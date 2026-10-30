@@ -23,3 +23,5 @@ Subpaths: [[Alpha Note#Alpha child|child section]], [[Alpha Note#^alpha-block|bl
 Rich: [[Rich Note]].
 
 Long: [[Long Note]].
+
+A diagram: [[Mermaid Note]].

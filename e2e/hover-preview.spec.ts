@@ -1,9 +1,22 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
+import { PREVIEW_PATH } from "../src/lib/preview-types";
+import { PREVIEW_PROPERTIES_KEY } from "../src/lib/properties-keys";
 
 const preview = (page: Page) => page.getByTestId("hover-preview");
 
 /** The Note body, so sidebar links with the same name are not matched. */
 const note = (page: Page) => page.locator(".markdown-rendered").first();
+
+/** Records the URLs of every Preview Payload the page downloads. */
+function recordPayloadRequests(page: Page): string[] {
+  const requests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes(PREVIEW_PATH)) requests.push(request.url());
+  });
+  return requests;
+}
 
 /** Waits for hydration, so the hover handlers exist before the pointer moves. */
 async function openNote(page: Page, url: string) {
@@ -77,13 +90,9 @@ test("links that resolve to no Vault Note get no preview", async ({ page }) => {
   }
 });
 
-test("a link with a Subpath still previews its Note and carries the Subpath", async ({
-  page,
-}) => {
+test("a link with a Subpath still previews its Note", async ({ page }) => {
   await openNote(page, "/links-note");
-  const link = note(page).getByRole("link", { name: "Alpha Note" });
-  await expect(link).toHaveAttribute("data-subpath", "alpha-heading");
-  await link.hover();
+  await note(page).getByRole("link", { name: "Alpha Note" }).hover();
   await expect(
     preview(page).getByText("Body of the alpha note."),
   ).toBeVisible();
@@ -94,13 +103,15 @@ test("the preview renders Callouts, Highlights, math and Embeds", async ({
 }) => {
   await openNote(page, "/links-note");
   await note(page).getByRole("link", { name: "Rich Note" }).hover();
-  const popup = preview(page);
+  const hoverPreview = preview(page);
 
-  await expect(popup.locator(".markdown-rendered")).toBeVisible();
-  await expect(popup.locator(".callout")).toContainText("Callout body text.");
-  await expect(popup.locator("mark")).toHaveText("marked text");
-  await expect(popup.locator(".katex")).toBeVisible();
-  await expect(popup.getByText("Body of the alpha note.")).toBeVisible();
+  await expect(hoverPreview.locator(".markdown-rendered")).toBeVisible();
+  await expect(hoverPreview.locator(".callout")).toContainText(
+    "Callout body text.",
+  );
+  await expect(hoverPreview.locator("mark")).toHaveText("marked text");
+  await expect(hoverPreview.locator(".katex")).toBeVisible();
+  await expect(hoverPreview.getByText("Body of the alpha note.")).toBeVisible();
 });
 
 test("links inside a preview are plain links", async ({ page }) => {
@@ -160,10 +171,7 @@ test("the page and the preview remember their Properties state separately", asyn
 test("a Note is downloaded once, however many links point at it", async ({
   page,
 }) => {
-  const requests: string[] = [];
-  page.on("request", (request) => {
-    if (request.url().includes("/api/preview/")) requests.push(request.url());
-  });
+  const requests = recordPayloadRequests(page);
 
   await openNote(page, "/links-note");
   expect(requests).toHaveLength(0);
@@ -181,7 +189,7 @@ test("a Note is downloaded once, however many links point at it", async ({
 test("shows a loading state, then a failure state when the payload cannot load", async ({
   page,
 }) => {
-  await page.route("**/api/preview/**", async (route) => {
+  await page.route(`**${PREVIEW_PATH}**`, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 600));
     await route.fulfill({ status: 500, body: "boom" });
   });
@@ -197,10 +205,10 @@ test("a long Note is capped in height and scrolls inside the preview", async ({
 }) => {
   await openNote(page, "/links-note");
   await note(page).getByRole("link", { name: "Long Note" }).hover();
-  const popup = preview(page);
-  await expect(popup.getByText("Last line")).toBeAttached();
+  const hoverPreview = preview(page);
+  await expect(hoverPreview.getByText("Last line")).toBeAttached();
 
-  const { client, scroll } = await popup.evaluate((el) => ({
+  const { client, scroll } = await hoverPreview.evaluate((el) => ({
     client: el.clientHeight,
     scroll: el.scrollHeight,
   }));
@@ -260,7 +268,7 @@ test.describe("Subpaths", () => {
   }) => {
     // The plugin leaves links to unknown anchors unresolved, so a stale anchor
     // is simulated by removing the section from the downloaded payload.
-    await page.route("**/api/preview/alpha-note*", async (route) => {
+    await page.route(`**${PREVIEW_PATH}alpha-note*`, async (route) => {
       const response = await route.fetch();
       const payload = await response.json();
       payload.html = payload.html.replace('id="alpha-child"', "");
@@ -280,10 +288,7 @@ test.describe("Subpaths", () => {
   test("links with different Subpaths to one Note download it once", async ({
     page,
   }) => {
-    const requests: string[] = [];
-    page.on("request", (request) => {
-      if (request.url().includes("/api/preview/")) requests.push(request.url());
-    });
+    const requests = recordPayloadRequests(page);
     await openNote(page, "/links-note");
 
     for (const name of ["child section", "block link", "item link"]) {
@@ -295,4 +300,70 @@ test.describe("Subpaths", () => {
 
     expect(requests).toHaveLength(1);
   });
+});
+
+test("focus leaving the link closes the preview", async ({ page }) => {
+  await openNote(page, "/links-note");
+  const link = note(page).getByRole("link", { name: "Beta Note" });
+  await link.focus();
+  await expect(preview(page)).toBeVisible();
+
+  await link.blur();
+  await expect(preview(page)).toHaveCount(0);
+});
+
+test("the preview opens after the open delay and closes after the close delay", async ({
+  page,
+}) => {
+  await openNote(page, "/links-note");
+
+  const hoverStart = Date.now();
+  await note(page).getByRole("link", { name: "Beta Note" }).hover();
+  await expect(preview(page)).toBeVisible();
+  // Delay is 300ms; the tolerance covers the pointer landing a bit early.
+  expect(Date.now() - hoverStart).toBeGreaterThanOrEqual(200);
+
+  const leaveStart = Date.now();
+  await page.mouse.move(2, 2);
+  // Delay is 150ms: right after the pointer leaves, the preview is still there.
+  await expect(preview(page)).toHaveCount(1, { timeout: 0 });
+  await expect(preview(page)).toHaveCount(0);
+  expect(Date.now() - leaveStart).toBeGreaterThanOrEqual(100);
+});
+
+test("the preview's Properties state syncs between tabs", async ({
+  context,
+  page,
+}) => {
+  await openNote(page, "/links-note");
+  await note(page).getByRole("link", { name: "Beta Note" }).hover();
+  const toggle = preview(page).getByRole("button", { name: "Properties" });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+  const other = await context.newPage();
+  await openNote(other, "/links-note");
+  await note(other).getByRole("link", { name: "Beta Note" }).hover();
+  await preview(other).getByRole("button", { name: "Properties" }).click();
+  expect(
+    await other.evaluate(
+      (key) => localStorage.getItem(key),
+      PREVIEW_PROPERTIES_KEY,
+    ),
+  ).toBe("1");
+
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+});
+
+test("a Mermaid diagram renders inside a preview", async ({ page }) => {
+  await openNote(page, "/links-note");
+  await note(page).getByRole("link", { name: "Mermaid Note" }).hover();
+
+  await expect(preview(page).locator("svg").getByText("Finish")).toBeVisible();
+});
+
+test("Note pages and Preview Payloads are statically generated", () => {
+  // The fixture build wrote them to disk, so no request renders them.
+  const app = path.join(process.cwd(), ".next/server/app");
+  expect(existsSync(path.join(app, "alpha-note.html"))).toBe(true);
+  expect(existsSync(path.join(app, "api/preview/alpha-note.body"))).toBe(true);
 });

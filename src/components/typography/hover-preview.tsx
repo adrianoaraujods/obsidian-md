@@ -3,6 +3,7 @@
 import { PreviewCard } from "@base-ui/react/preview-card";
 import Link from "next/link";
 import {
+  type ComponentProps,
   type ReactNode,
   useEffect,
   useState,
@@ -12,14 +13,13 @@ import {
 import { Properties } from "@/components/typography/properties";
 import { fetchPreviewPayload } from "@/lib/preview-client";
 import { slicePreviewHtml } from "@/lib/preview-slice";
+import { PREVIEW_PROPERTIES_KEY } from "@/lib/properties-keys";
 import type { PreviewPayload } from "@/lib/preview-types";
-
-export const PREVIEW_PROPERTIES_KEY = "properties-panel:preview";
 
 const OPEN_DELAY = 300;
 const CLOSE_DELAY = 150;
 
-type State =
+type PreviewState =
   | { status: "loading" }
   | { status: "error" }
   | { status: "ready"; payload: PreviewPayload };
@@ -31,7 +31,7 @@ function PreviewContent({
   slug: string[];
   subpath: string | undefined;
 }) {
-  const [state, setState] = useState<State>({ status: "loading" });
+  const [state, setState] = useState<PreviewState>({ status: "loading" });
   const key = slug.join("/");
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `key` identifies `slug`
@@ -68,6 +68,7 @@ function PreviewContent({
     <div className="p-4">
       <Properties
         defaultOpen={false}
+        noFlash={false}
         properties={state.payload.properties}
         storageKey={PREVIEW_PROPERTIES_KEY}
       />
@@ -100,7 +101,7 @@ function useCanHover(): boolean {
 /**
  * An internal link that shows a Hover Preview of the Note it points at.
  * `slug` is the target Note's Slug and `subpath` the link's Subpath (the part
- * after `#`), carried on the trigger as `data-subpath`.
+ * after `#`), which picks the part of the Note the preview shows.
  */
 export function HoverPreview({
   href,
@@ -108,7 +109,7 @@ export function HoverPreview({
   subpath,
   children,
   ...props
-}: Omit<React.ComponentProps<"a">, "href"> & {
+}: Omit<ComponentProps<"a">, "href"> & {
   href: string;
   slug: string[];
   subpath?: string | undefined;
@@ -127,7 +128,6 @@ export function HoverPreview({
     <PreviewCard.Root>
       <PreviewCard.Trigger
         closeDelay={CLOSE_DELAY}
-        data-subpath={subpath}
         delay={OPEN_DELAY}
         render={<Link href={href} {...props} />}
       >

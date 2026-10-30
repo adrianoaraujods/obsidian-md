@@ -15,6 +15,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { FormattedDate } from "@/components/typography/formatted-date";
 import { PropertiesPanel } from "@/components/typography/properties-panel";
+import { PAGE_PROPERTIES_KEY } from "@/lib/properties-keys";
 import { cn } from "@/lib/utils";
 
 /** Frontmatter keys consumed by Fumadocs or the schema, not by the panel. */
@@ -206,17 +207,18 @@ function Value({
   return <>{toText(value)}</>;
 }
 
-export const PAGE_PROPERTIES_KEY = "properties-panel:page";
-
 export function Properties({
   properties,
   storageKey = PAGE_PROPERTIES_KEY,
   defaultOpen = true,
+  noFlash = true,
 }: {
   properties: unknown;
   /** localStorage key remembering the open state; one per surface. */
   storageKey?: string;
   defaultOpen?: boolean;
+  /** Emit the inline script that applies the stored state before hydration. */
+  noFlash?: boolean;
 }) {
   if (
     typeof properties !== "object" ||
@@ -232,7 +234,11 @@ export function Properties({
   if (rows.length === 0) return null;
 
   return (
-    <PropertiesPanel defaultOpen={defaultOpen} storageKey={storageKey}>
+    <PropertiesPanel
+      defaultOpen={defaultOpen}
+      noFlash={noFlash}
+      storageKey={storageKey}
+    >
       <div className="flex flex-col gap-1 py-2">
         {rows.map(([key, value]) => {
           const type = inferType(key, value);

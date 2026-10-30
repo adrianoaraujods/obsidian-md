@@ -24,10 +24,13 @@ export function PropertiesPanel({
   children,
   storageKey,
   defaultOpen,
+  noFlash = true,
 }: {
   children: ReactNode;
   storageKey: string;
   defaultOpen: boolean;
+  /** Skip the inline script where the panel is only rendered on the client. */
+  noFlash?: boolean;
 }) {
   const id = useId();
   const [open, setOpen] = usePersistedOpen(storageKey, defaultOpen);
@@ -56,12 +59,14 @@ export function PropertiesPanel({
           </CollapsiblePanel>
         </Collapsible>
       </div>
-      <script
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: no-flash script, content is built from constants
-        dangerouslySetInnerHTML={{
-          __html: persistedOpenScript(id, storageKey),
-        }}
-      />
+      {noFlash ? (
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: no-flash script, content is built from constants
+          dangerouslySetInnerHTML={{
+            __html: persistedOpenScript(id, storageKey),
+          }}
+        />
+      ) : null}
     </>
   );
 }

@@ -13,8 +13,8 @@ import {
 import { Properties } from "@/components/typography/properties";
 import { fetchPreviewPayload } from "@/lib/preview-client";
 import { slicePreviewHtml } from "@/lib/preview-slice";
-import { PREVIEW_PROPERTIES_KEY } from "@/lib/properties-keys";
 import type { PreviewPayload } from "@/lib/preview-types";
+import { PREVIEW_PROPERTIES_KEY } from "@/lib/properties-keys";
 
 const OPEN_DELAY = 300;
 const CLOSE_DELAY = 150;

@@ -4,7 +4,7 @@ import {
   slugify,
 } from "remark-obsidian-md";
 
-import { vaultDir } from "@/lib/vault-dir";
+import { vaultDir } from "./vault-dir";
 
 const resolver = filesystemResolver(vaultDir);
 const paths = resolver.paths;

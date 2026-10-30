@@ -186,18 +186,67 @@ test("a Note is downloaded once, however many links point at it", async ({
   expect(requests).toHaveLength(1);
 });
 
-test("shows a loading state, then a failure state when the payload cannot load", async ({
+test("a slow payload is requested on hover and the preview opens only once it arrives", async ({
   page,
 }) => {
-  await page.route(`**${PREVIEW_PATH}**`, async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    await route.fulfill({ status: 500, body: "boom" });
+  let requestedAt = 0;
+  await page.route(`**${PREVIEW_PATH}beta-note*`, async (route) => {
+    requestedAt = Date.now();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.continue();
+  });
+  await openNote(page, "/links-note");
+  const hoveredAt = Date.now();
+  await note(page).getByRole("link", { name: "Beta Note" }).hover();
+
+  // The fetch starts with the hover, not when the 300 ms open delay ends.
+  await expect.poll(() => requestedAt).toBeGreaterThan(0);
+  expect(requestedAt - hoveredAt).toBeLessThan(250);
+
+  // Past the open delay but before the payload: nothing at all is rendered.
+  await page.waitForTimeout(600);
+  await expect(preview(page)).toHaveCount(0);
+  await expect(page.getByText("Loading preview")).toHaveCount(0);
+
+  await expect(preview(page).getByText("Body of the beta note.")).toBeVisible();
+});
+
+test("leaving the link before the payload arrives means the preview never opens", async ({
+  page,
+}) => {
+  await page.route(`**${PREVIEW_PATH}beta-note*`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    await route.continue();
   });
   await openNote(page, "/links-note");
   await note(page).getByRole("link", { name: "Beta Note" }).hover();
+  await page.waitForTimeout(400);
+  await page.mouse.move(2, 2);
+  await page.waitForTimeout(1200);
+  await expect(preview(page)).toHaveCount(0);
+});
 
-  await expect(preview(page).getByText("Loading preview")).toBeVisible();
-  await expect(preview(page).getByText("Preview unavailable")).toBeVisible();
+test("a failing payload opens nothing and the next hover retries", async ({
+  page,
+}) => {
+  let calls = 0;
+  await page.route(`**${PREVIEW_PATH}beta-note*`, async (route) => {
+    calls += 1;
+    if (calls === 1) await route.fulfill({ status: 500, body: "boom" });
+    else await route.continue();
+  });
+  await openNote(page, "/links-note");
+  const link = note(page).getByRole("link", { name: "Beta Note" });
+  await link.hover();
+  await page.waitForTimeout(800);
+  await expect(preview(page)).toHaveCount(0);
+  await expect(page.getByText("Preview unavailable")).toHaveCount(0);
+  expect(calls).toBe(1);
+
+  await page.mouse.move(2, 2);
+  await link.hover();
+  await expect(preview(page).getByText("Body of the beta note.")).toBeVisible();
+  expect(calls).toBe(2);
 });
 
 test("a long Note is capped in height and scrolls inside the preview", async ({

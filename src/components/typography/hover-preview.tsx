@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   type ComponentProps,
   type ReactNode,
-  useEffect,
+  useCallback,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -19,57 +19,21 @@ import { PREVIEW_PROPERTIES_KEY } from "@/lib/properties-keys";
 const OPEN_DELAY = 300;
 const CLOSE_DELAY = 150;
 
-type PreviewState =
-  | { status: "loading" }
-  | { status: "error" }
-  | { status: "ready"; payload: PreviewPayload };
-
 function PreviewContent({
-  slug,
+  payload,
   subpath,
 }: {
-  slug: string[];
+  payload: PreviewPayload;
   subpath: string | undefined;
 }) {
-  const [state, setState] = useState<PreviewState>({ status: "loading" });
-  const key = slug.join("/");
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` identifies `slug`
-  useEffect(() => {
-    let cancelled = false;
-    setState({ status: "loading" });
-    fetchPreviewPayload(slug).then(
-      (payload) => !cancelled && setState({ status: "ready", payload }),
-      () => !cancelled && setState({ status: "error" }),
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [key]);
-
-  if (state.status === "loading") {
-    return (
-      <output className="block p-4 text-muted-foreground text-sm">
-        Loading preview…
-      </output>
-    );
-  }
-  if (state.status === "error") {
-    return (
-      <p className="p-4 text-muted-foreground text-sm" role="alert">
-        Preview unavailable. Open the link to read the Note.
-      </p>
-    );
-  }
-
-  const html = slicePreviewHtml(state.payload.html, subpath);
+  const html = slicePreviewHtml(payload.html, subpath);
 
   return (
     <div className="p-4">
       <Properties
         defaultOpen={false}
         noFlash={false}
-        properties={state.payload.properties}
+        properties={payload.properties}
         storageKey={PREVIEW_PROPERTIES_KEY}
       />
       <div
@@ -116,6 +80,22 @@ export function HoverPreview({
   children?: ReactNode;
 }) {
   const canHover = useCanHover();
+  const [payload, setPayload] = useState<PreviewPayload | null>(null);
+  const [wantOpen, setWantOpen] = useState(false);
+  const key = slug.join("/");
+
+  // Starts on pointer enter or focus, in parallel with the open delay. A
+  // failure opens nothing and is not cached, so the next hover retries.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` identifies `slug`
+  const load = useCallback(() => {
+    fetchPreviewPayload(slug).then(setPayload, () => setWantOpen(false));
+  }, [key]);
+
+  // Leaving before the content has arrived means the preview never opens.
+  const cancelPending = useCallback(() => {
+    if (!payload) setWantOpen(false);
+  }, [payload]);
+
   if (!canHover) {
     return (
       <Link href={href} {...props}>
@@ -125,10 +105,17 @@ export function HoverPreview({
   }
 
   return (
-    <PreviewCard.Root>
+    <PreviewCard.Root
+      onOpenChange={(next) => setWantOpen(next)}
+      open={wantOpen && payload !== null}
+    >
       <PreviewCard.Trigger
         closeDelay={CLOSE_DELAY}
         delay={OPEN_DELAY}
+        onBlur={cancelPending}
+        onFocus={load}
+        onPointerEnter={load}
+        onPointerLeave={cancelPending}
         render={<Link href={href} {...props} />}
       >
         {children}
@@ -139,7 +126,7 @@ export function HoverPreview({
             className="z-50 max-h-[min(24rem,70vh)] w-[min(28rem,92vw)] overflow-y-auto rounded-lg border bg-popover text-popover-foreground shadow-lg"
             data-testid="hover-preview"
           >
-            <PreviewContent slug={slug} subpath={subpath} />
+            {payload && <PreviewContent payload={payload} subpath={subpath} />}
           </PreviewCard.Popup>
         </PreviewCard.Positioner>
       </PreviewCard.Portal>

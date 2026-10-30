@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { buildPreviewPayload } from "@/lib/preview-payload";
+import { PREVIEW_SLUG_ATTR, PREVIEW_SUBPATH_ATTR } from "@/lib/preview-types";
+
+const htmlOf = async (slug: string[]) =>
+  (await buildPreviewPayload(slug))?.html ?? "";
 
 describe("buildPreviewPayload", () => {
   it("returns nothing for a Slug that is not a Note", async () => {
@@ -30,7 +34,7 @@ describe("buildPreviewPayload", () => {
   });
 
   it("transcludes Embeds and renders Callouts, Highlights and math", async () => {
-    const html = (await buildPreviewPayload(["rich-note"]))?.html ?? "";
+    const html = await htmlOf(["rich-note"]);
 
     expect(html).toContain("Body of the alpha note.");
     expect(html).toContain("Callout body text.");
@@ -39,7 +43,7 @@ describe("buildPreviewPayload", () => {
   });
 
   it("resolves Wiki Links to published Slugs and leaves unresolved ones unresolved", async () => {
-    const html = (await buildPreviewPayload(["links-note"]))?.html ?? "";
+    const html = await htmlOf(["links-note"]);
 
     expect(html).toContain('href="/beta-note"');
     expect(html).toContain('href="/alpha-note#alpha-heading"');
@@ -52,50 +56,55 @@ describe("buildPreviewPayload", () => {
     const anchors = (html: string) => html.match(/<a [^>]*>/g) ?? [];
     const anchorTo = (html: string, href: string) =>
       anchors(html).find((a) => a.includes(`href="${href}"`)) ?? "";
+    const isMarked = (anchor: string) => anchor.includes(PREVIEW_SLUG_ATTR);
 
     it("marks a link to a Vault Note with the target's Slug", async () => {
-      const html = (await buildPreviewPayload(["links-note"]))?.html ?? "";
+      const html = await htmlOf(["links-note"]);
 
       expect(anchorTo(html, "/beta-note")).toContain(
-        'data-preview-slug="beta-note"',
+        `${PREVIEW_SLUG_ATTR}="beta-note"`,
       );
     });
 
     it("carries the Subpath of the link", async () => {
-      const html = (await buildPreviewPayload(["links-note"]))?.html ?? "";
+      const anchor = anchorTo(
+        await htmlOf(["links-note"]),
+        "/alpha-note#alpha-heading",
+      );
 
-      expect(anchorTo(html, "/alpha-note#alpha-heading")).toContain(
-        'data-preview-slug="alpha-note"',
-      );
-      expect(anchorTo(html, "/alpha-note#alpha-heading")).toContain(
-        'data-preview-subpath="alpha-heading"',
-      );
+      expect(anchor).toContain(`${PREVIEW_SLUG_ATTR}="alpha-note"`);
+      expect(anchor).toContain(`${PREVIEW_SUBPATH_ATTR}="alpha-heading"`);
     });
 
     it("does not mark unresolved, Asset, external, same-Note or non-Vault links", async () => {
-      const html = (await buildPreviewPayload(["links-note"]))?.html ?? "";
-      const betaHtml = (await buildPreviewPayload(["beta-note"]))?.html ?? "";
-      expect(betaHtml).toContain('href="#beta-heading"');
-      expect(
-        anchors(betaHtml).some((a) => a.includes("data-preview-slug")),
-      ).toBe(true);
-      const unmarked = anchors(html).filter(
-        (a) => !a.includes("data-preview-slug"),
+      const unmarked = anchors(await htmlOf(["links-note"])).filter(
+        (a) => !isMarked(a),
       );
+      const has = (text: string) => unmarked.some((a) => a.includes(text));
 
-      expect(unmarked.some((a) => a.includes("is-unresolved"))).toBe(true);
-      expect(unmarked.some((a) => a.includes("pic.png"))).toBe(true);
-      expect(unmarked.some((a) => a.includes("https://example.com"))).toBe(
-        true,
-      );
-      expect(unmarked.some((a) => a.includes('href="/api/search"'))).toBe(true);
-      expect(unmarked.some((a) => a.includes('href="#anchors"'))).toBe(true);
+      expect(has("is-unresolved")).toBe(true);
+      expect(has("pic.png")).toBe(true);
+      expect(has("https://example.com")).toBe(true);
+      expect(has('href="/api/search"')).toBe(true);
+      expect(has('href="#anchors"')).toBe(true);
     });
 
     it("does not mark a link back to the Note being previewed", async () => {
-      const html = (await buildPreviewPayload(["beta-note"]))?.html ?? "";
+      const html = await htmlOf(["beta-note"]);
+
       expect(html).toContain("beta self link");
-      expect(html).not.toContain('data-preview-slug="beta-note"');
+      expect(html).not.toContain(`${PREVIEW_SLUG_ATTR}="beta-note"`);
+    });
+
+    it("still marks a link from B back to A; only a direct self-link is excluded", async () => {
+      // Ping links to Pong and Pong links back to Ping: previewing Ping, then
+      // Pong inside it, offers Ping again.
+      expect(anchorTo(await htmlOf(["ping-note"]), "/pong-note")).toContain(
+        `${PREVIEW_SLUG_ATTR}="pong-note"`,
+      );
+      expect(anchorTo(await htmlOf(["pong-note"]), "/ping-note")).toContain(
+        `${PREVIEW_SLUG_ATTR}="ping-note"`,
+      );
     });
   });
 });

@@ -6,10 +6,12 @@ import type { ComponentProps } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 
 import { HoverPreview } from "@/components/typography/hover-preview";
+import { PREVIEW_SLUG_ATTR, PREVIEW_SUBPATH_ATTR } from "@/lib/preview-types";
+import { slugFromKey } from "@/lib/slug-key";
 
 type AnchorProps = ComponentProps<"a"> & {
-  "data-preview-slug"?: string;
-  "data-preview-subpath"?: string;
+  [PREVIEW_SLUG_ATTR]?: string;
+  [PREVIEW_SUBPATH_ATTR]?: string;
 };
 
 /**
@@ -18,8 +20,8 @@ type AnchorProps = ComponentProps<"a"> & {
  * Hover Preview; every other link stays a plain link.
  */
 function PreviewLink({
-  "data-preview-slug": slug,
-  "data-preview-subpath": subpath,
+  [PREVIEW_SLUG_ATTR]: slug,
+  [PREVIEW_SUBPATH_ATTR]: subpath,
   href,
   children,
   ...props
@@ -35,7 +37,7 @@ function PreviewLink({
     <HoverPreview
       {...props}
       href={href}
-      slug={slug.split("/")}
+      slug={slugFromKey(slug)}
       subpath={subpath}
     >
       {children}

@@ -2,10 +2,7 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { ComponentProps } from "react";
 
 import { HoverPreview } from "@/components/typography/hover-preview";
-import type { source } from "@/lib/source";
-import { resolveVaultLink } from "@/lib/vault-link-target";
-
-type SourcePage = NonNullable<ReturnType<typeof source.getPage>>;
+import { resolveVaultLink, type SourcePage } from "@/lib/vault-link-target";
 
 /**
  * The `a` override for a Note's page. It runs on the server with the page

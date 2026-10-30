@@ -20,6 +20,7 @@ import { fetchPreviewPayload } from "@/lib/preview-client";
 import { slicePreviewHtml } from "@/lib/preview-slice";
 import type { PreviewPayload } from "@/lib/preview-types";
 import { PREVIEW_PROPERTIES_KEY } from "@/lib/properties-keys";
+import { slugKey } from "@/lib/slug-key";
 
 /**
  * Lets a preview tell the one that holds it (the link it sits in belongs to
@@ -27,6 +28,9 @@ import { PREVIEW_PROPERTIES_KEY } from "@/lib/properties-keys";
  * pointer left everything while the nested preview was keeping it open.
  */
 const ChildClosedContext = createContext<(() => void) | null>(null);
+
+type Part = "trigger" | "popup";
+type Input = "pointer" | "focus";
 
 const OPEN_DELAY = 300;
 const CLOSE_DELAY = 150;
@@ -92,21 +96,27 @@ export function HoverPreview({
   const canHover = useCanHover();
   const [payload, setPayload] = useState<PreviewPayload | null>(null);
   const [wantOpen, setWantOpen] = useState(false);
-  const key = slug.join("/");
+  const key = slugKey(slug);
   const notifyParent = useContext(ChildClosedContext);
   const isOpen = wantOpen && payload !== null;
 
-  // Which parts of this preview the reader's pointer or focus is on. The
-  // popup's React enter/leave events also cover the nested previews portaled
-  // out of it, so "inside the popup" means anywhere in the nested chain.
-  const presence = useRef({ trigger: false, popup: false });
+  // What the reader's pointer or focus is on: the link or the popup, by
+  // pointer or by focus. The popup's React events also cover the nested
+  // previews portaled out of it, so "inside the popup" means anywhere in the
+  // nested chain, for focus as well as for the pointer.
+  const presence = useRef(new Set<string>());
   const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const setPresence = (part: "trigger" | "popup", present: boolean) => {
-    presence.current[part] = present;
-    if (present) clearTimeout(closeTimer.current);
+  const setPresence = (part: Part, input: Input, present: boolean) => {
+    const id = `${part}:${input}`;
+    if (present) {
+      presence.current.add(id);
+      clearTimeout(closeTimer.current);
+    } else {
+      presence.current.delete(id);
+    }
   };
   const onChildClosed = useCallback(() => {
-    if (presence.current.trigger || presence.current.popup) return;
+    if (presence.current.size > 0) return;
     clearTimeout(closeTimer.current);
     closeTimer.current = setTimeout(() => setWantOpen(false), CLOSE_DELAY);
   }, []);
@@ -130,6 +140,17 @@ export function HoverPreview({
     if (!payload) setWantOpen(false);
   }, [payload]);
 
+  // Hovering or focusing the link starts loading its payload; leaving it
+  // before the payload has arrived cancels the preview.
+  const enter = (input: Input) => {
+    setPresence("trigger", input, true);
+    load();
+  };
+  const leave = (input: Input) => {
+    setPresence("trigger", input, false);
+    cancelPending();
+  };
+
   if (!canHover) {
     return (
       <Link href={href} {...props}>
@@ -143,22 +164,10 @@ export function HoverPreview({
       <PreviewCard.Trigger
         closeDelay={CLOSE_DELAY}
         delay={OPEN_DELAY}
-        onBlur={() => {
-          setPresence("trigger", false);
-          cancelPending();
-        }}
-        onFocus={() => {
-          setPresence("trigger", true);
-          load();
-        }}
-        onPointerEnter={() => {
-          setPresence("trigger", true);
-          load();
-        }}
-        onPointerLeave={() => {
-          setPresence("trigger", false);
-          cancelPending();
-        }}
+        onBlur={() => leave("focus")}
+        onFocus={() => enter("focus")}
+        onPointerEnter={() => enter("pointer")}
+        onPointerLeave={() => leave("pointer")}
         render={<Link href={href} {...props} />}
       >
         {children}
@@ -168,8 +177,10 @@ export function HoverPreview({
           <PreviewCard.Popup
             className="max-h-[min(24rem,70vh)] w-[min(28rem,92vw)] overflow-y-auto rounded-lg border bg-popover text-popover-foreground shadow-lg"
             data-testid="hover-preview"
-            onPointerEnter={() => setPresence("popup", true)}
-            onPointerLeave={() => setPresence("popup", false)}
+            onBlur={() => setPresence("popup", "focus", false)}
+            onFocus={() => setPresence("popup", "focus", true)}
+            onPointerEnter={() => setPresence("popup", "pointer", true)}
+            onPointerLeave={() => setPresence("popup", "pointer", false)}
           >
             <ChildClosedContext.Provider value={onChildClosed}>
               {payload && (

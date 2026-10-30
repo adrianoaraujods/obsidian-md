@@ -18,6 +18,37 @@ function recordPayloadRequests(page: Page): string[] {
   return requests;
 }
 
+/**
+ * Lets the open and close delays (300 ms and 150 ms) run out, for asserting
+ * that something did not happen. Where something does happen, wait for it
+ * with an assertion instead.
+ */
+const PAST_DELAYS = 600;
+const letDelaysPass = (page: Page) => page.waitForTimeout(PAST_DELAYS);
+
+/** Lets React apply what a just-settled request or event changed. */
+const nextFrames = (page: Page) =>
+  page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+
+/**
+ * Holds the Preview Payload of `slug` back for `ms`. `requestedAt()` is when
+ * the page asked for it (0 if it has not).
+ */
+async function delayPayload(page: Page, slug: string, ms: number) {
+  let requestedAt = 0;
+  await page.route(`**${PREVIEW_PATH}${slug}*`, async (route) => {
+    requestedAt = Date.now();
+    await new Promise((resolve) => setTimeout(resolve, ms));
+    await route.continue();
+  });
+  return { requestedAt: () => requestedAt };
+}
+
 /** Waits for hydration, so the hover handlers exist before the pointer moves. */
 async function openNote(page: Page, url: string) {
   await page.goto(url);
@@ -31,8 +62,7 @@ test("hovering a link to a Note previews that Note after a short delay", async (
   await note(page).getByRole("link", { name: "Beta Note" }).hover();
 
   // Not instant: moving the pointer across the page must not flash popovers.
-  await page.waitForTimeout(100);
-  await expect(preview(page)).toHaveCount(0);
+  await expect(preview(page)).toHaveCount(0, { timeout: 0 });
 
   await expect(preview(page)).toBeVisible();
   await expect(preview(page).getByText("Body of the beta note.")).toBeVisible();
@@ -48,7 +78,7 @@ test("the preview stays open while the pointer moves into it, then closes", asyn
   const box = await preview(page).boundingBox();
   if (!box) throw new Error("preview has no box");
   await page.mouse.move(box.x + box.width / 2, box.y + 20, { steps: 8 });
-  await page.waitForTimeout(400);
+  await letDelaysPass(page);
   await expect(preview(page)).toBeVisible();
 
   await page.mouse.move(2, 2);
@@ -85,7 +115,7 @@ test("links that resolve to no Vault Note get no preview", async ({ page }) => {
 
   for (const link of links) {
     await link.hover();
-    await page.waitForTimeout(600);
+    await letDelaysPass(page);
     await expect(preview(page)).toHaveCount(0);
   }
 });
@@ -167,7 +197,7 @@ test.describe("nested previews", () => {
     const box = await previews(page).nth(1).boundingBox();
     if (!box) throw new Error("nested preview has no box");
     await page.mouse.move(box.x + box.width / 2, box.y + 20, { steps: 10 });
-    await page.waitForTimeout(500);
+    await letDelaysPass(page);
     await expect(previews(page)).toHaveCount(2);
 
     await page.mouse.move(2, 2);
@@ -187,6 +217,36 @@ test.describe("nested previews", () => {
     await expect(previews(page)).toHaveCount(0);
   });
 
+  test("focus inside a preview keeps it open when its nested preview closes", async ({
+    page,
+  }) => {
+    await openNote(page, "/links-note");
+    await note(page).getByRole("link", { name: "Beta Note" }).focus();
+    await expect(previews(page)).toHaveCount(1);
+    await inside(page, 0, "beta to alpha child").focus();
+    await expect(previews(page)).toHaveCount(2);
+
+    // Focus moves to another link of the parent: the nested one closes, but
+    // focus is still inside the parent, so it must stay open.
+    await inside(page, 0, "beta self link").focus();
+    await expect(previews(page)).toHaveCount(1);
+    await letDelaysPass(page);
+    await expect(previews(page)).toHaveCount(1);
+  });
+
+  test("focus leaving a chain of nested previews closes all of them", async ({
+    page,
+  }) => {
+    await openNote(page, "/links-note");
+    await note(page).getByRole("link", { name: "Rich Note" }).focus();
+    await expect(previews(page)).toHaveCount(1);
+    await inside(page, 0, "Beta Note").focus();
+    await expect(previews(page)).toHaveCount(2);
+
+    await page.evaluate(() => (document.activeElement as HTMLElement).blur());
+    await expect(previews(page)).toHaveCount(0);
+  });
+
   test("links inside a preview that point at no other Note get no preview", async ({
     page,
   }) => {
@@ -200,7 +260,7 @@ test.describe("nested previews", () => {
       "Search",
     ]) {
       await inside(page, 1, name).hover();
-      await page.waitForTimeout(600);
+      await letDelaysPass(page);
       await expect(previews(page)).toHaveCount(2);
     }
 
@@ -309,22 +369,17 @@ test("a Note is downloaded once, however many links point at it", async ({
 test("a slow payload is requested on hover and the preview opens only once it arrives", async ({
   page,
 }) => {
-  let requestedAt = 0;
-  await page.route(`**${PREVIEW_PATH}beta-note*`, async (route) => {
-    requestedAt = Date.now();
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    await route.continue();
-  });
+  const payload = await delayPayload(page, "beta-note", 1000);
   await openNote(page, "/links-note");
   const hoveredAt = Date.now();
   await note(page).getByRole("link", { name: "Beta Note" }).hover();
 
   // The fetch starts with the hover, not when the 300 ms open delay ends.
-  await expect.poll(() => requestedAt).toBeGreaterThan(0);
-  expect(requestedAt - hoveredAt).toBeLessThan(250);
+  await expect.poll(payload.requestedAt).toBeGreaterThan(0);
+  expect(payload.requestedAt() - hoveredAt).toBeLessThan(250);
 
   // Past the open delay but before the payload: nothing at all is rendered.
-  await page.waitForTimeout(600);
+  await letDelaysPass(page);
   await expect(preview(page)).toHaveCount(0);
   await expect(page.getByText("Loading preview")).toHaveCount(0);
 
@@ -334,15 +389,15 @@ test("a slow payload is requested on hover and the preview opens only once it ar
 test("leaving the link before the payload arrives means the preview never opens", async ({
   page,
 }) => {
-  await page.route(`**${PREVIEW_PATH}beta-note*`, async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    await route.continue();
-  });
+  await delayPayload(page, "beta-note", 800);
   await openNote(page, "/links-note");
+  const arrived = page.waitForResponse((r) => r.url().includes(PREVIEW_PATH));
   await note(page).getByRole("link", { name: "Beta Note" }).hover();
-  await page.waitForTimeout(400);
+  await letDelaysPass(page);
   await page.mouse.move(2, 2);
-  await page.waitForTimeout(1200);
+
+  await arrived;
+  await nextFrames(page);
   await expect(preview(page)).toHaveCount(0);
 });
 
@@ -358,10 +413,10 @@ test("a failing payload opens nothing and the next hover retries", async ({
   await openNote(page, "/links-note");
   const link = note(page).getByRole("link", { name: "Beta Note" });
   await link.hover();
-  await page.waitForTimeout(800);
+  await expect.poll(() => calls).toBe(1);
+  await letDelaysPass(page);
   await expect(preview(page)).toHaveCount(0);
   await expect(page.getByText("Preview unavailable")).toHaveCount(0);
-  expect(calls).toBe(1);
 
   await page.mouse.move(2, 2);
   await link.hover();

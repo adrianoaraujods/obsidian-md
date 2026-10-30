@@ -1,4 +1,5 @@
 import { type PreviewPayload, previewPayloadUrl } from "@/lib/preview-types";
+import { slugKey } from "@/lib/slug-key";
 
 const cache = new Map<string, Promise<PreviewPayload>>();
 
@@ -11,7 +12,7 @@ const cache = new Map<string, Promise<PreviewPayload>>();
 export function fetchPreviewPayload(
   slug: readonly string[],
 ): Promise<PreviewPayload> {
-  const key = slug.join("/");
+  const key = slugKey(slug);
   const cached = cache.get(key);
   if (cached) return cached;
 

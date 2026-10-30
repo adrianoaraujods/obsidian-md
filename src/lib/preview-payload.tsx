@@ -1,5 +1,10 @@
 import { Img } from "@/components/typography/mdx-components";
-import type { PreviewPayload } from "@/lib/preview-types";
+import {
+  PREVIEW_SLUG_ATTR,
+  PREVIEW_SUBPATH_ATTR,
+  type PreviewPayload,
+} from "@/lib/preview-types";
+import { slugKey } from "@/lib/slug-key";
 import { source } from "@/lib/source";
 import { resolveVaultLink } from "@/lib/vault-link-target";
 
@@ -37,8 +42,8 @@ export async function buildPreviewPayload(
               href={resolved}
               {...props}
               {...(target && {
-                "data-preview-slug": target.slug.join("/"),
-                "data-preview-subpath": target.subpath,
+                [PREVIEW_SLUG_ATTR]: slugKey(target.slug),
+                [PREVIEW_SUBPATH_ATTR]: target.subpath,
               })}
             >
               {children}

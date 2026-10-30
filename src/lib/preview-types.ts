@@ -7,7 +7,10 @@ export type PreviewPayload = {
   html: string;
 };
 
+/** Where Preview Payloads are served from. */
+export const PREVIEW_PATH = "/api/preview/";
+
 /** URL of the Preview Payload for the Note published under `slug`. */
 export function previewPayloadUrl(slug: readonly string[]): string {
-  return `/api/preview/${slug.map(encodeURIComponent).join("/")}`;
+  return `${PREVIEW_PATH}${slug.map(encodeURIComponent).join("/")}`;
 }

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const PAGE_KEY = "properties-panel:page";
+import { PAGE_PROPERTIES_KEY } from "../src/lib/properties-keys";
 
 test("the page's Properties Panel starts expanded", async ({ page }) => {
   await page.goto("/beta-note");
@@ -34,7 +34,10 @@ test("a stored collapsed state is applied before hydration (no flash)", async ({
   page,
 }) => {
   await page.goto("/beta-note");
-  await page.evaluate((key) => localStorage.setItem(key, "0"), PAGE_KEY);
+  await page.evaluate(
+    (key) => localStorage.setItem(key, "0"),
+    PAGE_PROPERTIES_KEY,
+  );
 
   // Block every script chunk: only the inline script can have run.
   await page.route("**/_next/static/**/*.js", (route) => route.abort());

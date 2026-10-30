@@ -13,8 +13,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-
 import { FormattedDate } from "@/components/typography/formatted-date";
+import { PropertiesPanel } from "@/components/typography/properties-panel";
+import { PAGE_PROPERTIES_KEY } from "@/lib/properties-keys";
 import { cn } from "@/lib/utils";
 
 /** Frontmatter keys consumed by Fumadocs or the schema, not by the panel. */
@@ -206,7 +207,19 @@ function Value({
   return <>{toText(value)}</>;
 }
 
-export function Properties({ properties }: { properties: unknown }) {
+export function Properties({
+  properties,
+  storageKey = PAGE_PROPERTIES_KEY,
+  defaultOpen = true,
+  noFlash = true,
+}: {
+  properties: unknown;
+  /** localStorage key remembering the open state; one per surface. */
+  storageKey?: string;
+  defaultOpen?: boolean;
+  /** Emit the inline script that applies the stored state before hydration. */
+  noFlash?: boolean;
+}) {
   if (
     typeof properties !== "object" ||
     properties === null ||
@@ -221,28 +234,34 @@ export function Properties({ properties }: { properties: unknown }) {
   if (rows.length === 0) return null;
 
   return (
-    <div className="mb-8 flex flex-col gap-1 py-2">
-      {rows.map(([key, value]) => {
-        const type = inferType(key, value);
-        const Icon = TYPE_ICONS[type];
+    <PropertiesPanel
+      defaultOpen={defaultOpen}
+      noFlash={noFlash}
+      storageKey={storageKey}
+    >
+      <div className="flex flex-col gap-1 py-2">
+        {rows.map(([key, value]) => {
+          const type = inferType(key, value);
+          const Icon = TYPE_ICONS[type];
 
-        return (
-          <div
-            className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-start rounded-[6px] focus-within:ring-1 focus-within:ring-ring hover:ring-1 hover:ring-border sm:grid-cols-[9rem_minmax(0,1fr)]"
-            key={key}
-          >
-            <div className="flex min-h-7 min-w-0 items-center gap-2 py-1 pr-2 pl-1 text-muted-foreground">
-              <Icon aria-hidden className="size-4 shrink-0" />
-              <span className="truncate text-sm" title={key}>
-                {key}
-              </span>
+          return (
+            <div
+              className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-start rounded-[6px] focus-within:ring-1 focus-within:ring-ring hover:ring-1 hover:ring-border sm:grid-cols-[9rem_minmax(0,1fr)]"
+              key={key}
+            >
+              <div className="flex min-h-7 min-w-0 items-center gap-2 py-1 pr-2 pl-1 text-muted-foreground">
+                <Icon aria-hidden className="size-4 shrink-0" />
+                <span className="truncate text-sm" title={key}>
+                  {key}
+                </span>
+              </div>
+              <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-3 py-1 pr-2 text-foreground text-sm">
+                <Value type={type} value={value} />
+              </div>
             </div>
-            <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-3 py-1 pr-2 text-foreground text-sm">
-              <Value type={type} value={value} />
-            </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </PropertiesPanel>
   );
 }

@@ -4,6 +4,8 @@ title: Long Note
 
 # Long Note
 
+See also [[Rich Note]].
+
 Paragraph 1 of a long note.
 
 Paragraph 2 of a long note.

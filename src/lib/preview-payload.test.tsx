@@ -47,4 +47,55 @@ describe("buildPreviewPayload", () => {
       /<a [^>]*class="is-unresolved"[^>]*>Missing Note<\/a>/,
     );
   });
+
+  describe("marking links that can be previewed", () => {
+    const anchors = (html: string) => html.match(/<a [^>]*>/g) ?? [];
+    const anchorTo = (html: string, href: string) =>
+      anchors(html).find((a) => a.includes(`href="${href}"`)) ?? "";
+
+    it("marks a link to a Vault Note with the target's Slug", async () => {
+      const html = (await buildPreviewPayload(["links-note"]))?.html ?? "";
+
+      expect(anchorTo(html, "/beta-note")).toContain(
+        'data-preview-slug="beta-note"',
+      );
+    });
+
+    it("carries the Subpath of the link", async () => {
+      const html = (await buildPreviewPayload(["links-note"]))?.html ?? "";
+
+      expect(anchorTo(html, "/alpha-note#alpha-heading")).toContain(
+        'data-preview-slug="alpha-note"',
+      );
+      expect(anchorTo(html, "/alpha-note#alpha-heading")).toContain(
+        'data-preview-subpath="alpha-heading"',
+      );
+    });
+
+    it("does not mark unresolved, Asset, external, same-Note or non-Vault links", async () => {
+      const html = (await buildPreviewPayload(["links-note"]))?.html ?? "";
+      const betaHtml = (await buildPreviewPayload(["beta-note"]))?.html ?? "";
+      expect(betaHtml).toContain('href="#beta-heading"');
+      expect(
+        anchors(betaHtml).some((a) => a.includes("data-preview-slug")),
+      ).toBe(true);
+      const unmarked = anchors(html).filter(
+        (a) => !a.includes("data-preview-slug"),
+      );
+
+      expect(unmarked.some((a) => a.includes("is-unresolved"))).toBe(true);
+      expect(unmarked.some((a) => a.includes("pic.png"))).toBe(true);
+      expect(unmarked.some((a) => a.includes("https://example.com"))).toBe(
+        true,
+      );
+      expect(unmarked.some((a) => a.includes('href="/api/search"'))).toBe(true);
+      expect(unmarked.some((a) => a.includes('href="#anchors"'))).toBe(true);
+    });
+
+    it("does not mark a link back to the Note being previewed", async () => {
+      const html = (await buildPreviewPayload(["beta-note"]))?.html ?? "";
+      expect(html).toContain("beta self link");
+      expect(html).not.toContain('data-preview-slug="beta-note"');
+    });
+  });
 });

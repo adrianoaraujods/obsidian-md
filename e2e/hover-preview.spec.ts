@@ -114,14 +114,134 @@ test("the preview renders Callouts, Highlights, math and Embeds", async ({
   await expect(hoverPreview.getByText("Body of the alpha note.")).toBeVisible();
 });
 
-test("links inside a preview are plain links", async ({ page }) => {
-  await openNote(page, "/links-note");
-  await note(page).getByRole("link", { name: "Rich Note" }).hover();
-  const inner = preview(page).getByRole("link", { name: "Beta Note" });
-  await expect(inner).toBeVisible();
-  await inner.hover();
-  await page.waitForTimeout(600);
-  await expect(preview(page)).toHaveCount(1);
+test.describe("nested previews", () => {
+  const previews = (page: Page) => page.getByTestId("hover-preview");
+  const inside = (page: Page, depth: number, name: string) =>
+    previews(page).nth(depth).getByRole("link", { name });
+
+  /** Opens Rich Note's preview, then Beta Note's inside it. */
+  async function openTwoLevels(page: Page) {
+    await openNote(page, "/links-note");
+    await note(page).getByRole("link", { name: "Rich Note" }).hover();
+    await expect(previews(page)).toHaveCount(1);
+    await inside(page, 0, "Beta Note").hover();
+    await expect(previews(page)).toHaveCount(2);
+  }
+
+  test("a link inside a preview opens a nested preview", async ({ page }) => {
+    await openTwoLevels(page);
+    await expect(
+      previews(page).nth(1).getByText("Body of the beta note."),
+    ).toBeVisible();
+  });
+
+  test("a third level opens from the second, with no depth limit", async ({
+    page,
+  }) => {
+    await openTwoLevels(page);
+    await inside(page, 1, "beta to alpha child").hover();
+    await expect(previews(page)).toHaveCount(3);
+    await expect(
+      previews(page).nth(2).getByText("Body of the alpha child."),
+    ).toBeVisible();
+    await expect(
+      previews(page).nth(2).getByText("Body of the alpha sibling."),
+    ).toHaveCount(0);
+  });
+
+  test("a nested link carries its Subpath", async ({ page }) => {
+    await openTwoLevels(page);
+    await inside(page, 1, "beta to alpha block").hover();
+    await expect(
+      previews(page).nth(2).getByText("A tagged alpha paragraph."),
+    ).toBeVisible();
+    await expect(
+      previews(page).nth(2).getByText("Body of the alpha note."),
+    ).toHaveCount(0);
+  });
+
+  test("moving into the nested preview keeps the parent open; leaving closes all", async ({
+    page,
+  }) => {
+    await openTwoLevels(page);
+    const box = await previews(page).nth(1).boundingBox();
+    if (!box) throw new Error("nested preview has no box");
+    await page.mouse.move(box.x + box.width / 2, box.y + 20, { steps: 10 });
+    await page.waitForTimeout(500);
+    await expect(previews(page)).toHaveCount(2);
+
+    await page.mouse.move(2, 2);
+    await expect(previews(page)).toHaveCount(0);
+  });
+
+  test("Escape closes the innermost preview first", async ({ page }) => {
+    await openNote(page, "/links-note");
+    await note(page).getByRole("link", { name: "Rich Note" }).focus();
+    await expect(previews(page)).toHaveCount(1);
+    await inside(page, 0, "Beta Note").focus();
+    await expect(previews(page)).toHaveCount(2);
+
+    await page.keyboard.press("Escape");
+    await expect(previews(page)).toHaveCount(1);
+    await page.keyboard.press("Escape");
+    await expect(previews(page)).toHaveCount(0);
+  });
+
+  test("links inside a preview that point at no other Note get no preview", async ({
+    page,
+  }) => {
+    await openTwoLevels(page);
+    for (const name of [
+      "beta self link",
+      "beta anchor link",
+      "Nowhere Note",
+      "pic.png",
+      "Example",
+      "Search",
+    ]) {
+      await inside(page, 1, name).hover();
+      await page.waitForTimeout(600);
+      await expect(previews(page)).toHaveCount(2);
+    }
+
+    // Positive control: an eligible link in the same preview does open one.
+    await inside(page, 1, "beta to alpha child").hover();
+    await expect(previews(page)).toHaveCount(3);
+  });
+
+  test("the Properties Panel state is shared across levels", async ({
+    page,
+  }) => {
+    // Beta Note and Alpha Note both have Properties.
+    await openNote(page, "/links-note");
+    await note(page).getByRole("link", { name: "Beta Note" }).hover();
+    await expect(previews(page)).toHaveCount(1);
+    await inside(page, 0, "beta to alpha child").hover();
+    await expect(previews(page)).toHaveCount(2);
+    const toggle = (depth: number) =>
+      previews(page).nth(depth).getByRole("button", { name: "Properties" });
+    await expect(toggle(1)).toHaveAttribute("aria-expanded", "false");
+    await toggle(1).click();
+    await expect(toggle(1)).toHaveAttribute("aria-expanded", "true");
+    await expect(toggle(0)).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("Embeds, Callouts, Highlights and math render in a nested preview", async ({
+    page,
+  }) => {
+    await openNote(page, "/links-note");
+    await note(page).getByRole("link", { name: "Long Note" }).hover();
+    await expect(previews(page)).toHaveCount(1);
+    await inside(page, 0, "Rich Note").hover();
+    await expect(previews(page)).toHaveCount(2);
+    const nested = previews(page).nth(1);
+    await expect(nested.locator(".callout")).toContainText(
+      "Callout body text.",
+    );
+    await expect(nested.locator("mark")).toHaveText("marked text");
+    await expect(nested.locator(".katex")).toBeVisible();
+    await expect(nested.getByText("Body of the alpha note.")).toBeVisible();
+  });
 });
 
 test("the preview's Properties Panel starts collapsed and the choice persists", async ({

@@ -1,9 +1,9 @@
-import path from "node:path";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { ComponentProps } from "react";
 
 import { HoverPreview } from "@/components/typography/hover-preview";
-import { source } from "@/lib/source";
+import type { source } from "@/lib/source";
+import { resolveVaultLink } from "@/lib/vault-link-target";
 
 type SourcePage = NonNullable<ReturnType<typeof source.getPage>>;
 
@@ -23,22 +23,15 @@ export function createVaultLink(page: SourcePage) {
   }: ComponentProps<typeof DefaultLink>) {
     if (typeof href !== "string") return <DefaultLink {...props} href={href} />;
 
-    // Relative file paths (`./Other.md`) become the published URL.
-    const resolved = source.resolveHref(href, page);
-    const target = source.getPageByHref(resolved, {
-      dir: path.posix.dirname(page.path),
-    });
-
-    if (!target || target.page.url === page.url) {
-      return <DefaultLink {...props} href={resolved} />;
-    }
+    const { href: resolved, target } = resolveVaultLink(page, href);
+    if (!target) return <DefaultLink {...props} href={resolved} />;
 
     return (
       <HoverPreview
         {...props}
         href={resolved}
-        slug={target.page.slugs}
-        subpath={target.hash}
+        slug={target.slug}
+        subpath={target.subpath}
       />
     );
   };

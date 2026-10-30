@@ -1,13 +1,14 @@
 import { Img } from "@/components/typography/mdx-components";
 import type { PreviewPayload } from "@/lib/preview-types";
 import { source } from "@/lib/source";
+import { resolveVaultLink } from "@/lib/vault-link-target";
 
 /**
  * Builds the Preview Payload of the Note published under `slug`, or
  * `undefined` when no Note has that Slug. The body goes through the same
  * compiled MDX and plugin pipeline as the Note's page. Fumadocs' default
  * components are client components and cannot be serialized to a string, so
- * the body uses plain elements; links are plain links by design.
+ * the body uses plain elements; eligible links are marked for the client to turn into Hover Previews.
  */
 export async function buildPreviewPayload(
   slug: string[],
@@ -26,11 +27,24 @@ export async function buildPreviewPayload(
     <MDX
       components={{
         img: Img,
-        a: ({ href, children, ...props }) => (
-          <a href={href} {...props}>
-            {children}
-          </a>
-        ),
+        a: ({ href, children, ...props }) => {
+          if (typeof href !== "string") return <a {...props}>{children}</a>;
+          // Eligibility is decided relative to the Note being previewed, so
+          // the client, which has no page source, only follows the marks.
+          const { href: resolved, target } = resolveVaultLink(page, href);
+          return (
+            <a
+              href={resolved}
+              {...props}
+              {...(target && {
+                "data-preview-slug": target.slug.join("/"),
+                "data-preview-subpath": target.subpath,
+              })}
+            >
+              {children}
+            </a>
+          );
+        },
       }}
     />,
   );

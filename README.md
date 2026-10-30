@@ -9,7 +9,7 @@ Hovering or focusing an internal link that points at a Note opens a **Hover Prev
 - A link to a heading (`[[Note#Heading]]`) previews that section, up to the next heading of the same or higher level. A link to a Block ID (`[[Note#^id]]`) previews that block; on a list item, that item.
 - If the heading or block can't be found, the whole Note is shown.
 - No preview appears for unresolved links, Assets, same-Note anchors, external links or routes that aren't Vault pages. On touch devices a tap navigates straight away.
-- Links inside a preview are plain links; previews don't nest. Interactive client components in a Note body are inert in a preview.
+- Links inside a preview that point at another Note open their own preview, to any depth, with the same delays, Subpath rules and Properties state; moving into a nested preview keeps its parent open, and Escape closes the innermost first. A link back to the previewed Note gets none. Interactive client components in a Note body are inert in a preview.
 - Each Note is prepared at build time as a static Preview Payload and downloaded only on the first hover, once per Note whatever Subpath the links carry. New Notes need no registration. See `docs/adr/0001-static-preview-payload.md` for the reasoning.
 
 ## Properties Panel

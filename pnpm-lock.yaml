@@ -32,6 +32,9 @@ importers:
       hast-util-to-html:
         specifier: 9.0.5
         version: 9.0.5
+      hast-util-to-jsx-runtime:
+        specifier: 2.3.6
+        version: 2.3.6
       katex:
         specifier: ^0.16.28
         version: 0.16.47

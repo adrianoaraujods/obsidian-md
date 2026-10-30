@@ -5,7 +5,7 @@ A Next.js and Fumadocs template that publishes an Obsidian Vault using `remark-o
 ## Previewing
 
 **Hover Preview**:
-A popover that shows the content of the Note an internal link points to, without leaving the current Note. A link whose Subpath names a heading previews that section, and one whose Subpath is a Block ID previews that block.
+A popover that shows the content of the Note an internal link points to, without leaving the current Note. A link whose Subpath names a heading previews that section, and one whose Subpath is a Block ID previews that block. It opens only once its content has arrived, and a link inside one opens a further Hover Preview, to any depth.
 _Avoid_: tooltip, popup, page preview, link card
 
 **Preview Payload**:

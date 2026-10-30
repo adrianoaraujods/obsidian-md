@@ -48,9 +48,9 @@ function PreviewContent({
 
   if (state.status === "loading") {
     return (
-      <p className="p-4 text-muted-foreground text-sm" role="status">
+      <output className="block p-4 text-muted-foreground text-sm">
         Loading preview…
-      </p>
+      </output>
     );
   }
   if (state.status === "error") {

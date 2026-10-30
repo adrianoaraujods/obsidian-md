@@ -8,7 +8,7 @@ Previewable: [[Beta Note]] and [[Alpha Note#Alpha heading]].
 
 Unresolved: [[Missing Note]].
 
-Asset: [[pic.png]].
+Asset: [[pic.png]] and [Picture file](pic.png).
 
 External: [Example](https://example.com).
 
@@ -19,3 +19,5 @@ Same-Note anchor: [[#Anchors]].
 ## Anchors
 
 Rich: [[Rich Note]].
+
+Long: [[Long Note]].

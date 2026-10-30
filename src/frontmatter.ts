@@ -30,6 +30,22 @@ export type FrontmatterDate = {
   kind: "date" | "datetime";
 };
 
+/**
+ * Any value `getFrontmatter` can produce: YAML scalars and Dates unchanged,
+ * links as {@link FrontmatterLink}, whole-value dates as
+ * {@link FrontmatterDate}, and arrays and objects of these.
+ */
+export type FrontmatterValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Date
+  | FrontmatterLink
+  | FrontmatterDate
+  | FrontmatterValue[]
+  | { [key: string]: FrontmatterValue };
+
 export type GetFrontmatterOptions = UrlOptions & {
   resolver: Resolver;
   ignoredKeys?: string[];
@@ -45,7 +61,7 @@ export type GetFrontmatterOptions = UrlOptions & {
 
 /**
  * Resolves the values of a parsed frontmatter object so they can be rendered
- * directly by a consumer (e.g. fumadocs). Wiki links (`[[Note]]`), URLs and
+ * directly by a consumer (e.g. fumadocs). Returns {@link FrontmatterValue}s. Wiki links (`[[Note]]`), URLs and
  * markdown links (`[label](https://example.com)`) inside string values are
  * resolved to `{ url, label }` objects; wiki links whose target names no Note
  * come back as `{ label, unresolved: true }` so consumers can style them like
@@ -66,9 +82,9 @@ export type GetFrontmatterOptions = UrlOptions & {
 export function getFrontmatter(
   frontmatter: Record<string, unknown>,
   options: GetFrontmatterOptions,
-): Record<string, unknown> {
+): Record<string, FrontmatterValue> {
   const ignoredKeys = options.ignoredKeys ?? [];
-  const result: Record<string, unknown> = {};
+  const result: Record<string, FrontmatterValue> = {};
 
   for (const [key, value] of Object.entries(frontmatter)) {
     if (ignoredKeys.includes(key)) continue;
@@ -139,7 +155,10 @@ function dateValueFor(
 
 const MARKDOWN_LINK_REGEX = /^\[([^\]]+)\]\((.*)\)$/;
 
-function resolveValue(value: unknown, options: GetFrontmatterOptions): unknown {
+function resolveValue(
+  value: unknown,
+  options: GetFrontmatterOptions,
+): FrontmatterValue {
   if (Array.isArray(value)) {
     return value.map((item) => resolveValue(item, options));
   }
@@ -154,7 +173,8 @@ function resolveValue(value: unknown, options: GetFrontmatterOptions): unknown {
   }
 
   if (typeof value !== "string") {
-    return value;
+    // Parsed YAML: booleans, numbers, null and Dates pass through unchanged.
+    return value as FrontmatterValue;
   }
 
   const slugifyFn = options.slugify ?? slugify;

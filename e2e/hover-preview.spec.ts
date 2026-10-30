@@ -218,3 +218,81 @@ test.describe("touch", () => {
     await expect(preview(page)).toHaveCount(0);
   });
 });
+
+test.describe("Subpaths", () => {
+  test("a heading link previews only that section", async ({ page }) => {
+    await openNote(page, "/links-note");
+    await note(page).getByRole("link", { name: "child section" }).hover();
+
+    await expect(
+      preview(page).getByText("Body of the alpha child."),
+    ).toBeVisible();
+    await expect(
+      preview(page).getByText("Body of the alpha note."),
+    ).toHaveCount(0);
+    await expect(
+      preview(page).getByText("Body of the alpha sibling."),
+    ).toHaveCount(0);
+  });
+
+  test("a Block ID link previews only that block", async ({ page }) => {
+    await openNote(page, "/links-note");
+    await note(page).getByRole("link", { name: "block link" }).hover();
+
+    await expect(
+      preview(page).getByText("A tagged alpha paragraph."),
+    ).toBeVisible();
+    await expect(
+      preview(page).getByText("Body of the alpha note."),
+    ).toHaveCount(0);
+  });
+
+  test("a Block ID on a list item previews that item", async ({ page }) => {
+    await openNote(page, "/links-note");
+    await note(page).getByRole("link", { name: "item link" }).hover();
+
+    await expect(preview(page).getByText("Tagged alpha item")).toBeVisible();
+    await expect(preview(page).getByText("First alpha item")).toHaveCount(0);
+  });
+
+  test("an anchor missing from the payload falls back to the whole Note", async ({
+    page,
+  }) => {
+    // The plugin leaves links to unknown anchors unresolved, so a stale anchor
+    // is simulated by removing the section from the downloaded payload.
+    await page.route("**/api/preview/alpha-note*", async (route) => {
+      const response = await route.fetch();
+      const payload = await response.json();
+      payload.html = payload.html.replace('id="alpha-child"', "");
+      await route.fulfill({ response, json: payload });
+    });
+    await openNote(page, "/links-note");
+    await note(page).getByRole("link", { name: "child section" }).hover();
+
+    await expect(
+      preview(page).getByText("Body of the alpha note."),
+    ).toBeVisible();
+    await expect(
+      preview(page).getByText("Body of the alpha sibling."),
+    ).toBeVisible();
+  });
+
+  test("links with different Subpaths to one Note download it once", async ({
+    page,
+  }) => {
+    const requests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("/api/preview/")) requests.push(request.url());
+    });
+    await openNote(page, "/links-note");
+
+    for (const name of ["child section", "block link", "item link"]) {
+      await note(page).getByRole("link", { name }).hover();
+      await expect(preview(page)).toBeVisible();
+      await page.mouse.move(2, 2);
+      await expect(preview(page)).toHaveCount(0);
+    }
+
+    expect(requests).toHaveLength(1);
+  });
+});

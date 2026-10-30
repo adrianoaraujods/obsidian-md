@@ -65,6 +65,12 @@ describe("slicePreviewHtml", () => {
     );
   });
 
+  it("treats an encoded Block ID on a heading as a block, not a section", () => {
+    expect(slicePreviewHtml(NOTE, "%5Ehead")).toBe(
+      '<h2 id="^head">Tagged heading</h2>',
+    );
+  });
+
   it("selects the list item carrying a Block ID, kept inside its list", () => {
     expect(slicePreviewHtml(NOTE, "^item")).toBe(
       '<ul><li id="^item">Two</li></ul>',

@@ -16,6 +16,8 @@ Non-Vault route: [Search](/api/search).
 
 Same-Note anchor: [[#Anchors]].
 
+Subpaths: [[Alpha Note#Alpha child|child section]], [[Alpha Note#^alpha-block|block link]] and [[Alpha Note#^alpha-item|item link]].
+
 ## Anchors
 
 Rich: [[Rich Note]].

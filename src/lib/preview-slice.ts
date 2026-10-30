@@ -22,7 +22,11 @@ function decode(subpath: string): string {
 function find(
   parent: Root | Element,
   id: string,
-): { siblings: ElementContent[]; index: number; parent: Root | Element } | null {
+): {
+  siblings: ElementContent[];
+  index: number;
+  parent: Root | Element;
+} | null {
   const children = parent.children as ElementContent[];
   for (let index = 0; index < children.length; index++) {
     const node = children[index];
@@ -50,13 +54,14 @@ export function slicePreviewHtml(
   if (!subpath) return html;
 
   const tree = fromHtml(html, { fragment: true });
-  const hit = find(tree, decode(subpath)) ?? find(tree, subpath);
+  const anchor = decode(subpath);
+  const hit = find(tree, anchor) ?? find(tree, subpath);
   if (!hit) return html;
 
   const node = hit.siblings[hit.index] as Element;
   const level = headingLevel(node);
 
-  if (level !== undefined && !subpath.startsWith("^")) {
+  if (level !== undefined && !anchor.startsWith("^")) {
     let end = hit.index + 1;
     while (end < hit.siblings.length) {
       const next = headingLevel(hit.siblings[end] as ElementContent);

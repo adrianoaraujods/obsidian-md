@@ -11,6 +11,7 @@ import {
 
 import { Properties } from "@/components/typography/properties";
 import { fetchPreviewPayload } from "@/lib/preview-client";
+import { slicePreviewHtml } from "@/lib/preview-slice";
 import type { PreviewPayload } from "@/lib/preview-types";
 
 export const PREVIEW_PROPERTIES_KEY = "properties-panel:preview";
@@ -25,9 +26,9 @@ type State =
 
 function PreviewContent({
   slug,
+  subpath,
 }: {
   slug: string[];
-  /** Carried for slicing; the whole Note is shown for now. */
   subpath: string | undefined;
 }) {
   const [state, setState] = useState<State>({ status: "loading" });
@@ -61,6 +62,8 @@ function PreviewContent({
     );
   }
 
+  const html = slicePreviewHtml(state.payload.html, subpath);
+
   return (
     <div className="p-4">
       <Properties
@@ -71,7 +74,7 @@ function PreviewContent({
       <div
         className="markdown-rendered prose text-sm"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: payload HTML is rendered from the Vault at build time
-        dangerouslySetInnerHTML={{ __html: state.payload.html }}
+        dangerouslySetInnerHTML={{ __html: html }}
       />
     </div>
   );

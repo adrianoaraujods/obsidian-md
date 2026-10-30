@@ -1,0 +1,6 @@
+allowBuilds:
+  esbuild: true
+  sharp: true
+  msw: true
+patchedDependencies:
+  fumadocs-core@16.17.7: patches/fumadocs-core@16.17.7.patch

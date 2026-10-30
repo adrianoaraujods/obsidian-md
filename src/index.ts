@@ -76,12 +76,14 @@ export { remarkObsidianFootnotes } from "./footnotes.js";
 export type {
   FrontmatterDate,
   FrontmatterLink,
+  FrontmatterValue,
   GetFrontmatterOptions,
 } from "./frontmatter.js";
 export { getFrontmatter } from "./frontmatter.js";
 export { remarkObsidianHighlights } from "./highlights.js";
 export {
   filesystemPropertyTypes,
+  type PropertyType,
   type PropertyTypes,
 } from "./property-types.js";
 export {

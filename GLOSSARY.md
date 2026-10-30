@@ -83,7 +83,7 @@ _Avoid_: kind, variant, category
 ## Metadata
 
 **Frontmatter**:
-The YAML metadata block at the top of a Note, surfaced in Obsidian as Properties. It is hidden by default when the Note is embedded.
+The YAML metadata block at the top of a Note, surfaced in Obsidian as Properties. It is hidden by default when the Note is embedded. `getFrontmatter` resolves its values into plain scalars, links (`FrontmatterLink`, unresolved when the Wiki Link names no Note) and dates (`FrontmatterDate`, of kind `date` or `datetime`), exported as `FrontmatterValue`; the type a property has in Obsidian is a `PropertyType`.
 _Avoid_: metadata, YAML header
 
 **CSS Class**:

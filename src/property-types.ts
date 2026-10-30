@@ -4,11 +4,23 @@ import { join } from "node:path";
 import { isPlainObject } from "./utils.js";
 
 /**
- * Obsidian's property type map: property name → the type set in the app
- * (`"text"`, `"number"`, `"checkbox"`, `"date"`, `"datetime"`, `"tags"`,
- * `"aliases"`, `"multitext"`, …).
+ * A property type set in Obsidian. The listed names are the ones Obsidian
+ * ships; any other string is accepted so a future or plugin-defined type read
+ * from `types.json` still type-checks.
  */
-export type PropertyTypes = Record<string, string>;
+export type PropertyType =
+  | "text"
+  | "multitext"
+  | "number"
+  | "checkbox"
+  | "date"
+  | "datetime"
+  | "tags"
+  | "aliases"
+  | (string & {});
+
+/** Obsidian's property type map: property name → the type set in the app. */
+export type PropertyTypes = Record<string, PropertyType>;
 
 /**
  * Reads the property types Obsidian keeps in `<vault>/.obsidian/types.json`,

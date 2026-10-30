@@ -349,9 +349,15 @@ const frontmatter = getFrontmatter(note.data.frontmatter, {
 // frontmatter.Escrito === { date: "2026-02-17T11:33", kind: "datetime" }
 ```
 
+`getFrontmatter` returns `Record<string, FrontmatterValue>`. `FrontmatterValue` is a union of the YAML scalars (and `Date`), `FrontmatterLink` (`{ url, label }`, or `{ label, unresolved: true }` for an unresolved Wiki Link), `FrontmatterDate` (`{ date, kind }`) and arrays and objects of these. `PropertyType` names an Obsidian property type (`"text"`, `"date"`, `"datetime"`, `"tags"`, …) and `PropertyTypes` maps property names to it. Import them instead of re-declaring the shapes:
+
+```ts
+import type { FrontmatterValue } from "remark-obsidian-md";
+```
+
 ## Types
 
-This package is fully typed with [TypeScript](https://www.typescriptlang.org). It exports `RemarkObsidianMdOptions`, `Resolver`, `FilesystemResolver`, `ResolvedTarget`, `NoteMetadata`, `MapResolverEntry`, `FilesystemResolverOptions`, `DuplicatePolicy`, `UnresolvedStrategy`, `UrlOptions`, `WikiLinksOptions`, `WikiLinksPluginOptions`, `EmbedsOptions`, `EmbedsPluginOptions`, `BlockIdsOptions`, `CalloutsPluginOptions`, `CalloutTypeDefinition`, `GetFrontmatterOptions`, `FrontmatterLink`, `FrontmatterDate`, `PropertyTypes`, `SlugifyPath`, `filesystemPropertyTypes` and `createSlugifyPath`.
+This package is fully typed with [TypeScript](https://www.typescriptlang.org). It exports `RemarkObsidianMdOptions`, `Resolver`, `FilesystemResolver`, `ResolvedTarget`, `NoteMetadata`, `MapResolverEntry`, `FilesystemResolverOptions`, `DuplicatePolicy`, `UnresolvedStrategy`, `UrlOptions`, `WikiLinksOptions`, `WikiLinksPluginOptions`, `EmbedsOptions`, `EmbedsPluginOptions`, `BlockIdsOptions`, `CalloutsPluginOptions`, `CalloutTypeDefinition`, `GetFrontmatterOptions`, `FrontmatterValue`, `FrontmatterLink`, `FrontmatterDate`, `PropertyType`, `PropertyTypes`, `SlugifyPath`, `filesystemPropertyTypes` and `createSlugifyPath`.
 
 The custom `embed` and `callout` nodes are registered in the `@types/mdast` maps via module augmentation.
 

@@ -1,11 +1,10 @@
-import path from "node:path";
 import {
   createSlugifyPath,
   filesystemResolver,
   slugify,
 } from "remark-obsidian-md";
 
-const vaultDir = path.resolve("public/vault");
+import { vaultDir } from "@/lib/vault-dir";
 
 const resolver = filesystemResolver(vaultDir);
 const paths = resolver.paths;

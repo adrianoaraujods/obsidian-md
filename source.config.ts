@@ -16,14 +16,14 @@ import remarkObsidianMd, {
 } from "remark-obsidian-md";
 import z from "zod";
 
+import { vaultDir } from "./src/lib/vault-dir";
 import { slugifyPath } from "./src/lib/vault-slugs";
 
-const vaultDir = path.resolve("public/vault");
 const resolver = filesystemResolver(vaultDir);
 const propertyTypes = filesystemPropertyTypes(vaultDir);
 
 export const vault = defineDocs({
-  dir: "public/vault",
+  dir: vaultDir,
   docs: {
     schema: (context) =>
       pageSchema

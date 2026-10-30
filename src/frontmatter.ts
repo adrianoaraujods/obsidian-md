@@ -61,8 +61,8 @@ export type GetFrontmatterOptions = UrlOptions & {
 
 /**
  * Resolves the values of a parsed frontmatter object so they can be rendered
- * directly by a consumer (e.g. fumadocs). Returns {@link FrontmatterValue}s. Wiki links (`[[Note]]`), URLs and
- * markdown links (`[label](https://example.com)`) inside string values are
+ * directly by a consumer (e.g. fumadocs). Returns {@link FrontmatterValue}s.
+ * Wiki links (`[[Note]]`), URLs and markdown links (`[label](https://example.com)`) inside string values are
  * resolved to `{ url, label }` objects; wiki links whose target names no Note
  * come back as `{ label, unresolved: true }` so consumers can style them like
  * Obsidian does. Markdown links are treated as external references: the

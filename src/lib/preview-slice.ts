@@ -19,7 +19,7 @@ function decode(subpath: string): string {
 }
 
 /** Finds the element with the given id, with the list of siblings holding it. */
-function find(
+function findElementById(
   parent: Root | Element,
   id: string,
 ): {
@@ -32,7 +32,7 @@ function find(
     const node = children[index];
     if (node?.type !== "element") continue;
     if (node.properties.id === id) return { siblings: children, index, parent };
-    const inner = find(node, id);
+    const inner = findElementById(node, id);
     if (inner) return inner;
   }
   return null;
@@ -55,7 +55,7 @@ export function slicePreviewHtml(
 
   const tree = fromHtml(html, { fragment: true });
   const anchor = decode(subpath);
-  const hit = find(tree, anchor) ?? find(tree, subpath);
+  const hit = findElementById(tree, anchor) ?? findElementById(tree, subpath);
   if (!hit) return html;
 
   const node = hit.siblings[hit.index] as Element;

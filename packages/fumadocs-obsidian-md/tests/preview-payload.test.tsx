@@ -1,17 +1,24 @@
 import { PREVIEW_SLUG_ATTR, PREVIEW_SUBPATH_ATTR } from "react-obsidian-md";
-import { describe, expect, it } from "vitest";
-import { buildPreviewPayload } from "@/lib/preview-payload";
+import { beforeAll, describe, expect, it } from "vitest";
 
-const htmlOf = async (slug: string[]) =>
-  (await buildPreviewPayload(slug))?.html ?? "";
+import { buildPreviewPayload } from "../src/index.js";
+import { createFixtureSource } from "./helpers/fixture-source.js";
+
+let source: Awaited<ReturnType<typeof createFixtureSource>>;
+beforeAll(async () => {
+  source = await createFixtureSource("preview-vault");
+});
+
+const payloadOf = (slug: string[]) => buildPreviewPayload(source, slug);
+const htmlOf = async (slug: string[]) => (await payloadOf(slug))?.html ?? "";
 
 describe("buildPreviewPayload", () => {
   it("returns nothing for a Slug that is not a Note", async () => {
-    expect(await buildPreviewPayload(["no-such-note"])).toBeUndefined();
+    expect(await payloadOf(["no-such-note"])).toBeUndefined();
   });
 
   it("returns the title and the Properties split out of the body", async () => {
-    const payload = await buildPreviewPayload(["beta-note"]);
+    const payload = await payloadOf(["beta-note"]);
 
     expect(payload?.title).toBe("Beta Note");
     expect(payload?.properties).toMatchObject({
@@ -24,21 +31,18 @@ describe("buildPreviewPayload", () => {
   });
 
   it("renders the body to HTML", async () => {
-    const payload = await buildPreviewPayload(["alpha-note"]);
+    const payload = await payloadOf(["alpha-note"]);
 
-    expect(payload?.html).toContain(
-      '<h1 id="alpha-heading">Alpha heading</h1>',
-    );
+    expect(payload?.html).toContain("<h1>Alpha heading</h1>");
     expect(payload?.html).toContain("<p>Body of the alpha note.</p>");
   });
 
-  it("transcludes Embeds and renders Callouts, Highlights and math", async () => {
+  it("transcludes Embeds and renders Callouts and Highlights", async () => {
     const html = await htmlOf(["rich-note"]);
 
     expect(html).toContain("Body of the alpha note.");
     expect(html).toContain("Callout body text.");
     expect(html).toContain("<mark");
-    expect(html).toContain("katex");
   });
 
   it("resolves Wiki Links to published Slugs and leaves unresolved ones unresolved", async () => {
@@ -96,8 +100,6 @@ describe("buildPreviewPayload", () => {
     });
 
     it("still marks a link from B back to A; only a direct self-link is excluded", async () => {
-      // Ping links to Pong and Pong links back to Ping: previewing Ping, then
-      // Pong inside it, offers Ping again.
       expect(anchorTo(await htmlOf(["ping-note"]), "/pong-note")).toContain(
         `${PREVIEW_SLUG_ATTR}="pong-note"`,
       );

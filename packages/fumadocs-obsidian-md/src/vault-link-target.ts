@@ -1,8 +1,6 @@
 import path from "node:path";
 
-import { source } from "@/lib/source";
-
-export type SourcePage = NonNullable<ReturnType<typeof source.getPage>>;
+import type { VaultPage, VaultSource } from "./vault-source.js";
 
 /** The Note a link points at, and the part of it (after `#`) it selects. */
 export type VaultLinkTarget = {
@@ -17,7 +15,8 @@ export type VaultLinkTarget = {
  * outside the Vault have no target, so they get no Hover Preview.
  */
 export function resolveVaultLink(
-  page: SourcePage,
+  source: VaultSource,
+  page: VaultPage,
   href: string,
 ): { href: string; target?: VaultLinkTarget } {
   const resolved = source.resolveHref(href, page);

@@ -128,3 +128,72 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Properties Panel from react-obsidian-md: the package is headless, so every
+   style lives here, keyed on its stable data-* attributes. */
+[data-properties-panel] {
+  @apply mb-8;
+}
+[data-properties-trigger] {
+  @apply flex items-center gap-1 rounded-[6px] py-1 pr-2 text-muted-foreground text-sm hover:text-foreground;
+}
+[data-properties-expand-icon] {
+  @apply inline-flex size-4 transition-transform;
+}
+[data-properties-expand-icon] svg {
+  @apply size-4;
+}
+[data-properties-panel][data-open="true"] [data-properties-expand-icon] {
+  @apply rotate-90;
+}
+[data-properties-panel][data-open="true"] [data-properties-content] {
+  @apply block;
+}
+[data-properties-panel][data-open="false"] [data-properties-content] {
+  @apply hidden;
+}
+[data-properties-list] {
+  @apply flex flex-col gap-1 py-2;
+}
+[data-properties-row] {
+  @apply grid grid-cols-[7.5rem_minmax(0,1fr)] items-start rounded-[6px] focus-within:ring-1 focus-within:ring-ring hover:ring-1 hover:ring-border sm:grid-cols-[9rem_minmax(0,1fr)];
+}
+[data-properties-key] {
+  @apply flex min-h-7 min-w-0 items-center gap-2 py-1 pr-2 pl-1 text-muted-foreground;
+}
+[data-properties-type-icon] {
+  @apply inline-flex size-4 shrink-0;
+}
+[data-properties-type-icon] svg {
+  @apply size-4;
+}
+[data-properties-name] {
+  @apply truncate text-sm;
+}
+[data-properties-value] {
+  @apply flex min-h-7 min-w-0 flex-wrap items-center gap-3 py-1 pr-2 text-foreground text-sm;
+}
+[data-properties-item] {
+  @apply inline-flex min-w-0 items-center;
+}
+[data-property-link]:not([data-property-tag]) {
+  @apply text-primary underline decoration-primary/40 underline-offset-2 transition-colors hover:decoration-primary;
+}
+[data-property-link][data-unresolved]:not([data-property-tag]) {
+  @apply text-muted-foreground decoration-muted-foreground decoration-dotted hover:decoration-muted-foreground;
+}
+[data-property-tag] {
+  @apply inline-flex max-w-full items-center rounded-full bg-primary/10 px-[0.65em] py-[0.25em] leading-none text-primary no-underline transition-colors hover:bg-primary/20;
+}
+[data-property-number] {
+  @apply tabular-nums;
+}
+[data-property-checkbox] {
+  @apply inline-flex size-4 shrink-0 items-center justify-center rounded-[3px] border border-input bg-transparent;
+}
+[data-property-checkbox][data-checked="true"] {
+  @apply border-primary bg-primary text-primary-foreground;
+}
+[data-property-checkbox] svg {
+  @apply size-3;
+}

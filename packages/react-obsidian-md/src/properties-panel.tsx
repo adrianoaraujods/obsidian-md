@@ -1,36 +1,40 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import { type ReactNode, useId } from "react";
 
 import {
   Collapsible,
   CollapsiblePanel,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  persistedOpenScript,
-  usePersistedOpen,
-} from "@/hooks/use-persisted-open";
+} from "./collapsible.js";
+import { persistedOpenScript, usePersistedOpen } from "./use-persisted-open.js";
 
 /**
  * Collapsible shell around the Properties rows. Remembers its state in
  * `localStorage` under `storageKey`; each surface (page, preview) uses its own.
  *
- * `keepMounted` plus the `data-open` rules below let the inline script show or
- * hide the panel before React has hydrated.
+ * The root carries `data-open`, which the inline no-flash script sets before
+ * React has hydrated. The panel stays mounted when closed, so style the closed
+ * state from `[data-properties-panel][data-open="false"]` (for example
+ * `display: none` on `[data-properties-content]`).
  */
 export function PropertiesPanel({
   children,
   storageKey,
   defaultOpen,
   noFlash = true,
+  label = "Properties",
+  expandIcon,
 }: {
   children: ReactNode;
   storageKey: string;
   defaultOpen: boolean;
   /** Skip the inline script where the panel is only rendered on the client. */
   noFlash?: boolean;
+  /** The trigger's text. */
+  label?: ReactNode;
+  /** Icon slot for the expand/collapse control; there is no default. */
+  expandIcon?: ReactNode;
 }) {
   const id = useId();
   const [open, setOpen] = usePersistedOpen(storageKey, defaultOpen);
@@ -38,23 +42,21 @@ export function PropertiesPanel({
   return (
     <>
       <div
-        className="group/properties mb-8"
         data-open={open}
+        data-properties-panel=""
         id={id}
         suppressHydrationWarning
       >
         <Collapsible onOpenChange={setOpen} open={open}>
-          <CollapsibleTrigger className="flex items-center gap-1 rounded-[6px] py-1 pr-2 text-muted-foreground text-sm hover:text-foreground">
-            <ChevronRight
-              aria-hidden
-              className="size-4 transition-transform group-data-[open=true]/properties:rotate-90"
-            />
-            Properties
+          <CollapsibleTrigger data-properties-trigger="">
+            {expandIcon ? (
+              <span aria-hidden data-properties-expand-icon="">
+                {expandIcon}
+              </span>
+            ) : null}
+            {label}
           </CollapsibleTrigger>
-          <CollapsiblePanel
-            className="group-data-[open=true]/properties:block group-data-[open=false]/properties:hidden"
-            keepMounted
-          >
+          <CollapsiblePanel data-properties-content="" keepMounted>
             {children}
           </CollapsiblePanel>
         </Collapsible>

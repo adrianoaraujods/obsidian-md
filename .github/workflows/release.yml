@@ -37,6 +37,9 @@ jobs:
           commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The action commits the version bump; skip the local pre-commit hook
+          # (it runs the full test suite, which needs built packages).
+          HUSKY: "0"
           # Authentication is OIDC trusted publishing: no NPM_TOKEN. Provenance
           # attestations are requested explicitly for every publish.
           NPM_CONFIG_PROVENANCE: "true"

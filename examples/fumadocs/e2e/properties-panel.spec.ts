@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { PAGE_PROPERTIES_KEY } from "../src/lib/properties-keys";
+import { PAGE_PROPERTIES_KEY } from "react-obsidian-md";
 
 test("the page's Properties Panel starts expanded", async ({ page }) => {
   await page.goto("/beta-note");

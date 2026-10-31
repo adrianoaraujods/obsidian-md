@@ -6,6 +6,9 @@ const PORT = 3100;
 // public/vault. VAULT_DIR points the build at it (see src/lib/vault-dir.ts).
 export default defineConfig({
   testDir: "e2e",
+  reporter: process.env.CI
+    ? [["list"], ["html", { open: "never" }]]
+    : "list",
   use: { baseURL: `http://localhost:${PORT}` },
   webServer: {
     command: `VAULT_DIR=tests/fixtures/vault pnpm build && pnpm start -p ${PORT}`,

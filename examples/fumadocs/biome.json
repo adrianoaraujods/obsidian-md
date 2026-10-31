@@ -1,23 +1,10 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  },
-  "files": {
-    "ignoreUnknown": true,
-    "includes": ["**", "!node_modules", "!.next", "!dist", "!build"]
-  },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2
-  },
+  "root": false,
+  "extends": "//",
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "nursery": {
         "useSortedClasses": {
           "fix": "safe",
@@ -30,6 +17,9 @@
       },
       "suspicious": {
         "noUnknownAtRules": "off"
+      },
+      "performance": {
+        "noImgElement": "off"
       }
     },
     "domains": {
@@ -44,6 +34,14 @@
         "useSortedAttributes": "on",
         "useSortedProperties": "on"
       }
+    }
+  },
+  "files": {
+    "includes": ["**", "!.next", "!.source"]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   }
 }

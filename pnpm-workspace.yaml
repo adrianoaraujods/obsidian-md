@@ -1,2 +1,12 @@
 packages:
   - packages/*
+  - examples/*
+allowBuilds:
+  esbuild: true
+  sharp: true
+  msw: true
+# Version-specific: examples/fumadocs pins fumadocs-core to the same version.
+# Regenerate the patch when upgrading, or drop it once Fumadocs ships a
+# tolerant Frontmatter parser upstream.
+patchedDependencies:
+  fumadocs-core@16.17.7: examples/fumadocs/patches/fumadocs-core@16.17.7.patch

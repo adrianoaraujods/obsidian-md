@@ -1,3 +1,4 @@
+import { createVaultLink } from "fumadocs-obsidian-md";
 import {
   DocsBody,
   DocsDescription,
@@ -8,7 +9,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getMDXComponents } from "@/components/typography/mdx-components";
 import { Properties } from "@/components/typography/properties";
-import { createVaultLink } from "@/components/typography/vault-link";
 import { source } from "@/lib/source";
 
 export default async function Page(props: PageProps<"/[[...slug]]">) {
@@ -27,7 +27,7 @@ export default async function Page(props: PageProps<"/[[...slug]]">) {
         <MDX
           components={getMDXComponents({
             // resolves relative file paths and adds Hover Previews
-            a: createVaultLink(page),
+            a: createVaultLink(source, page),
           })}
         />
       </DocsBody>

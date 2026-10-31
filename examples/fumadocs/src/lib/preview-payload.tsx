@@ -1,10 +1,11 @@
-import { Img } from "@/components/typography/mdx-components";
 import {
   PREVIEW_SLUG_ATTR,
   PREVIEW_SUBPATH_ATTR,
   type PreviewPayload,
-} from "@/lib/preview-types";
-import { slugKey } from "@/lib/slug-key";
+  slugKey,
+} from "react-obsidian-md";
+import { Img } from "@/components/typography/mdx-components";
+
 import { source } from "@/lib/source";
 import { resolveVaultLink } from "@/lib/vault-link-target";
 

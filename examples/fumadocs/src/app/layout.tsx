@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { WikiProvider } from "@/components/typography/obsidian-provider";
 import { cn } from "@/lib/utils";
 
 import "@/styles/globals.css";
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           geistMono.variable,
         )}
       >
-        {children}
+        <WikiProvider>{children}</WikiProvider>
       </body>
     </html>
   );

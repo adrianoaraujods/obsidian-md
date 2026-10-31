@@ -1,7 +1,8 @@
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { ComponentProps } from "react";
 
-import { HoverPreview } from "@/components/typography/hover-preview";
+import { HoverPreview } from "react-obsidian-md";
+
 import { resolveVaultLink, type SourcePage } from "@/lib/vault-link-target";
 
 /**

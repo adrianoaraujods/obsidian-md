@@ -1,7 +1,6 @@
 "use client";
 
 import { PreviewCard } from "@base-ui/react/preview-card";
-import Link from "next/link";
 import {
   type ComponentProps,
   createContext,
@@ -13,13 +12,13 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { PREVIEW_PROPERTIES_KEY } from "react-obsidian-md";
-import { PreviewBody } from "@/components/typography/preview-body";
-import { Properties } from "@/components/typography/properties";
-import { fetchPreviewPayload } from "@/lib/preview-client";
-import { slicePreviewHtml } from "@/lib/preview-slice";
-import type { PreviewPayload } from "@/lib/preview-types";
-import { slugKey } from "@/lib/slug-key";
+import { PreviewBody } from "./preview-body.js";
+import { fetchPreviewPayload } from "./preview-client.js";
+import { slicePreviewHtml } from "./preview-slice.js";
+import type { PreviewPayload } from "./preview-types.js";
+import { PREVIEW_PROPERTIES_KEY } from "./properties-keys.js";
+import { useObsidian } from "./provider.js";
+import { slugKey } from "./slug-key.js";
 
 /**
  * Lets a preview tell the one that holds it (the link it sits in belongs to
@@ -42,16 +41,20 @@ function PreviewContent({
   subpath: string | undefined;
 }) {
   const html = slicePreviewHtml(payload.html, subpath);
+  const { renderProperties, previewBodyClassName } = useObsidian();
 
   return (
-    <div className="p-4">
-      <Properties
-        defaultOpen={false}
-        noFlash={false}
-        properties={payload.properties}
-        storageKey={PREVIEW_PROPERTIES_KEY}
-      />
-      <div className="markdown-rendered prose text-sm">
+    <div data-hover-preview-content="">
+      {renderProperties({
+        defaultOpen: false,
+        noFlash: false,
+        properties: payload.properties,
+        storageKey: PREVIEW_PROPERTIES_KEY,
+      })}
+      <div
+        className={previewBodyClassName || undefined}
+        data-hover-preview-body=""
+      >
         <PreviewBody html={html} />
       </div>
     </div>
@@ -92,6 +95,7 @@ export function HoverPreview({
   subpath?: string | undefined;
   children?: ReactNode;
 }) {
+  const { linkComponent: Link, previewPayloadUrl } = useObsidian();
   const canHover = useCanHover();
   const [payload, setPayload] = useState<PreviewPayload | null>(null);
   const [wantOpen, setWantOpen] = useState(false);
@@ -131,8 +135,10 @@ export function HoverPreview({
   // failure opens nothing and is not cached, so the next hover retries.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `key` identifies `slug`
   const load = useCallback(() => {
-    fetchPreviewPayload(slug).then(setPayload, () => setWantOpen(false));
-  }, [key]);
+    fetchPreviewPayload(slug, previewPayloadUrl).then(setPayload, () =>
+      setWantOpen(false),
+    );
+  }, [key, previewPayloadUrl]);
 
   // Leaving before the content has arrived means the preview never opens.
   const cancelPending = useCallback(() => {
@@ -172,9 +178,9 @@ export function HoverPreview({
         {children}
       </PreviewCard.Trigger>
       <PreviewCard.Portal>
-        <PreviewCard.Positioner className="z-50" sideOffset={8}>
+        <PreviewCard.Positioner data-hover-preview-positioner="" sideOffset={8}>
           <PreviewCard.Popup
-            className="max-h-[min(24rem,70vh)] w-[min(28rem,92vw)] overflow-y-auto rounded-lg border bg-popover text-popover-foreground shadow-lg"
+            data-hover-preview=""
             data-testid="hover-preview"
             onBlur={() => setPresence("popup", "focus", false)}
             onFocus={() => setPresence("popup", "focus", true)}

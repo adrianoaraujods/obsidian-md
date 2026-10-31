@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { slicePreviewHtml } from "@/lib/preview-slice";
+import { slicePreviewHtml } from "../src/index.js";
 
 const NOTE = [
   "<p>Intro paragraph.</p>",

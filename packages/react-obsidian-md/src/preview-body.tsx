@@ -5,9 +5,10 @@ import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import type { ComponentProps } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 
-import { HoverPreview } from "@/components/typography/hover-preview";
-import { PREVIEW_SLUG_ATTR, PREVIEW_SUBPATH_ATTR } from "@/lib/preview-types";
-import { slugFromKey } from "@/lib/slug-key";
+import { HoverPreview } from "./hover-preview.js";
+import { PREVIEW_SLUG_ATTR, PREVIEW_SUBPATH_ATTR } from "./preview-types.js";
+import { useObsidian } from "./provider.js";
+import { slugFromKey } from "./slug-key.js";
 
 type AnchorProps = ComponentProps<"a"> & {
   [PREVIEW_SLUG_ATTR]?: string;
@@ -17,7 +18,7 @@ type AnchorProps = ComponentProps<"a"> & {
 /**
  * A link in a preview's body. The payload builder marks the links that
  * resolve to a Vault Note with the target's Slug, so those become a nested
- * Hover Preview; every other link stays a plain link.
+ * Hover Preview; every other link uses the provider's link component.
  */
 function PreviewLink({
   [PREVIEW_SLUG_ATTR]: slug,
@@ -26,11 +27,12 @@ function PreviewLink({
   children,
   ...props
 }: AnchorProps) {
+  const { linkComponent: Link } = useObsidian();
   if (!slug || !href) {
     return (
-      <a href={href} {...props}>
+      <Link href={href as string} {...props}>
         {children}
-      </a>
+      </Link>
     );
   }
   return (

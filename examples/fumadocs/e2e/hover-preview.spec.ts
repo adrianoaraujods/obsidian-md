@@ -1,8 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
-import { PREVIEW_PROPERTIES_KEY } from "react-obsidian-md";
-import { PREVIEW_PATH } from "../src/lib/preview-types";
+import { PREVIEW_PATH, PREVIEW_PROPERTIES_KEY } from "react-obsidian-md";
 
 const preview = (page: Page) => page.getByTestId("hover-preview");
 

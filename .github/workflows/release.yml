@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# One release run at a time; never cancel a publish midway.
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # push the version branch and tags
+  pull-requests: write # open the "Version Packages" PR
+  id-token: write # npm trusted publishing (OIDC) and provenance
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Reads the pnpm version from `packageManager` in package.json.
+      - uses: pnpm/action-setup@v4
+      # Node 24 bundles npm >= 11.5.1, which trusted publishing requires.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: npm --version
+      - run: pnpm install --frozen-lockfile
+      - uses: changesets/action@v1
+        with:
+          version: pnpm version-packages
+          publish: pnpm release
+          title: "chore: version packages"
+          commit: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Authentication is OIDC trusted publishing: no NPM_TOKEN. Provenance
+          # attestations are requested explicitly for every publish.
+          NPM_CONFIG_PROVENANCE: "true"

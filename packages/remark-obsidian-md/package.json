@@ -1,0 +1,85 @@
+{
+  "name": "remark-obsidian-md",
+  "version": "3.0.0",
+  "author": "Adriano Araújo (adrianoaraujodsantos@hotmail.com)",
+  "description": "Remark plugin for Obsidian.md syntax: wiki links, embeds, callouts, highlights, comments, block IDs and inline footnotes",
+  "license": "MIT",
+  "keywords": [
+    "remark",
+    "remark-plugin",
+    "markdown",
+    "obsidian",
+    "unified",
+    "mdast",
+    "wiki-links",
+    "callouts",
+    "embeds",
+    "highlights",
+    "digital-garden",
+    "hast"
+  ],
+  "homepage": "https://github.com/adrianoaraujods/obsidian-md/tree/main/packages/remark-obsidian-md#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrianoaraujods/obsidian-md.git",
+    "directory": "packages/remark-obsidian-md"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE-LUCIDE"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./styles.css": "./dist/styles.css",
+    "./styles/base.css": "./dist/styles/base.css",
+    "./styles/dark-media.css": "./dist/styles/dark-media.css",
+    "./styles/dark-class.css": "./dist/styles/dark-class.css"
+  },
+  "scripts": {
+    "generate:icons": "node scripts/generate-icons.mjs",
+    "build": "tsc && node scripts/copy-styles.mjs",
+    "test": "vitest --coverage",
+    "prepublishOnly": "pnpm run build",
+    "lint": "biome check",
+    "format": "biome format --write"
+  },
+  "dependencies": {
+    "github-slugger": "^2.0.0",
+    "js-yaml": "^5.5.0",
+    "mdast-util-from-markdown": "^2.1.0",
+    "micromark": "^4.0.3",
+    "micromark-util-symbol": "^2.0.1",
+    "micromark-util-types": "^2.0.3",
+    "unist-util-visit": "^5.1.0"
+  },
+  "peerDependencies": {
+    "remark-gfm": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^25.2.0",
+    "@types/unist": "^3.0.3",
+    "@vitest/coverage-v8": "^5.0.5",
+    "lucide-static": "1.63.0",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "typescript": "^5.9.3",
+    "unified": "^11.0.5",
+    "unist-util-select": "^5.1.0",
+    "vfile": "^6.0.3",
+    "vitest": "^5.0.5"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "bugs": {
+    "url": "https://github.com/adrianoaraujods/obsidian-md/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

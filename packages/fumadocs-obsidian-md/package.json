@@ -1,0 +1,71 @@
+{
+  "name": "fumadocs-obsidian-md",
+  "version": "0.0.0",
+  "author": "Adriano Araújo (adrianoaraujodsantos@hotmail.com)",
+  "description": "Glue between remark-obsidian-md and Fumadocs: Vault resolver, slugs, MDX options and Asset URL handling",
+  "license": "MIT",
+  "keywords": [
+    "fumadocs",
+    "obsidian",
+    "remark",
+    "wiki-links",
+    "digital-garden",
+    "nextjs"
+  ],
+  "homepage": "https://github.com/adrianoaraujods/obsidian-md/tree/main/packages/fumadocs-obsidian-md#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrianoaraujods/obsidian-md.git",
+    "directory": "packages/fumadocs-obsidian-md"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./next": {
+      "types": "./dist/next/index.d.ts",
+      "default": "./dist/next/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm run build",
+    "lint": "biome check",
+    "format": "biome format --write"
+  },
+  "dependencies": {
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-obsidian-md": "workspace:*"
+  },
+  "peerDependencies": {
+    "fumadocs-core": "^16.0.0",
+    "fumadocs-mdx": "^14.0.0",
+    "fumadocs-ui": "^16.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.0",
+    "@types/hast": "^3.0.5",
+    "fumadocs-core": "16.17.7",
+    "fumadocs-mdx": "14.3.2",
+    "fumadocs-ui": "16.17.7",
+    "rehype-stringify": "^10.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "typescript": "^5.9.3",
+    "unified": "^11.0.5",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

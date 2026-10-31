@@ -1,7 +1,9 @@
 import { vault } from "fumadocs-mdx:collections/server";
 import { loader } from "fumadocs-core/source";
 
-import { slugifyPath, slugRenames } from "@/lib/vault-slugs";
+import { vaultConfig } from "@/lib/vault";
+
+const { slugifyPath, slugRenames } = vaultConfig;
 
 const vaultSource = vault.toFumadocsSource();
 

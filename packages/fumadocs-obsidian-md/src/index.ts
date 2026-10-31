@@ -1,4 +1,8 @@
 export {
+  findUnparseableFrontmatter,
+  type UnparseableFrontmatter,
+} from "./check-frontmatter.js";
+export {
   type CreateMdxOptionsConfig,
   createMdxOptions,
 } from "./mdx-options.js";

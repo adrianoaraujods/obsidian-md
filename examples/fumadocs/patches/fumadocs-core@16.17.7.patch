@@ -1,0 +1,22 @@
+diff --git a/dist/content/md/frontmatter.js b/dist/content/md/frontmatter.js
+index 29fde137880587fd74ba3a6833a146f0263840e2..ab4bcf27568e2a3d1c5ebcdf1e6c3753281b636d 100644
+--- a/dist/content/md/frontmatter.js
++++ b/dist/content/md/frontmatter.js
+@@ -15,9 +15,16 @@ function frontmatter(input) {
+ 	};
+ 	const match = regex.exec(input);
+ 	if (!match) return output;
++	let data;
++	try {
++		data = parse(match[1]) ?? {};
++	} catch {
++		// Corrupt YAML: render the note as plain markdown, with no frontmatter.
++		return output;
++	}
+ 	output.matter = match[0];
+ 	output.content = input.slice(match[0].length);
+-	output.data = parse(match[1]) ?? {};
++	output.data = data;
+ 	return output;
+ }
+ //#endregion

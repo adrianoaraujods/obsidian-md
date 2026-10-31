@@ -1,5 +1,5 @@
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -10,10 +10,10 @@
 
 # testing
 **/__snapshots__/**
-/coverage
+coverage
 
 # builds
-/dist
+dist
 
 # typescript
 *.tsbuildinfo

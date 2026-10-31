@@ -13,13 +13,12 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-
+import { PREVIEW_PROPERTIES_KEY } from "react-obsidian-md";
 import { PreviewBody } from "@/components/typography/preview-body";
 import { Properties } from "@/components/typography/properties";
 import { fetchPreviewPayload } from "@/lib/preview-client";
 import { slicePreviewHtml } from "@/lib/preview-slice";
 import type { PreviewPayload } from "@/lib/preview-types";
-import { PREVIEW_PROPERTIES_KEY } from "@/lib/properties-keys";
 import { slugKey } from "@/lib/slug-key";
 
 /**

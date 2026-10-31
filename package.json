@@ -21,10 +21,14 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "format": "biome format --write",
-    "prepare": "husky"
+    "prepare": "husky",
+    "changeset": "changeset",
+    "version-packages": "changeset version && pnpm install --lockfile-only",
+    "release": "pnpm build && changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.13",
+    "@changesets/cli": "^3.0.3",
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
     "husky": "^9.1.7"

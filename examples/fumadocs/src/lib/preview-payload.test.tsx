@@ -1,7 +1,6 @@
+import { PREVIEW_SLUG_ATTR, PREVIEW_SUBPATH_ATTR } from "react-obsidian-md";
 import { describe, expect, it } from "vitest";
-
 import { buildPreviewPayload } from "@/lib/preview-payload";
-import { PREVIEW_SLUG_ATTR, PREVIEW_SUBPATH_ATTR } from "@/lib/preview-types";
 
 const htmlOf = async (slug: string[]) =>
   (await buildPreviewPayload(slug))?.html ?? "";

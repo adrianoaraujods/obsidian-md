@@ -2,7 +2,7 @@
 
 Hover Previews read a Preview Payload (`{ title, properties, html }`) that is prerendered at build time, one JSON file per Note, and fetched on first hover. The body is a rendered HTML string, and the Properties Panel is rendered on the client from the `properties` data, so its open or closed state can persist. A link to a heading or block uses the same payload: the client slices the section or block out of the cached Note instead of fetching a payload per Subpath.
 
-The template deploys on Vercel's Node runtime, where a Server Action returning JSX would have worked and reused the real server components. We chose static payloads anyway: they are CDN-cacheable and cost no function invocation per hover, and they keep the template deployable to any static host. Fetching an RSC payload directly was rejected because the Next.js docs describe no supported API for it.
+The example deploys on Vercel's Node runtime, where a Server Action returning JSX would have worked and reused the real server components. We chose static payloads anyway: they are CDN-cacheable and cost no function invocation per hover, and they keep the Example deployable to any static host. Fetching an RSC payload directly was rejected because the Next.js docs describe no supported API for it.
 
 ## Considered options
 

@@ -1,6 +1,6 @@
-# remark-obsidian-md
+# obsidian-md
 
-A remark plugin that ports Obsidian.md's markdown syntax into standard MDAST, so Obsidian Vaults can be published by any unified pipeline.
+A monorepo that ports Obsidian.md's markdown syntax into standard MDAST (`remark-obsidian-md`), plus headless React components (`react-obsidian-md`) and Fumadocs glue (`fumadocs-obsidian-md`), so Obsidian Vaults can be published as Wikis by any unified pipeline.
 
 ## Vault & notes
 
@@ -21,6 +21,14 @@ _Avoid_: media, attachment, resource
 **Slug**:
 The path a Note is published under, built from its path segments (e.g. `Geografia/Localizações/Sebá.md` → `geografia/localizacoes/seba`). Every Note of a Vault gets its own.
 _Avoid_: route, page path, permalink
+
+**Wiki**:
+A website that publishes a Vault, one page per Note.
+_Avoid_: site, docs site, digital garden
+
+**Example**:
+A runnable app in `examples/` that shows a Wiki built from the packages and is meant to be copied to start a new one.
+_Avoid_: starter, boilerplate, demo app
 
 ## Links & embeds
 
@@ -43,6 +51,16 @@ _Avoid_: label, text, title
 **Embed**:
 The `![[…]]` construct that renders the target's content in place instead of linking to it.
 _Avoid_: transclusion, include
+
+## Previewing
+
+**Hover Preview**:
+A popover that shows the content of the Note an internal link points to, without leaving the current Note. A link whose Subpath names a heading previews that section, and one whose Subpath is a Block ID previews that block. It opens only once its content has arrived, and a link inside one opens a further Hover Preview, to any depth.
+_Avoid_: tooltip, popup, page preview, link card
+
+**Preview Payload**:
+The content of one Note prepared ahead of time for Hover Previews: its title, its Properties and its rendered body. One exists per Note, whatever Subpath a link carries.
+_Avoid_: preview data, snapshot, excerpt
 
 ## Inline syntax
 
@@ -85,6 +103,10 @@ _Avoid_: kind, variant, category
 **Frontmatter**:
 The YAML metadata block at the top of a Note, surfaced in Obsidian as Properties. It is hidden by default when the Note is embedded. `getFrontmatter` resolves its values into plain scalars, links (`FrontmatterLink`, unresolved when the Wiki Link names no Note) and dates (`FrontmatterDate`, of kind `date` or `datetime`), exported as `FrontmatterValue`; the type a property has in Obsidian is a `PropertyType`.
 _Avoid_: metadata, YAML header
+
+**Properties Panel**:
+The collapsible block that lists a Note's Frontmatter properties. A Note shows it expanded by default; a Hover Preview shows it collapsed by default. Each remembers the reader's last choice separately.
+_Avoid_: frontmatter table, metadata box, header
 
 **CSS Class**:
 A class name listed in a Note's `cssclasses` Frontmatter property, applied to that Note's rendered container and carried along when the Note is embedded.

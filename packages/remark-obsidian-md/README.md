@@ -142,7 +142,7 @@ use(remarkObsidianMd, {
 });
 ```
 
-The built-in `slugify` spells `+` and `#` that follow a word, so `C++.md` → `c-plus-plus` and `C.md` → `c` get distinct URLs. It is not injective in general: names that differ only in other punctuation (say `A B.md` and `A-B.md`) still collide, and a site generator that requires unique URLs will reject them — pass your own `slugify` when a Vault has such names.
+The built-in `slugify` spells `+` and `#` that follow a word, so `C++.md` → `c-plus-plus` and `C.md` → `c` get distinct URLs. It is not injective in general: names that differ only in other punctuation (say `A B.md` and `A-B.md`) still collide, and a static-site generator that requires unique URLs will reject them — pass your own `slugify` when a Vault has such names.
 
 ### Unique slugs
 
@@ -157,7 +157,7 @@ const slugifyPath = createSlugifyPath(resolver.paths);
 use(remarkObsidianMd, { resolver, slugifyPath });
 ```
 
-Pass the same map to your site generator, so a link and the Note it points at always agree. `getFrontmatter` takes it too:
+Pass the same map to your Wiki generator, so a link and the Note it points at always agree. `getFrontmatter` takes it too:
 
 ```ts
 const frontmatter = getFrontmatter(note.data.frontmatter, {

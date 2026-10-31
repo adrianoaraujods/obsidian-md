@@ -31,7 +31,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm build
-      - run: pnpm test
+      # The example's Playwright suite runs in the dedicated e2e job (browsers
+      # are only installed there); keep its unit tests here.
+      - run: pnpm -r --filter '!fumadocs-example' test
+        env:
+          CI: true
+      - run: pnpm --filter fumadocs-example test:unit
         env:
           CI: true
 

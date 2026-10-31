@@ -1,8 +1,9 @@
 import type { ComponentType } from "react";
 
 /** Components an MDX body accepts through its `components` prop. */
-// biome-ignore lint/suspicious/noExplicitAny: components take arbitrary props
-export type MdxComponentMap = Record<string, ComponentType<any>>;
+// biome-ignore lint/suspicious/noExplicitAny: components take arbitrary props; MDXContent's props are stricter than a loose map
+type AnyComponent = ComponentType<any>;
+export type MdxComponentMap = Record<string, AnyComponent>;
 
 /** The parts of a Fumadocs page the glue reads. */
 export interface VaultPage {
@@ -12,9 +13,7 @@ export interface VaultPage {
   data: {
     title: string;
     properties?: unknown;
-    // MDXContent's props are stricter than a loose map; any keeps it assignable.
-    // biome-ignore lint/suspicious/noExplicitAny: see above
-    body: ComponentType<any>;
+    body: AnyComponent;
   };
 }
 

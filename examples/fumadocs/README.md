@@ -2,6 +2,15 @@
 
 A Next.js and Fumadocs template that publishes an Obsidian Vault with `remark-obsidian-md`. Terms such as Vault, Note, Wiki Link, Subpath and Block ID follow that package's glossary; see `GLOSSARY.md` for the template's own terms.
 
+## Vaults
+
+This example has two Vaults, and they are not interchangeable.
+
+- **Sample Vault** (`public/vault`) is the demo. A short set of Notes that reads as documentation of what the plugin supports: Wiki Links with Aliases and Subpaths, Embeds, Callouts, Highlights, Comments, Block IDs, Properties and Hover Previews (including nested ones). `pnpm dev` and `pnpm build` publish it. Start at its `index.md`.
+- **Fixture Vault** (`tests/fixtures/vault`) is test data. It holds edge cases for the tests and is never published by the demo. Don't edit it to improve the demo.
+
+Set `VAULT_DIR` to publish a different Vault.
+
 ## Hover Previews
 
 Hovering or focusing an internal link that points at a Note opens a **Hover Preview** of it, after a short delay. It stays open while the pointer is inside it and closes shortly after the pointer leaves or on Escape. Long Notes scroll inside the preview.
@@ -21,4 +30,4 @@ A Note's Frontmatter properties are listed in a collapsible **Properties Panel**
 
 ## Tests
 
-`pnpm test` runs the unit tests (Vitest) and the browser tests (Playwright) against a small fixture Vault. See `tests/README.md`.
+`pnpm test` runs the unit tests (Vitest) and the browser tests (Playwright) against the fixture Vault (the sample Vault has a unit test that checks it covers every feature and that its links resolve). See `tests/README.md`.

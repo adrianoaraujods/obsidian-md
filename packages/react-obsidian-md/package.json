@@ -1,6 +1,6 @@
 {
   "name": "react-obsidian-md",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": "Adriano Araújo (adrianoaraujodsantos@hotmail.com)",
   "description": "Headless React components for Obsidian.md content: a collapsible Properties Panel with persisted state, styled entirely by your own CSS",
   "license": "MIT",

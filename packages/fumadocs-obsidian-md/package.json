@@ -1,6 +1,6 @@
 {
   "name": "fumadocs-obsidian-md",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": "Adriano Araújo (adrianoaraujodsantos@hotmail.com)",
   "description": "Glue between remark-obsidian-md and Fumadocs: Vault resolver, slugs, MDX options and Asset URL handling",
   "license": "MIT",

@@ -51,7 +51,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # The example consumes the packages through workspace:*, so build them first.
+      # The example consumes the packages through workspace overrides (pnpm-workspace.yaml), so build them first.
       - run: pnpm build
       - run: pnpm --filter fumadocs-example exec playwright install --with-deps chromium
       - run: pnpm --filter fumadocs-example test:e2e

@@ -105,6 +105,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  remark-obsidian-md: workspace:*
+  fumadocs-obsidian-md: workspace:*
+  react-obsidian-md: workspace:*
+
 patchedDependencies:
   fumadocs-core@16.17.7: 7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de
 

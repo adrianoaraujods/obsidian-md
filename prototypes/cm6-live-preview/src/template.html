@@ -1,0 +1,32 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>PROTOTYPE – CM6 Live Preview</title>
+<style>
+:root{color-scheme:dark light;--bg:#1e1e1e;--fg:#dcddde;--dim:#7a7a7a;--accent:#a78bfa;--hl:#6b5b00}
+@media (prefers-color-scheme:light){:root{--bg:#fff;--fg:#222;--dim:#999;--accent:#6d28d9;--hl:#fff3a3}}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif}
+header{padding:10px 24px;border-bottom:1px solid #8883;font-size:13px;color:var(--dim)}
+header b{color:#e5484d}
+.wrap{max-width:760px;margin:0 auto;padding:16px 24px}
+.cm-editor{outline:none!important}.cm-content{font-family:inherit;caret-color:var(--fg)}
+.cm-scroller{font-family:inherit}
+.cm-line{padding:0 2px}
+.lp-h1{font-size:1.9em;font-weight:700;line-height:1.3}.lp-h2{font-size:1.5em;font-weight:650;line-height:1.3}.lp-h3{font-size:1.2em;font-weight:600}
+.lp-b{font-weight:700}.lp-i{font-style:italic}
+.lp-wl{color:var(--accent);text-decoration:underline;cursor:pointer}
+.lp-wl.unresolved{opacity:.6;text-decoration-style:dashed}
+.lp-raw{color:var(--accent)}
+.lp-hl{background:var(--hl);border-radius:3px}
+.lp-hl-red{background:#e5484d55}.lp-hl-green{background:#30a46c55}.lp-hl-blue{background:#3b82f655}
+.lp-cm{color:var(--dim);font-style:italic}
+.lp-id{color:var(--dim);font-size:.85em}
+.lp-co{background:#3b82f622;border-left:3px solid #3b82f6;padding-left:12px!important;margin:0}
+.lp-co-first{border-top-left-radius:6px;padding-top:4px;margin-top:6px}
+.lp-co-last{border-bottom-left-radius:6px;padding-bottom:4px;margin-bottom:6px}
+.lp-co-tip{background:#30a46c22;border-color:#30a46c}.lp-co-warning{background:#f5a52422;border-color:#f5a524}
+.lp-co-title{font-weight:650}
+.lp-code{font-family:ui-monospace,monospace;background:#8882;border-radius:3px}
+.cm-tooltip{background:var(--bg);border:1px solid #8885;border-radius:6px}
+</style></head>
+<body><header><b>PROTOTYPE – throwaway.</b> CodeMirror 6 Live Preview for issue #66. Cursor into a construct to reveal its source. The document is the raw Markdown: <a href="#" id="dump" style="color:inherit">show raw text</a></header>
+<div class="wrap"><div id="ed"></div><pre id="raw" hidden style="white-space:pre-wrap;font-size:12px;color:var(--dim)"></pre></div>
+<script>/*BUNDLE*/</script></body></html>

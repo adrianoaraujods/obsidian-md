@@ -1,0 +1,18 @@
+{
+  "name": "prototype-cm6-live-preview",
+  "private": true,
+  "type": "module",
+  "description": "PROTOTYPE, throwaway: CodeMirror 6 Live Preview feel test for issue #66. Not part of the pnpm workspace.",
+  "scripts": {
+    "start": "node build.mjs"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "6.18.6",
+    "@codemirror/commands": "6.8.1",
+    "@codemirror/lang-markdown": "6.3.2",
+    "@codemirror/language": "6.11.0",
+    "@codemirror/state": "6.5.2",
+    "@codemirror/view": "6.36.8",
+    "esbuild": "0.25.5"
+  }
+}

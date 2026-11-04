@@ -1,0 +1,60 @@
+
+=== syntax: default
+{"k":"wikilink","types":"paragraph,text","verbatim":"identical","normalized":"See \\[\\[My Note]] here.\n"}
+{"k":"wikilink alias+subpath","types":"paragraph,text","verbatim":"identical","normalized":"See \\[\\[My Note#Heading|alias]] and \\[\\[N#^blk]].\n"}
+{"k":"embed","types":"paragraph,text","verbatim":"identical","normalized":"!\\[\\[Note]]\n\n!\\[\\[img.png|200]]\n"}
+{"k":"highlight","types":"paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"comment inline","types":"paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"comment block","types":"paragraph,text","verbatim":"identical","normalized":"%% hidden block %%\n"}
+{"k":"inline footnote","types":"paragraph,text","verbatim":"identical","normalized":"Text^\\[inline note] more.\n"}
+{"k":"ref footnote","types":"paragraph,text,verbatimInline,verbatim","verbatim":"identical","normalized":"identical"}
+{"k":"block id","types":"paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"callout","types":"blockquote,paragraph,text","verbatim":"identical","normalized":"> \\[!tip] Title Body text\n"}
+{"k":"callout fold","types":"blockquote,paragraph,text","verbatim":"identical","normalized":"> \\[!note]- Folded Body\n"}
+{"k":"frontmatter","types":"frontmatter,text,paragraph","verbatim":"identical","normalized":"identical"}
+{"k":"tag","types":"paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"task list","types":"taskList,taskItem,paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"table w/ wikilink","types":"table,tableRow,tableHeader,paragraph,text,tableCell","verbatim":"identical","normalized":"| a       | b |\n| ------- | - |\n| \\[\\[X]] | y |\n"}
+{"k":"math inline","types":"paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"math block","types":"paragraph,text","verbatim":"identical","normalized":"$$ E=mc^2 $$\n"}
+{"k":"mermaid","types":"codeBlock,text","verbatim":"identical","normalized":"identical"}
+{"k":"html comment","error":"Unexpected character `!` (U+0021) before name, expected a character that can start a name, such as a letter, `$`, or `_` (note: to create a comment in MDX, use `{/* text */}`)"}
+{"k":"curly braces","types":"paragraph,text,mdxTextExpression","verbatim":"identical","normalized":"identical"}
+{"k":"lt sign","error":"Unexpected character `2` (U+0032) before name, expected a character that can start a name, such as a letter, `$`, or `_`"}
+{"k":"raw html","types":"paragraph,text,mark:mdxJsxTag","verbatim":"identical","normalized":"identical"}
+{"k":"br tag","error":"Expected a closing tag for `<br>` (1:5-1:9) before the end of `paragraph`"}
+{"k":"autolink","error":"Unexpected character `/` (U+002F) before local name, expected a character that can start a name, such as a letter, `$`, or `_` (note: to create a link in MDX, use `[text](url)`)"}
+{"k":"escaped pipe wikilink in table","types":"table,tableRow,tableHeader,paragraph,text,tableCell","verbatim":"identical","normalized":"| a          |\n| ---------- |\n| \\[\\[X\\|Y]] |\n"}
+{"k":"non-ASCII wikilink","types":"paragraph,text","verbatim":"identical","normalized":"\\[\\[Geografia/Localizações/Sebá]]\n"}
+{"k":"dollar amounts","types":"paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"underscore/asterisk text","types":"paragraph,text,mark:italic","verbatim":"identical","normalized":"identical"}
+
+=== syntax: math+directives
+{"k":"wikilink","types":"paragraph,text","verbatim":"identical","normalized":"See \\[\\[My Note]] here.\n"}
+{"k":"wikilink alias+subpath","types":"paragraph,text","verbatim":"identical","normalized":"See \\[\\[My Note#Heading|alias]] and \\[\\[N#^blk]].\n"}
+{"k":"embed","types":"paragraph,text","verbatim":"identical","normalized":"!\\[\\[Note]]\n\n!\\[\\[img.png|200]]\n"}
+{"k":"highlight","types":"paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"comment inline","types":"paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"comment block","types":"paragraph,text","verbatim":"identical","normalized":"%% hidden block %%\n"}
+{"k":"inline footnote","types":"paragraph,text","verbatim":"identical","normalized":"Text^\\[inline note] more.\n"}
+{"k":"ref footnote","types":"paragraph,text,verbatimInline,verbatim","verbatim":"identical","normalized":"identical"}
+{"k":"block id","types":"paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"callout","types":"blockquote,paragraph,text","verbatim":"identical","normalized":"> \\[!tip] Title Body text\n"}
+{"k":"callout fold","types":"blockquote,paragraph,text","verbatim":"identical","normalized":"> \\[!note]- Folded Body\n"}
+{"k":"frontmatter","types":"frontmatter,text,paragraph","verbatim":"identical","normalized":"identical"}
+{"k":"tag","types":"paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"task list","types":"taskList,taskItem,paragraph,text","verbatim":"identical","normalized":"identical"}
+{"k":"table w/ wikilink","types":"table,tableRow,tableHeader,paragraph,text,tableCell","verbatim":"identical","normalized":"| a       | b |\n| ------- | - |\n| \\[\\[X]] | y |\n"}
+{"k":"math inline","types":"paragraph,text,mathInline","verbatim":"identical","normalized":"identical"}
+{"k":"math block","types":"mathBlock,text","verbatim":"identical","normalized":"identical"}
+{"k":"mermaid","types":"codeBlock,text","verbatim":"identical","normalized":"identical"}
+{"k":"html comment","error":"Unexpected character `!` (U+0021) before name, expected a character that can start a name, such as a letter, `$`, or `_` (note: to create a comment in MDX, use `{/* text */}`)"}
+{"k":"curly braces","types":"paragraph,text,mdxTextExpression","verbatim":"identical","normalized":"identical"}
+{"k":"lt sign","error":"Unexpected character `2` (U+0032) before name, expected a character that can start a name, such as a letter, `$`, or `_`"}
+{"k":"raw html","types":"paragraph,text,mark:mdxJsxTag","verbatim":"identical","normalized":"identical"}
+{"k":"br tag","error":"Expected a closing tag for `<br>` (1:5-1:9) before the end of `paragraph`"}
+{"k":"autolink","error":"Unexpected character `/` (U+002F) before local name, expected a character that can start a name, such as a letter, `$`, or `_` (note: to create a link in MDX, use `[text](url)`)"}
+{"k":"escaped pipe wikilink in table","types":"table,tableRow,tableHeader,paragraph,text,tableCell","verbatim":"identical","normalized":"| a          |\n| ---------- |\n| \\[\\[X\\|Y]] |\n"}
+{"k":"non-ASCII wikilink","types":"paragraph,text","verbatim":"identical","normalized":"\\[\\[Geografia/Localizações/Sebá]]\n"}
+{"k":"dollar amounts","types":"paragraph,text,mathInline","verbatim":"identical","normalized":"identical"}
+{"k":"underscore/asterisk text","types":"paragraph,text,mark:italic","verbatim":"identical","normalized":"identical"}

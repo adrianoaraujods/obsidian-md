@@ -236,7 +236,8 @@ export function createFakeContentsApi(
       new RegExp(`^/repos/${repo}/compare/([^./]+)\\.\\.\\.([^./]+)$`),
     );
     if (compare && request.method === "GET") {
-      const [, a, b] = compare;
+      const a = compare[1] ?? "";
+      const b = compare[2] ?? "";
       if (a === b && divergent.has(a))
         return json(200, { status: "identical" });
       if (divergent.has(a) || divergent.has(b)) {

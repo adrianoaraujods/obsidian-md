@@ -110,3 +110,20 @@ Later Live Preview work adds to the core without changing it.
 Decorations are rebuilt when a re-parse lands or the selection moves, and only mapped while typing.
 
 Line breaks: the document always splits on `\n`, so a `\r` stays a character and positions equal text offsets. In a Note that is purely CRLF, Enter inserts `\r\n`.
+
+## New Note screen
+
+`codemirror-obsidian-md/new-note` is a framework-agnostic DOM component (the package has no React) plus the pure validation it uses. `Storage` cannot list files, so the host passes the Vault-relative paths of existing Notes.
+
+```ts
+import { createNewNoteScreen } from "codemirror-obsidian-md/new-note";
+
+const screen = createNewNoteScreen({
+  parent: document.querySelector("#new-note")!,
+  existingPaths, // e.g. ["Index.md", "Geografia/Seba.md"]
+  onCreate: (path) => storage.create(path, ""), // Vault-relative, ends in .md
+  onCancel: () => history.back(),
+});
+```
+
+The folder field offers existing folders and accepts a typed nested one; a folder exists only once a Note is created in it. `resolveNewNote({ folder, name, existing })` returns `{ ok: true, path }` or `{ ok: false, error }` (empty name, leading `/`, `..` segment, characters GitHub paths reject, existing path, case-only difference). `listFolders(paths)` derives the picker list.

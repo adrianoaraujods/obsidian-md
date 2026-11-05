@@ -57,6 +57,10 @@
       "types": "./dist/storage/http.d.ts",
       "default": "./dist/storage/http.js"
     },
+    "./new-note": {
+      "types": "./dist/new-note/index.d.ts",
+      "default": "./dist/new-note/index.js"
+    },
     "./editor": {
       "types": "./dist/editor/index.d.ts",
       "default": "./dist/editor/index.js"

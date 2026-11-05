@@ -1,0 +1,28 @@
+export { isRevealed } from "./cursor.js";
+export {
+  type CreateEditorOptions,
+  createEditor,
+  type EditorHandle,
+} from "./mount.js";
+export {
+  createNoteParser,
+  frontmatterLength,
+  PLAIN_SOURCE_TYPES,
+} from "./parse.js";
+export {
+  constructProviders,
+  constructsField,
+  DEFAULT_IDLE_MS,
+  decorationsField,
+  isCrlf,
+  type ObsidianMdOptions,
+  obsidianMd,
+  reparse,
+} from "./state.js";
+export type {
+  Construct,
+  ConstructProvider,
+  DecorationContext,
+  NoteParser,
+  ProviderResult,
+} from "./types.js";

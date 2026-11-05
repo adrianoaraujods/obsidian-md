@@ -29,11 +29,18 @@ const authEnv = (port: number) =>
 
 export default defineConfig({
   testDir: "e2e",
+  // The editor and file-tree specs share one fake GitHub repo.
+  workers: 1,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   projects: [
     {
       name: "production",
-      testMatch: ["production.spec.ts", "editor.spec.ts", "startup.spec.ts"],
+      testMatch: [
+        "production.spec.ts",
+        "editor.spec.ts",
+        "file-tree-menu.spec.ts",
+        "startup.spec.ts",
+      ],
       use: { baseURL: `http://localhost:${PROD_PORT}` },
     },
     {

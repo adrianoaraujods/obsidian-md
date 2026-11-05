@@ -9,7 +9,6 @@ export {
   frontmatterLength,
   PLAIN_SOURCE_TYPES,
 } from "./parse.js";
-export * from "./save-flow.js";
 export {
   type CalloutEmbedOptions,
   calloutEmbed,
@@ -30,6 +29,7 @@ export {
   rankCandidates,
   wikiLinkTarget,
 } from "./picker.js";
+export * from "./save-flow.js";
 export {
   constructProviders,
   constructsField,

@@ -11,6 +11,13 @@ export {
   PLAIN_SOURCE_TYPES,
 } from "./parse.js";
 export {
+  type NoteCandidate,
+  type PickerOptions,
+  pickerExtension,
+  rankCandidates,
+  wikiLinkTarget,
+} from "./picker.js";
+export {
   type CalloutEmbedOptions,
   calloutEmbed,
 } from "./providers/callout-embed.js";
@@ -23,13 +30,6 @@ export {
   inlineProviders,
   wikiLinkProvider,
 } from "./providers/inline.js";
-export {
-  type NoteCandidate,
-  type PickerOptions,
-  pickerExtension,
-  rankCandidates,
-  wikiLinkTarget,
-} from "./picker.js";
 export * from "./save-flow.js";
 export {
   constructProviders,

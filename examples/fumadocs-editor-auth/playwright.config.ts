@@ -34,7 +34,7 @@ const authEnv = (port: number) =>
 
 export default defineConfig({
   testDir: "e2e",
-  // The editor and file-tree specs share one fake GitHub repo.
+  // The specs that save share one fake GitHub repo, so files run one at a time.
   workers: 1,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   projects: [

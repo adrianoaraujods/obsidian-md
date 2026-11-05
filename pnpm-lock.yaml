@@ -230,6 +230,21 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@20.19.43)(@vitest/coverage-v8@5.0.5)(jsdom@27.4.0(supports-color@7.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.6.1)(yaml@2.9.1))
 
+  packages/codemirror-obsidian-md:
+    devDependencies:
+      '@types/node':
+        specifier: ^25.2.0
+        version: 25.9.9
+      '@vitest/coverage-v8':
+        specifier: ^5.0.5
+        version: 5.0.5(vitest@5.0.5)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@25.9.9)(@vitest/coverage-v8@5.0.5)(jsdom@27.4.0(supports-color@7.2.0))(msw@2.15.0(@types/node@25.9.9)(typescript@5.9.3))(vite@8.3.4(@types/node@25.9.9)(esbuild@0.28.2)(jiti@2.6.1)(yaml@2.9.1))
+
   packages/fumadocs-obsidian-md:
     dependencies:
       remark-breaks:
@@ -8299,8 +8314,8 @@ snapshots:
 
   magicast@0.5.5:
     dependencies:
-      '@babel/parser': 7.29.9
-      '@babel/types': 7.29.8
+      '@babel/parser': 7.29.12
+      '@babel/types': 7.29.11
       source-map-js: 1.2.2
 
   markdown-extensions@2.0.0: {}

@@ -1,0 +1,5 @@
+<svg height="120" role="img" viewBox="0 0 240 120" width="240" xmlns="http://www.w3.org/2000/svg">
+  <title>Sample image</title>
+  <rect fill="#7c3aed" height="120" rx="12" width="240" />
+  <text fill="#fff" font-family="sans-serif" font-size="22" text-anchor="middle" x="120" y="68">Sample image</text>
+</svg>

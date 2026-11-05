@@ -230,6 +230,103 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@20.19.43)(@vitest/coverage-v8@5.0.5)(jsdom@27.4.0(supports-color@7.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.6.1)(yaml@2.9.1))
 
+  examples/fumadocs-editor:
+    dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      fumadocs-core:
+        specifier: 16.17.7
+        version: 16.17.7(patch_hash=7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de)(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@0.564.0(react@19.2.3))(next@16.4.2(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(supports-color@7.2.0)(zod@4.6.7)
+      fumadocs-mdx:
+        specifier: 14.3.2
+        version: 14.3.2(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.3.0)(fumadocs-core@16.17.7(patch_hash=7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de)(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@0.564.0(react@19.2.3))(next@16.4.2(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(supports-color@7.2.0)(zod@4.6.7))(next@16.4.2(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(supports-color@7.2.0)(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.6.1)(yaml@2.9.1))
+      fumadocs-obsidian-md:
+        specifier: workspace:*
+        version: link:../../packages/fumadocs-obsidian-md
+      fumadocs-ui:
+        specifier: 16.17.7
+        version: 16.17.7(@types/mdx@2.0.14)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(fumadocs-core@16.17.7(patch_hash=7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de)(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@0.564.0(react@19.2.3))(next@16.4.2(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(supports-color@7.2.0)(zod@4.6.7))(next@16.4.2(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(supports-color@7.2.0)(tailwindcss@4.3.3)
+      katex:
+        specifier: ^0.16.28
+        version: 0.16.47
+      lucide-react:
+        specifier: ^0.564.0
+        version: 0.564.0(react@19.2.3)
+      next:
+        specifier: 16.4.2
+        version: 16.4.2(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      next-themes:
+        specifier: ^0.4.6
+        version: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      playwright:
+        specifier: ^1.58.2
+        version: 1.64.1
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      react-dom:
+        specifier: 19.2.3
+        version: 19.2.3(react@19.2.3)
+      react-obsidian-md:
+        specifier: workspace:*
+        version: link:../../packages/react-obsidian-md
+      rehype-katex:
+        specifier: ^7.0.1
+        version: 7.0.1
+      rehype-mermaid:
+        specifier: ^2.1.0
+        version: 2.1.0(supports-color@7.2.0)
+      remark-math:
+        specifier: ^6.0.0
+        version: 6.0.0(supports-color@7.2.0)
+      remark-obsidian-md:
+        specifier: workspace:*
+        version: link:../../packages/remark-obsidian-md
+      shadcn:
+        specifier: ^3.8.4
+        version: 3.8.5(@types/node@20.19.43)(supports-color@7.2.0)(typescript@5.9.3)
+      tailwind-merge:
+        specifier: ^3.4.1
+        version: 3.7.0
+      tw-animate-css:
+        specifier: ^1.4.0
+        version: 1.4.0
+      zod:
+        specifier: ^4.3.6
+        version: 4.6.7
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.64.1
+        version: 1.64.1
+      '@tailwindcss/postcss':
+        specifier: ^4
+        version: 4.3.3
+      '@types/mdx':
+        specifier: ^2.0.14
+        version: 2.0.14
+      '@types/node':
+        specifier: ^20
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.3.0(@types/react@19.3.0)
+      babel-plugin-react-compiler:
+        specifier: 1.0.0
+        version: 1.0.0
+      tailwindcss:
+        specifier: ^4
+        version: 4.3.3
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@20.19.43)(@vitest/coverage-v8@5.0.5)(jsdom@27.4.0(supports-color@7.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.6.1)(yaml@2.9.1))
+
   packages/codemirror-obsidian-md:
     dependencies:
       '@codemirror/commands':

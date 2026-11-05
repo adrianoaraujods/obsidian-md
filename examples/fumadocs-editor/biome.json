@@ -1,0 +1,47 @@
+{
+  "root": false,
+  "extends": "//",
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "nursery": {
+        "useSortedClasses": {
+          "fix": "safe",
+          "level": "warn",
+          "options": {
+            "attributes": ["classList"],
+            "functions": ["clsx", "cva", "tw", "tw.*"]
+          }
+        }
+      },
+      "suspicious": {
+        "noUnknownAtRules": "off"
+      },
+      "performance": {
+        "noImgElement": "off"
+      }
+    },
+    "domains": {
+      "next": "recommended",
+      "react": "recommended"
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on",
+        "useSortedAttributes": "on",
+        "useSortedProperties": "on"
+      }
+    }
+  },
+  "files": {
+    "includes": ["**", "!.next", "!.source"]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  }
+}

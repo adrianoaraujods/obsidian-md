@@ -10,6 +10,7 @@ export {
   frontmatterLength,
   PLAIN_SOURCE_TYPES,
 } from "./parse.js";
+export { markdownProvider } from "./providers/markdown.js";
 export {
   type NoteCandidate,
   type PickerOptions,

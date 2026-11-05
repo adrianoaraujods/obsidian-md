@@ -253,4 +253,12 @@ describe("github lock", () => {
     deployed = "f".repeat(40); // unknown
     expect(await lock.isDeployed(second.commit as string)).toBe(false);
   });
+
+  it("is not live when the deployed commit has diverged from the saved one", async () => {
+    let deployed: string | null = null;
+    const { api, storage } = setup({ deployedCommit: async () => deployed });
+    const saved = await storage.create("a.md", "x");
+    deployed = api.divergentCommit();
+    expect(await storage.lock?.isDeployed(saved.commit as string)).toBe(false);
+  });
 });

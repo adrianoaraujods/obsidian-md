@@ -43,6 +43,11 @@ export interface FakeContentsApi {
   seed(path: string, content: string): void;
   /** Make a commit the way another person would, bypassing the adapter. */
   externalWrite(path: string, content: string, author: FakeAuthor): void;
+  /**
+   * A commit that exists off the branch (a fork, a force-push). Comparing it
+   * with any branch commit reports `diverged`. Returns its SHA.
+   */
+  divergentCommit(): string;
   /** Blob SHA of a file, as GitHub computes it. */
   shaOf(path: string): string;
   /** Current text of every file, by repo path. */
@@ -82,6 +87,7 @@ export function createFakeContentsApi(
   );
   const store = new Map<string, string>();
   const commits: FakeCommit[] = [];
+  const divergent = new Set<string>();
   const requests: FakeRequest[] = [];
   const installationToken = "ghs_fake_installation_token";
   let counter = 0;
@@ -230,8 +236,18 @@ export function createFakeContentsApi(
       new RegExp(`^/repos/${repo}/compare/([^./]+)\\.\\.\\.([^./]+)$`),
     );
     if (compare && request.method === "GET") {
-      const from = commits.findIndex((c) => c.sha === compare[1]);
-      const to = commits.findIndex((c) => c.sha === compare[2]);
+      const [, a, b] = compare;
+      if (a === b && divergent.has(a))
+        return json(200, { status: "identical" });
+      if (divergent.has(a) || divergent.has(b)) {
+        const other = divergent.has(a) ? b : a;
+        if (!divergent.has(other) && !commits.some((c) => c.sha === other)) {
+          return json(404, { message: "Not Found" });
+        }
+        return json(200, { status: "diverged" });
+      }
+      const from = commits.findIndex((c) => c.sha === a);
+      const to = commits.findIndex((c) => c.sha === b);
       if (from < 0 || to < 0) return json(404, { message: "Not Found" });
       const status = to === from ? "identical" : to > from ? "ahead" : "behind";
       return json(200, { status });
@@ -253,6 +269,13 @@ export function createFakeContentsApi(
     externalWrite: (path, content, author) => {
       store.set(path, content);
       commit(path, `Update ${path}`, author);
+    },
+    divergentCommit: () => {
+      const sha = createHash("sha1")
+        .update(`divergent ${divergent.size}`)
+        .digest("hex");
+      divergent.add(sha);
+      return sha;
     },
     shaOf: (path) => {
       const content = store.get(path);

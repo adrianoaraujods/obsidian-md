@@ -139,3 +139,7 @@ The folder field offers existing folders and accepts a typed nested one; a folde
 ```ts
 createEditor({ parent, doc, providers: inlineProviders, parser: blockIdParser() });
 ```
+
+### `[[` picker
+
+`pickerExtension({ candidates, resolver?, maxResults? })` (pass it in `extensions`) opens a Note picker when `[[` is typed. `candidates` is `NoteCandidate[]` (`{ path, title?, aliases? }`) or a getter, ranked by `rankCandidates`. Choosing one inserts a closed Wiki Link; `wikiLinkTarget` uses the bare name when the injected `Resolver` (or, by default, name uniqueness) reaches that Note, else the path.

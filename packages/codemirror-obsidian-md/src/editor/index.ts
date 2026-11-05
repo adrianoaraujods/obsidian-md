@@ -24,6 +24,13 @@ export {
   wikiLinkProvider,
 } from "./providers/inline.js";
 export {
+  type NoteCandidate,
+  type PickerOptions,
+  pickerExtension,
+  rankCandidates,
+  wikiLinkTarget,
+} from "./picker.js";
+export {
   constructProviders,
   constructsField,
   DEFAULT_IDLE_MS,

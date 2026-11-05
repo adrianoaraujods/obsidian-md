@@ -23,6 +23,35 @@ import { runStorageContract } from "codemirror-obsidian-md/storage/contract";
 runStorageContract("my adapter", async () => ({ storage: makeStorage() }));
 ```
 
+### GitHub
+
+`codemirror-obsidian-md/storage/github` (server-side only, it holds the write credential) commits through the Contents API. Each save, create and delete is one commit: `Update|Create|Delete <path>` plus `Edited-with` and `Edited-by` trailers built from the `editor` you pass (take it from the verified session, never from the client).
+
+```ts
+import { createGithubStorage } from "codemirror-obsidian-md/storage/github";
+
+const storage = createGithubStorage({
+  repo: "owner/name",
+  branch: "main", // default: the repo's default branch
+  vaultPath: "content", // default: the repo root
+  // A fine-grained PAT, a GitHub App installation, or both (the App wins).
+  credential: { token: process.env.GITHUB_TOKEN },
+  editor: { name: session.user.name, login: session.user.login },
+  deployedCommit: async () => buildSha, // adds `lock`; null when the host has no build commit
+  // fetch and baseUrl are injectable (GitHub Enterprise, tests).
+});
+```
+
+A stale SHA throws `StaleShaError` (with `newer.author` and `newer.time` when GitHub reports them) and an existing path throws `AlreadyExistsError`. `lock.isDeployed(commit)` is true when the deployed commit is identical to or ahead of `commit`.
+
+### Browser adapter
+
+Mount `createStorageHandler` from `codemirror-obsidian-md/storage/http` in a route handler (check the session inside `getStorage`; throw a `Response` to refuse). In the browser use `createStorageClient({ url: "/api/storage", lock: true })` from `codemirror-obsidian-md/storage/client`. It sends no token; the cookie authenticates and the token stays on the server.
+
+### Fake Contents API
+
+`createFakeContentsApi` from `codemirror-obsidian-md/storage/github-fake` is an in-memory GitHub with real SHA semantics (409 stale, 422 existing, commits, compare, App token minting). Pass its `fetch` and `baseUrl` to `createGithubStorage`, or wrap its `fetch` in an HTTP server for end-to-end tests. `externalWrite` simulates another person's commit.
+
 ## Editor
 
 The document is the Note's raw Markdown, so saving never rewrites syntax you did not touch (CRLF, a missing trailing newline and odd Frontmatter included). Load it only on your edit route.

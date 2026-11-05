@@ -41,6 +41,22 @@
       "types": "./dist/storage/contract.d.ts",
       "default": "./dist/storage/contract.js"
     },
+    "./storage/github": {
+      "types": "./dist/storage/github.d.ts",
+      "default": "./dist/storage/github.js"
+    },
+    "./storage/github-fake": {
+      "types": "./dist/storage/github-fake.d.ts",
+      "default": "./dist/storage/github-fake.js"
+    },
+    "./storage/client": {
+      "types": "./dist/storage/client.d.ts",
+      "default": "./dist/storage/client.js"
+    },
+    "./storage/http": {
+      "types": "./dist/storage/http.d.ts",
+      "default": "./dist/storage/http.js"
+    },
     "./editor": {
       "types": "./dist/editor/index.d.ts",
       "default": "./dist/editor/index.js"

@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 
 import { NoteEditor } from "@/components/editor/note-editor";
 import { requireEditor } from "@/lib/auth/session";
-import { createdNoteMatches, folderOf } from "@/lib/new-note";
+import { lockTimings } from "@/lib/lock-timings";
+import { createdCommit, createdNoteMatches, folderOf } from "@/lib/new-note";
 import { source } from "@/lib/source";
 
 /**
@@ -13,7 +14,7 @@ import { source } from "@/lib/source";
  */
 export default async function EditPage(props: PageProps<"/edit/[[...slug]]">) {
   const { slug = [] } = await props.params;
-  const { new: created } = await props.searchParams;
+  const { new: created, commit } = await props.searchParams;
   const session = await requireEditor(slug);
 
   const existing = source.getPages().map((note) => note.path);
@@ -23,9 +24,8 @@ export default async function EditPage(props: PageProps<"/edit/[[...slug]]">) {
   // page for it. `?new=<Vault path>` (set by /edit/new/open) stands in for it,
   // checked against the slug so it cannot open an arbitrary file.
   //
-  // SEAM(#98, deploy lock): this is where "the created Note opens locked until
-  // it is deployed" attaches. `createdPath` is set exactly when the Note is
-  // created-but-not-deployed; pass the lock to <NoteEditor> from here.
+  // The created Note opens locked until its create commit is deployed:
+  // `?commit=` is that commit, passed to the editor as `lockedCommit`.
   const createdPath =
     !page &&
     typeof created === "string" &&
@@ -50,6 +50,8 @@ export default async function EditPage(props: PageProps<"/edit/[[...slug]]">) {
             .getPages()
             .map((note) => ({ path: note.path, title: note.data.title }))}
           editor={{ name: name ?? null, login: login ?? "" }}
+          lockedCommit={createdPath ? createdCommit(commit) : undefined}
+          lockTimings={lockTimings(process.env)}
           path={path}
           title={title}
         />

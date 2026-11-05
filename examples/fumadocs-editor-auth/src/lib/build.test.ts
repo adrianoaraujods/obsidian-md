@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveBuildSha } from "./build";
+import { resolveBuildSha, resolveDeployedCommit } from "./build";
 
 const SHA = "a".repeat(40);
 const HEAD = "b".repeat(40);
@@ -32,6 +32,38 @@ describe("resolveBuildSha", () => {
       resolveBuildSha({ VERCEL_GIT_COMMIT_SHA: "oops" }, () => null),
     ).toBeNull();
     expect(resolveBuildSha({}, () => "fatal: not a git repository")).toBeNull();
+  });
+});
+
+describe("resolveDeployedCommit", () => {
+  const fake = (sha: unknown, ok = true) =>
+    (async () =>
+      new Response(JSON.stringify({ sha }), {
+        status: ok ? 200 : 500,
+      })) as unknown as typeof fetch;
+
+  it("is the build's own SHA outside the test seam", async () => {
+    const source = { VERCEL_GIT_COMMIT_SHA: SHA };
+    expect(await resolveDeployedCommit(source, fake(HEAD))).toBe(SHA);
+  });
+
+  it("reads the commit from TEST_BUILD_SHA_URL under the fake GitHub", async () => {
+    const source = {
+      GITHUB_OAUTH_URL: "http://fake",
+      TEST_BUILD_SHA_URL: "http://fake/__test/build-sha",
+      VERCEL_GIT_COMMIT_SHA: SHA,
+    };
+    expect(await resolveDeployedCommit(source, fake(HEAD))).toBe(HEAD);
+    expect(await resolveDeployedCommit(source, fake(null))).toBeNull();
+    expect(await resolveDeployedCommit(source, fake(HEAD, false))).toBeNull();
+  });
+
+  it("ignores TEST_BUILD_SHA_URL when GITHUB_OAUTH_URL is not overridden", async () => {
+    const source = {
+      TEST_BUILD_SHA_URL: "http://fake/__test/build-sha",
+      VERCEL_GIT_COMMIT_SHA: SHA,
+    };
+    expect(await resolveDeployedCommit(source, fake(HEAD))).toBe(SHA);
   });
 });
 

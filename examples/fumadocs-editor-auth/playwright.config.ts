@@ -25,6 +25,11 @@ const authEnv = (port: number) =>
     `GITHUB_OAUTH_URL=${FAKE_GITHUB_URL}`,
     `GITHUB_API_URL=${FAKE_GITHUB_URL}/api`,
     "TEST_DENY_LOGINS=blocked-user",
+    `TEST_BUILD_SHA_URL=${FAKE_GITHUB_URL}/__test/build-sha`,
+    // Fast deploy-lock polling; a real deploy waits a minute, then 5 seconds.
+    "EDITOR_LOCK_FIRST_POLL_MS=100",
+    "EDITOR_LOCK_INTERVAL_MS=150",
+    "EDITOR_LOCK_TIMEOUT_MS=2500",
   ].join(" ");
 
 export default defineConfig({
@@ -39,6 +44,7 @@ export default defineConfig({
         "production.spec.ts",
         "editor.spec.ts",
         "file-tree-menu.spec.ts",
+        "lock.spec.ts",
         "new-note.spec.ts",
         "startup.spec.ts",
       ],

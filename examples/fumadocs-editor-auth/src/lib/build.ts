@@ -36,3 +36,27 @@ export function getBuildSha(): string | null {
   cached ??= { sha: resolveBuildSha(process.env) };
   return cached.sha;
 }
+
+/**
+ * The commit the deploy lock compares against. Normally the build's own SHA.
+ * Under the fake GitHub (`GITHUB_OAUTH_URL` overridden, like
+ * `TEST_DENY_LOGINS`), `TEST_BUILD_SHA_URL` names an endpoint that reports the
+ * "deployed" commit, so a browser test decides when the deploy goes live.
+ */
+export async function resolveDeployedCommit(
+  source: Source = process.env,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string | null> {
+  const url = source.TEST_BUILD_SHA_URL;
+  if (!url || !source.GITHUB_OAUTH_URL) {
+    return source === process.env ? getBuildSha() : resolveBuildSha(source);
+  }
+  try {
+    const response = await fetchImpl(url, { cache: "no-store" });
+    if (!response.ok) return null;
+    const { sha } = (await response.json()) as { sha: unknown };
+    return typeof sha === "string" && SHA.test(sha) ? sha : null;
+  } catch {
+    return null;
+  }
+}

@@ -16,6 +16,9 @@
 // - POST /__test/reject-token     {on: boolean} answer the Contents API with 401
 // - POST /__test/external-write   {path, content, author: {name, login, date?}}
 //                                  a commit made by somebody else (Vault-relative path)
+// - POST /__test/build-sha     {sha: string|null|"diverged"} the commit the Example reports as
+//                                  deployed (it reads GET /__test/build-sha); "diverged" is a
+//                                  commit off the branch
 // - GET  /__test/state            {files, commits, shas} (repo paths)
 //
 //   node e2e/support/fake-github.mjs <port> [vaultDir] [repo] [vaultPath]
@@ -34,6 +37,7 @@ const origin = `http://localhost:${port}`;
 
 let github;
 let rejectToken = false;
+let buildSha = null;
 
 function reset() {
   github = createFakeContentsApi({
@@ -42,6 +46,7 @@ function reset() {
     baseUrl: `${origin}/api`,
   });
   rejectToken = false;
+  buildSha = null;
   for (const name of fs.readdirSync(vaultDir)) {
     if (!name.endsWith(".md")) continue;
     github.seed(
@@ -103,11 +108,16 @@ const server = http.createServer(async (req, res) => {
         ),
       });
     }
+    if (url.pathname === "/__test/build-sha" && req.method === "GET") {
+      return json(res, 200, { sha: buildSha });
+    }
     if (req.method !== "POST") return json(res, 405, {});
     const body = JSON.parse((await readBody(req)) || "{}");
     if (url.pathname === "/__test/reset") reset();
     else if (url.pathname === "/__test/reject-token") rejectToken = body.on;
-    else if (url.pathname === "/__test/external-write") {
+    else if (url.pathname === "/__test/build-sha") {
+      buildSha = body.sha === "diverged" ? github.divergentCommit() : body.sha;
+    } else if (url.pathname === "/__test/external-write") {
       github.externalWrite(
         `${vaultPath}/${body.path}`,
         body.content,

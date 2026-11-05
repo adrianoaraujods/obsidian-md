@@ -9,6 +9,7 @@ import {
   type SaveConfirmRequest,
   type SaveFlow,
   type SaveFlowState,
+  type SaveLock,
   saveFlowExtension,
 } from "codemirror-obsidian-md/editor";
 import { createStorageClient } from "codemirror-obsidian-md/storage/client";
@@ -16,8 +17,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { type CommitEditor, commitPreview } from "@/lib/commit-preview";
 import { editorSetup } from "@/lib/editor-setup";
+import type { LockTimings } from "@/lib/lock-timings";
 import { saveErrorMessage } from "@/lib/save-errors";
 import { CommitDialog, type PendingConfirm } from "./commit-dialog";
+import { DeployLockPanel, startDeployLock, useLockState } from "./deploy-lock";
 
 type Props = {
   /** The Note's path in the Vault, e.g. `Folder/Note.md`. */
@@ -26,6 +29,8 @@ type Props = {
   /** The verified editor, named in the commit's trailer. */
   editor: CommitEditor;
   candidates: NoteCandidate[];
+  /** Deploy lock poll timings; the defaults suit a real deploy. */
+  lockTimings?: LockTimings;
 };
 
 type Phase =
@@ -46,18 +51,26 @@ const idle: SaveFlowState = {
  * shows the commit. A conflict shows the banner; a failed credential shows a
  * message that keeps the text and offers no Overwrite.
  */
-export function NoteEditor({ path, title, editor, candidates }: Props) {
+export function NoteEditor({
+  path,
+  title,
+  editor,
+  candidates,
+  lockTimings,
+}: Props) {
   const host = useRef<HTMLDivElement>(null);
   const banner = useRef<HTMLDivElement>(null);
   const flowRef = useRef<SaveFlow | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [state, setState] = useState<SaveFlowState>(idle);
   const [pending, setPending] = useState<PendingConfirm | null>(null);
+  const [lock, setLock] = useState<SaveLock | null>(null);
+  const lockState = useLockState(lock);
   // Read when the editor mounts. Keeping them out of the effect's deps means a
   // re-render with new object identities never reloads the Note and loses text.
-  const props = useRef({ editor, candidates });
+  const props = useRef({ editor, candidates, lockTimings });
   useEffect(() => {
-    props.current = { editor, candidates };
+    props.current = { editor, candidates, lockTimings };
   });
 
   useEffect(() => {
@@ -67,8 +80,9 @@ export function NoteEditor({ path, title, editor, candidates }: Props) {
     let offUnload = () => {};
     let offState = () => {};
     let offReload = () => {};
+    let saveLock: SaveLock | null = null;
 
-    const storage = createStorageClient({ url: "/api/notes" });
+    const storage = createStorageClient({ url: "/api/notes", lock: true });
 
     const confirm = (request: SaveConfirmRequest) =>
       new Promise<boolean>((resolve) => {
@@ -117,6 +131,13 @@ export function NoteEditor({ path, title, editor, candidates }: Props) {
         offBanner = mountConflictBanner(flow, banner.current);
         offUnload = flow.attachBeforeUnload();
         offState = flow.subscribe(setState);
+        void startDeployLock(flow, storage, props.current.lockTimings).then(
+          (started) => {
+            if (cancelled) return started.dispose();
+            saveLock = started;
+            setLock(started);
+          },
+        );
         setPhase({ kind: "ready" });
       },
       (error) => {
@@ -130,19 +151,22 @@ export function NoteEditor({ path, title, editor, candidates }: Props) {
       offUnload();
       offState();
       offReload();
+      saveLock?.dispose();
+      setLock(null);
       handle?.destroy();
       flowRef.current = null;
     };
   }, [path]);
 
   const saving = state.status === "saving";
+  const locked = lockState.status !== "unlocked";
 
   return (
     <div data-testid="note-editor">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button
           className="rounded-md border border-fd-primary bg-fd-primary px-3 py-1.5 font-medium text-fd-primary-foreground text-sm disabled:opacity-50"
-          disabled={phase.kind !== "ready" || !state.dirty || saving}
+          disabled={phase.kind !== "ready" || !state.dirty || saving || locked}
           onClick={() => void flowRef.current?.save()}
           type="button"
         >
@@ -167,8 +191,14 @@ export function NoteEditor({ path, title, editor, candidates }: Props) {
         </p>
       )}
 
+      <DeployLockPanel lock={lock} />
       <div className="note-editor-banner" ref={banner} />
-      <div className="note-editor" data-testid="editor" ref={host} />
+      <div
+        className="note-editor"
+        data-testid="editor"
+        inert={locked}
+        ref={host}
+      />
 
       {pending && <CommitDialog pending={pending} />}
     </div>

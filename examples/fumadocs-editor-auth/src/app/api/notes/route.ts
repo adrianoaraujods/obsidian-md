@@ -1,4 +1,5 @@
 import { getAuth } from "@/lib/auth";
+import { resolveDeployedCommit } from "@/lib/build";
 import { getEnv } from "@/lib/env";
 import { createNotesHandler } from "@/lib/storage";
 
@@ -9,6 +10,7 @@ import { createNotesHandler } from "@/lib/storage";
  */
 const handler = createNotesHandler({
   env: getEnv,
+  deployedCommit: () => resolveDeployedCommit(),
   getEditor: async (request) => {
     const session = await getAuth().api.getSession({
       headers: request.headers,

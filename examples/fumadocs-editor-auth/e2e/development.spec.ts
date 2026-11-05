@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+import { DEV_PORT } from "./support/config";
 import { signInAs } from "./support/sign-in";
 
-const BASE = "http://localhost:3104";
+const BASE = `http://localhost:${DEV_PORT}`;
 
 test("a signed-in visitor opens the editor with no GITHUB_REPO set", async ({
   page,

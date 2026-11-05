@@ -1,9 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
 
-import { FAKE_GITHUB_URL } from "./support/config";
+import { FAKE_GITHUB_URL, PROD_PORT } from "./support/config";
 import { signInAs } from "./support/sign-in";
 
-const BASE = "http://localhost:3103";
+const BASE = `http://localhost:${PROD_PORT}`;
 // The Note's path in the fake repo: the Vault subdirectory plus its Vault path.
 const REPO_PATH = "tests/fixtures/vault/Alpha Note.md";
 

@@ -29,6 +29,16 @@ export const NOTE_MENU_ITEMS: NoteMenuItem[] = [
     },
   },
   {
+    id: "new-note",
+    label: "New note here",
+    run: ({ path }) => {
+      const folder = path.split("/").slice(0, -1).join("/");
+      location.assign(
+        `/edit/new${folder ? `?${new URLSearchParams({ folder })}` : ""}`,
+      );
+    },
+  },
+  {
     id: "delete",
     label: "Delete",
     run: ({ requestDelete }) => requestDelete(),

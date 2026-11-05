@@ -39,6 +39,7 @@ export default defineConfig({
         "production.spec.ts",
         "editor.spec.ts",
         "file-tree-menu.spec.ts",
+        "new-note.spec.ts",
         "startup.spec.ts",
       ],
       use: { baseURL: `http://localhost:${PROD_PORT}` },

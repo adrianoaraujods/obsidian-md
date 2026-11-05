@@ -239,3 +239,37 @@
   border: 1px solid var(--color-fd-border);
   border-radius: 0.375rem;
 }
+
+.new-note form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 28rem;
+}
+
+.new-note-field {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.new-note input {
+  padding: 0.375rem 0.5rem;
+  font-weight: 400;
+  background: var(--color-fd-background);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.375rem;
+}
+
+.new-note button {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.375rem;
+}
+
+.new-note button[type="submit"] {
+  color: var(--color-fd-primary-foreground);
+  background: var(--color-fd-primary);
+  border-color: var(--color-fd-primary);
+}

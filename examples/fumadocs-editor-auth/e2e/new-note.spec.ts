@@ -49,11 +49,37 @@ test("creates a Note in a chosen folder with one commit, and opens it", async ({
   await expect(page).toHaveURL(/\/edit\/projects\/fresh-idea\?new=/);
   await expect(page.getByTestId("editor").locator(".cm-content")).toBeVisible();
 
+  await expect.poll(async () => (await state()).commits).toHaveLength(1);
   const { commits, files } = await state();
-  expect(commits).toHaveLength(1);
   expect(commits[0]?.path).toBe(`${REPO}Projects/Fresh Idea.md`);
   expect(commits[0]?.message).toContain("Create Projects/Fresh Idea.md");
   expect(files[`${REPO}Projects/Fresh Idea.md`]).toBeDefined();
+});
+
+test("the created Note opens locked until its commit is deployed", async ({
+  page,
+}) => {
+  // A well-formed SHA the fake does not know: deployed, but not at the create.
+  await control("build-sha", { sha: "a".repeat(40) });
+  await page.goto("/edit/new");
+  const screen = page.getByTestId("new-note");
+  await screen.getByLabel("Name").fill("Locked Idea");
+  await screen.getByRole("button", { name: "Create" }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Create" })
+    .click();
+
+  await expect(page).toHaveURL(/\/edit\/locked-idea\?new=/);
+  await expect(page.getByTestId("lock-locked")).toBeVisible();
+  await expect(page.getByTestId("editor")).toHaveAttribute("inert", "");
+
+  await expect.poll(async () => (await state()).commits).toHaveLength(1);
+  const [created] = (await state()).commits;
+  await control("build-sha", { sha: (created as { sha?: string }).sha });
+
+  await expect(page.getByTestId("lock-locked")).toHaveCount(0);
+  await expect(page.getByTestId("editor")).not.toHaveAttribute("inert", "");
 });
 
 test("validates the name and refuses an existing path", async ({ page }) => {

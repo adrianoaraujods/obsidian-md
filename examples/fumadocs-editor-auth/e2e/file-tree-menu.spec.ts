@@ -82,8 +82,8 @@ test.describe("signed in", () => {
 
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByText("Deleted Beta Note.md")).toBeVisible();
+    await expect.poll(async () => (await state()).commits).toHaveLength(1);
     const { commits, files } = await state();
-    expect(commits).toHaveLength(1);
     expect(commits[0]?.path).toBe(REPO_PATH);
     expect(files[REPO_PATH]).toBeUndefined();
   });

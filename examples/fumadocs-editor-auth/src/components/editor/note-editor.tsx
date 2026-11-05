@@ -120,6 +120,7 @@ export function NoteEditor({
           parent: host.current,
           doc: file.content,
           providers: setup.providers,
+          parser: setup.parser,
           extensions: [...setup.extensions, saveFlowExtension(flow)],
         });
         offReload = flow.onReload((text) => {

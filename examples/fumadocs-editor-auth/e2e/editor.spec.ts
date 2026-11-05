@@ -89,8 +89,8 @@ test("confirming makes one commit as described", async ({ page }) => {
   await dialog.getByRole("button", { name: "Commit" }).click();
 
   await expect(page.getByText("No changes")).toBeVisible();
+  await expect.poll(async () => (await state()).commits).toHaveLength(1);
   const { commits, files } = await state();
-  expect(commits).toHaveLength(1);
   expect(commits[0]?.path).toBe(REPO_PATH);
   expect(commits[0]?.message).toBe(`${subject}\n\n${trailer}`);
   expect(files[REPO_PATH]).toMatch(/ Edited\.$/);
@@ -126,8 +126,8 @@ test("a conflict shows the banner, and Overwrite names the newer commit", async 
   await dialog.getByRole("button", { name: "Overwrite" }).click();
 
   await expect(banner).toHaveCount(0);
-  const { commits, files } = await state();
-  expect(commits).toHaveLength(2);
+  await expect.poll(async () => (await state()).commits).toHaveLength(2);
+  const { files } = await state();
   expect(files[REPO_PATH]).toContain("Mine.");
 });
 

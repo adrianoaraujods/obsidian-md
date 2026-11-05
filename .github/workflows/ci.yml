@@ -33,10 +33,10 @@ jobs:
       - run: pnpm build
       # The example's Playwright suite runs in the dedicated e2e job (browsers
       # are only installed there); keep its unit tests here.
-      - run: pnpm -r --filter '!fumadocs-example' --filter '!fumadocs-editor-example' test
+      - run: pnpm -r --filter '!fumadocs-example' --filter '!fumadocs-editor-example' --filter '!fumadocs-editor-auth-example' test
         env:
           CI: true
-      - run: pnpm --filter fumadocs-example --filter fumadocs-editor-example test:unit
+      - run: pnpm --filter fumadocs-example --filter fumadocs-editor-example --filter fumadocs-editor-auth-example test:unit
         env:
           CI: true
 
@@ -49,6 +49,7 @@ jobs:
         example:
           - { dir: fumadocs, package: fumadocs-example }
           - { dir: fumadocs-editor, package: fumadocs-editor-example }
+          - { dir: fumadocs-editor-auth, package: fumadocs-editor-auth-example }
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

@@ -7,5 +7,9 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["fumadocs-example", "fumadocs-editor-example"]
+  "ignore": [
+    "fumadocs-example",
+    "fumadocs-editor-example",
+    "fumadocs-editor-auth-example"
+  ]
 }

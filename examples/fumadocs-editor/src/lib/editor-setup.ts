@@ -1,5 +1,6 @@
 import {
   blockIdParser,
+  calloutEmbed,
   createEditor,
   createSaveFlow,
   inlineProviders,
@@ -11,6 +12,9 @@ import {
   saveFlowExtension,
 } from "codemirror-obsidian-md/editor";
 import { createStorageClient } from "codemirror-obsidian-md/storage/client";
+
+/** Assets live in the Vault, which the Example serves from `public/vault`. */
+const resolveAsset = (target: string) => `/vault/${encodeURI(target)}`;
 
 export interface EditorSetupOptions {
   /** Where the editor mounts. */
@@ -48,7 +52,11 @@ export async function setupEditor(options: EditorSetupOptions) {
     doc: file.content,
     providers: [...inlineProviders, markdownProvider],
     parser: blockIdParser(),
-    extensions: [pickerExtension({ candidates }), saveFlowExtension(flow)],
+    extensions: [
+      pickerExtension({ candidates }),
+      calloutEmbed({ resolveAsset }),
+      saveFlowExtension(flow),
+    ],
   });
   getText = editor.getText;
 

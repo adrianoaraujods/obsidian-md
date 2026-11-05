@@ -1,10 +1,14 @@
 import {
+  calloutEmbed,
   type ConstructProvider,
   inlineProviders,
   markdownProvider,
   type NoteCandidate,
   pickerExtension,
 } from "codemirror-obsidian-md/editor";
+
+/** Assets live in the Vault, which the Example serves from `public/vault`. */
+const resolveAsset = (target: string) => `/vault/${encodeURI(target)}`;
 
 /**
  * Everything the editor is assembled from, in one place. When more Live
@@ -16,10 +20,13 @@ export function editorSetup(options: {
   candidates: readonly NoteCandidate[];
 }): {
   providers: readonly ConstructProvider[];
-  extensions: ReturnType<typeof pickerExtension>[];
+  extensions: (ReturnType<typeof pickerExtension> | ReturnType<typeof calloutEmbed>)[];
 } {
   return {
     providers: [...inlineProviders, markdownProvider],
-    extensions: [pickerExtension({ candidates: options.candidates })],
+    extensions: [
+      pickerExtension({ candidates: options.candidates }),
+      calloutEmbed({ resolveAsset }),
+    ],
   };
 }

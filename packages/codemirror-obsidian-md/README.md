@@ -131,3 +131,11 @@ const screen = createNewNoteScreen({
 ```
 
 The folder field offers existing folders and accepts a typed nested one; a folder exists only once a Note is created in it. `resolveNewNote({ folder, name, existing })` returns `{ ok: true, path }` or `{ ok: false, error }` (empty name, leading `/`, `..` segment, characters GitHub paths reject, existing path, case-only difference). `listFolders(paths)` derives the picker list.
+
+### Inline Live Preview
+
+`inlineProviders` renders Wiki Links, Highlights (with Highlight Color), Comments, inline Footnotes and Block IDs, revealing the raw syntax under the cursor. Block IDs are not parse nodes, so wrap the parser with `blockIdParser()`:
+
+```ts
+createEditor({ parent, doc, providers: inlineProviders, parser: blockIdParser() });
+```

@@ -15,6 +15,15 @@ export {
   calloutEmbed,
 } from "./providers/callout-embed.js";
 export {
+  blockIdParser,
+  blockIdProvider,
+  commentProvider,
+  footnoteProvider,
+  highlightProvider,
+  inlineProviders,
+  wikiLinkProvider,
+} from "./providers/inline.js";
+export {
   constructProviders,
   constructsField,
   DEFAULT_IDLE_MS,

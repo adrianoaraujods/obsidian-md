@@ -17,7 +17,7 @@ import { visit } from "unist-util-visit";
 
 import { scanBlockIds } from "./block-id.js";
 import { addExtension } from "./extensions.js";
-import { mapResolver } from "./resolver.js";
+import { mapResolver } from "./map-resolver.js";
 import type {
   WikiLinkContext,
   WikiLinkNode,

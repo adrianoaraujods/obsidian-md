@@ -34,6 +34,7 @@
   ],
   "exports": {
     ".": "./dist/index.js",
+    "./syntax": "./dist/syntax.js",
     "./styles.css": "./dist/styles.css",
     "./styles/base.css": "./dist/styles/base.css",
     "./styles/dark-media.css": "./dist/styles/dark-media.css",
@@ -64,6 +65,7 @@
     "@types/node": "^25.2.0",
     "@types/unist": "^3.0.3",
     "@vitest/coverage-v8": "^5.0.5",
+    "esbuild": "0.28.2",
     "lucide-static": "1.63.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",

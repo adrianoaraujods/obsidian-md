@@ -1,4 +1,5 @@
 export { isRevealed } from "./cursor.js";
+export * from "./lock.js";
 export {
   type CreateEditorOptions,
   createEditor,

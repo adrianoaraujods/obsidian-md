@@ -1,6 +1,7 @@
 import {
   type ConstructProvider,
   inlineProviders,
+  markdownProvider,
   type NoteCandidate,
   pickerExtension,
 } from "codemirror-obsidian-md/editor";
@@ -18,7 +19,7 @@ export function editorSetup(options: {
   extensions: ReturnType<typeof pickerExtension>[];
 } {
   return {
-    providers: [...inlineProviders],
+    providers: [...inlineProviders, markdownProvider],
     extensions: [pickerExtension({ candidates: options.candidates })],
   };
 }

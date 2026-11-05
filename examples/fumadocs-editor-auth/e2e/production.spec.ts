@@ -97,7 +97,7 @@ test.describe("the editor route tree", () => {
   test("lets a signed-in visitor in", async ({ page, context }) => {
     await signInAs(context, BASE);
     await page.goto("/edit/alpha-note");
-    await expect(page.getByTestId("editor-placeholder")).toBeVisible();
+    await expect(page.getByTestId("note-editor")).toBeVisible();
   });
 });
 
@@ -112,7 +112,7 @@ test.describe("sign-in through the fake GitHub", () => {
     await page.getByRole("link", { name: "Authorize as octocat" }).click();
 
     await expect(page).toHaveURL(`${BASE}/edit/alpha-note`);
-    await expect(page.getByTestId("editor-placeholder")).toBeVisible();
+    await expect(page.getByTestId("note-editor")).toBeVisible();
     await expect(page.getByTestId("account")).toContainText("@octocat");
   });
 

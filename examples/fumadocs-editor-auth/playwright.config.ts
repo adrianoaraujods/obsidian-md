@@ -33,7 +33,7 @@ export default defineConfig({
   projects: [
     {
       name: "production",
-      testMatch: ["production.spec.ts", "startup.spec.ts"],
+      testMatch: ["production.spec.ts", "editor.spec.ts", "startup.spec.ts"],
       use: { baseURL: `http://localhost:${PROD_PORT}` },
     },
     {

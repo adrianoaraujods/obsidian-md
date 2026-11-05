@@ -211,3 +211,31 @@
 [data-property-checkbox] svg {
   @apply size-3;
 }
+
+/* The Note editor (CodeMirror). */
+.note-editor .cm-editor {
+  min-height: 24rem;
+  background: var(--color-fd-background);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.5rem;
+}
+.note-editor .cm-editor.cm-focused {
+  outline: 2px solid var(--color-fd-ring);
+}
+.note-editor .cm-content {
+  padding: 0.75rem;
+  font-family: var(--font-mono, monospace);
+}
+.note-editor-banner [data-save-flow-banner] {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: var(--color-fd-muted);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.5rem;
+}
+.note-editor-banner [data-save-flow-banner] button {
+  padding: 0.25rem 0.75rem;
+  margin: 0.5rem 0.5rem 0 0;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.375rem;
+}

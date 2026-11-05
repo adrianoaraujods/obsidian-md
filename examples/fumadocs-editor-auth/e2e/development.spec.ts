@@ -13,7 +13,7 @@ test("a signed-in visitor opens the editor with no GITHUB_REPO set", async ({
   await page.getByRole("link", { name: "Edit", exact: true }).click();
 
   await expect(page).toHaveURL(/\/edit\/alpha-note$/);
-  await expect(page.getByTestId("editor-placeholder")).toBeVisible();
+  await expect(page.getByTestId("note-editor")).toBeVisible();
 });
 
 test("hides View on GitHub when its variables are unset", async ({ page }) => {

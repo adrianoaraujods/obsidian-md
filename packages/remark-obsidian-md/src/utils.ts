@@ -1,6 +1,8 @@
 import GithubSlugger from "github-slugger";
+import type { Parent } from "mdast";
 import { codes } from "micromark-util-symbol";
 import type { Code } from "micromark-util-types";
+import type { Node } from "unist";
 
 import type { SlugifyPath } from "./types.js";
 
@@ -228,4 +230,34 @@ export function slugifyUrl(
   const anchorPart = options.anchor ? `#${options.anchor}` : "";
 
   return `/${prefixPart}${slug}${anchorPart}`;
+}
+
+/**
+ * Wraps a visitor that replaces nodes, so each replacement inherits the
+ * source position of the node it replaced: the editor maps rendered nodes
+ * back to the raw syntax through it.
+ */
+export function keepPosition<N extends Node, R>(
+  visitor: (
+    node: N,
+    index: number | undefined,
+    parent: Parent | undefined,
+  ) => R,
+) {
+  return (
+    node: N,
+    index: number | undefined,
+    parent: Parent | undefined,
+  ): R => {
+    const result = visitor(node, index, parent);
+
+    if (index !== undefined && parent && node.position) {
+      const replacement = parent.children[index];
+      if (replacement && replacement !== node && !replacement.position) {
+        replacement.position = node.position;
+      }
+    }
+
+    return result;
+  };
 }

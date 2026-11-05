@@ -25,6 +25,7 @@ import {
   parseInlineContent,
 } from "./inline.js";
 import type { ObsidianFootnoteNode } from "./types.js";
+import { keepPosition } from "./utils.js";
 
 declare module "micromark-util-types" {
   interface TokenTypeMap {
@@ -141,19 +142,23 @@ export function configureFootnotes(processor: Processor): (tree: Root) => void {
   );
 
   return (tree) => {
-    visit(tree, "obsidianFootnote", (node, index, parent) => {
-      if (index === undefined || !parent) return;
+    visit(
+      tree,
+      "obsidianFootnote",
+      keepPosition((node, index, parent) => {
+        if (index === undefined || !parent) return;
 
-      // A Footnote holding parsed content is already a container; only a
-      // Footnote of plain text becomes a text node.
-      if ("children" in node) return;
+        // A Footnote holding parsed content is already a container; only a
+        // Footnote of plain text becomes a text node.
+        if ("children" in node) return;
 
-      parent.children[index] = {
-        type: "text",
-        value: node.value,
-        data: { hName: "sup" },
-      };
-    });
+        parent.children[index] = {
+          type: "text",
+          value: node.value,
+          data: { hName: "sup" },
+        };
+      }),
+    );
   };
 }
 

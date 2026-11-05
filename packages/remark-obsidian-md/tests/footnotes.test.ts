@@ -126,10 +126,10 @@ describe("Inline Footnotes", () => {
     ]);
   });
 
-  it("publishes a plain footnote as a text node without a position", () => {
+  it("publishes a plain footnote as a text node", () => {
     const tree = process("Note^[details]");
 
-    expect(footnoteOf(tree)).toEqual({
+    expect(footnoteOf(tree)).toMatchObject({
       type: "text",
       value: "details",
       data: { hName: "sup" },
@@ -139,7 +139,7 @@ describe("Inline Footnotes", () => {
   it("publishes an empty footnote as an empty text node", () => {
     const tree = process("Note^[]");
 
-    expect(footnoteOf(tree)).toEqual({
+    expect(footnoteOf(tree)).toMatchObject({
       type: "text",
       value: "",
       data: { hName: "sup" },
@@ -306,9 +306,14 @@ describe("Inline Footnotes", () => {
         data: { hProperties: { className: "is-unresolved" } },
       },
     ]);
-    expect((body.children[0] as Paragraph).children[0]).toMatchObject(
-      footnoteOf(tree).children?.[0],
-    );
+    // The ranges differ: one sits in the Footnote, the other in the Note.
+    const withoutPosition = (node: unknown) =>
+      JSON.parse(JSON.stringify(node), (key, value) =>
+        key === "position" ? undefined : value,
+      );
+    expect(
+      withoutPosition((body.children[0] as Paragraph).children[0]),
+    ).toEqual(withoutPosition(footnoteOf(tree).children?.[0]));
   });
 
   it("turns a Highlight inside a footnote into a mark element", () => {
@@ -331,7 +336,7 @@ describe("Inline Footnotes", () => {
     const tree = process("Note^[a ^[b] c]");
 
     expect(JSON.stringify(tree).match(/"hName":"sup"/g) ?? []).toHaveLength(1);
-    expect(footnoteOf(tree)).toEqual({
+    expect(footnoteOf(tree)).toMatchObject({
       type: "text",
       value: "a ^[b] c",
       data: { hName: "sup" },
@@ -341,7 +346,7 @@ describe("Inline Footnotes", () => {
   it("keeps an Embed inside a footnote literal", () => {
     const tree = process("Note^[![[Wiki Link]]]");
 
-    expect(footnoteOf(tree)).toEqual({
+    expect(footnoteOf(tree)).toMatchObject({
       type: "text",
       value: "![[Wiki Link]]",
       data: { hName: "sup" },
@@ -442,7 +447,7 @@ describe("Inline Footnotes", () => {
   it("resolves only the syntax the pipeline provides through the per-feature plugin", () => {
     const tree = processStandalone("Note^[[[Wiki Link]]]");
 
-    expect(footnoteOf(tree)).toEqual({
+    expect(footnoteOf(tree)).toMatchObject({
       type: "text",
       value: "[[Wiki Link]]",
       data: { hName: "sup" },
@@ -719,7 +724,7 @@ describe("Highlight Colors in Footnotes", () => {
   it("publishes a Footnote without a Highlight Color unchanged", () => {
     const tree = process("Note^[plain footnote]");
 
-    expect(footnoteOf(tree)).toEqual({
+    expect(footnoteOf(tree)).toMatchObject({
       type: "text",
       value: "plain footnote",
       data: { hName: "sup" },
@@ -729,7 +734,7 @@ describe("Highlight Colors in Footnotes", () => {
   it("keeps a Highlight literal through the per-feature Footnote plugin", () => {
     const tree = processStandalone("Note^[==🔴watch this==]");
 
-    expect(footnoteOf(tree)).toEqual({
+    expect(footnoteOf(tree)).toMatchObject({
       type: "text",
       value: "==🔴watch this==",
       data: { hName: "sup" },

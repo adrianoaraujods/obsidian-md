@@ -38,10 +38,10 @@ export function remarkObsidianMd(
     wikiLinks,
   });
 
-  return (tree) => {
+  return (tree, file) => {
     // Embeds expand first so the later transforms also reach their children.
     transformEmbeds(tree, embeds);
-    transformCallouts(tree, options.callouts);
+    transformCallouts(tree, options.callouts, String(file.value));
 
     // Embed containers are finalized after Callouts, which rewraps callout
     // body lines into new paragraphs the Embed expansion never saw.

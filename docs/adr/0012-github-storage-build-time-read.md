@@ -1,6 +1,6 @@
 # Read the Wiki at build time, edit through GitHub, and let each commit be the deploy
 
-In the authenticated Example the Vault lives in the app's own GitHub repo (a configurable subdirectory, `content/` by default). The published Wiki and a raw `.md` export of each Note are built from the Vault at build time, exactly as in the first Example. The editor never reads the build: when a Note opens it loads the live file and its blob SHA from the GitHub API, and Save writes one commit per Note through the Contents API using the shared credential from [ADR 0015](0015-commit-with-a-shared-credential-name-the-editor-in-a-trailer.md). Every Save is therefore also a redeploy, which is how the published Wiki catches up.
+In the authenticated Example the Vault lives in the app's own GitHub repo (a configurable subdirectory, set with `VAULT_PATH`). The published Wiki and a raw `.md` export of each Note are built from the Vault at build time, exactly as in the first Example. The editor never reads the build: when a Note opens it loads the live file and its blob SHA from the GitHub API, and Save writes one commit per Note through the Contents API using the shared credential from [ADR 0015](0015-commit-with-a-shared-credential-name-the-editor-in-a-trailer.md). Every Save is therefore also a redeploy, which is how the published Wiki catches up.
 
 ## Considered options
 

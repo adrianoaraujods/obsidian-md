@@ -3,6 +3,7 @@ import {
   createEditor,
   createSaveFlow,
   inlineProviders,
+  markdownProvider,
   mountConflictBanner,
   type NoteCandidate,
   pickerExtension,
@@ -45,7 +46,7 @@ export async function setupEditor(options: EditorSetupOptions) {
   const editor = createEditor({
     parent,
     doc: file.content,
-    providers: [...inlineProviders],
+    providers: [...inlineProviders, markdownProvider],
     parser: blockIdParser(),
     extensions: [pickerExtension({ candidates }), saveFlowExtension(flow)],
   });

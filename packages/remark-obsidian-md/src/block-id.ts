@@ -3,6 +3,8 @@ import type { Processor, Transformer } from "unified";
 import type { Position } from "unist";
 import { visit } from "unist-util-visit";
 
+import { offsetBy } from "./utils.js";
+
 /**
  * A Block ID is a `^id` marker at the end of a block, preceded by whitespace.
  * The charset is limited to letters, digits and hyphens.
@@ -86,22 +88,14 @@ function splitBlockIdPosition(
   if (!text.position || !end || end.offset === undefined) return undefined;
 
   const trailing = matched.length - matched.trimEnd().length;
-  const idEnd = point(end, -trailing);
-  const idStart = point(idEnd, -(id.length + 1));
+  const idEnd = offsetBy(end, -trailing);
+  const idStart = offsetBy(idEnd, -(id.length + 1));
 
   // The whitespace before the marker is dropped from the text with it.
   if (matched[0] !== "\n")
-    text.position = { start: text.position.start, end: point(idStart, -1) };
+    text.position = { start: text.position.start, end: offsetBy(idStart, -1) };
 
   return { start: idStart, end: idEnd };
-}
-
-function point(from: Point, columns: number): Point {
-  return {
-    line: from.line,
-    column: from.column + columns,
-    offset: (from.offset ?? 0) + columns,
-  };
 }
 
 function annotate(

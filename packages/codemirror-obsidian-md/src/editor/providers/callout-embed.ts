@@ -1,9 +1,8 @@
 import type { Extension, Range } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import {
-  CALLOUT_ALIASES,
-  CALLOUT_TYPES,
   type CalloutTypeDefinition,
+  resolveCalloutType,
 } from "remark-obsidian-md/syntax";
 
 import { constructProviders } from "../state.js";
@@ -38,28 +37,16 @@ const IMAGE_EXTENSIONS = new Set([
 const CALLOUT_LINE = /^[ \t]*>[ \t]?\[!([^\]\n]+)\]([+-]?)[ \t]*(.*)$/;
 const QUOTE_PREFIX = /^[ \t]*>[ \t]?/;
 
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
 function resolveType(
   raw: string,
   custom: Record<string, CalloutTypeDefinition>,
 ) {
-  const label = raw.trim();
-  const id = label.toLowerCase();
-  const merge = (type: string): CalloutTypeDefinition => ({
-    ...CALLOUT_TYPES[type],
-    ...custom[type],
-  });
-  const type =
-    custom[id] || CALLOUT_TYPES[id] ? id : (CALLOUT_ALIASES[id] ?? "note");
-  const definition = merge(type);
+  const { type, definition, defaultTitle } = resolveCalloutType(raw, custom);
   return {
     type,
     icon: definition.icon ?? "pencil",
     color: definition.color,
-    title: definition.title ?? capitalize(label),
+    title: defaultTitle,
   };
 }
 

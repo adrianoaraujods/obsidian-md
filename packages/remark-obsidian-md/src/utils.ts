@@ -2,9 +2,21 @@ import GithubSlugger from "github-slugger";
 import type { Parent } from "mdast";
 import { codes } from "micromark-util-symbol";
 import type { Code } from "micromark-util-types";
-import type { Node } from "unist";
+import type { Node, Position } from "unist";
 
 import type { SlugifyPath } from "./types.js";
+
+/** A source point moved `columns` along its line. */
+export function offsetBy(
+  point: Position["start"],
+  columns: number,
+): Position["start"] {
+  return {
+    line: point.line,
+    column: point.column + columns,
+    offset: (point.offset ?? 0) + columns,
+  };
+}
 
 export const WIKI_LINK_REGEX = /(!)?\[\[(.*?)\]\]/;
 

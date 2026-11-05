@@ -10,6 +10,7 @@ export {
   CALLOUT_ALIASES,
   CALLOUT_TYPES,
   remarkObsidianCallouts,
+  resolveCalloutType,
 } from "./callouts.js";
 export {
   commentFromMarkdown,

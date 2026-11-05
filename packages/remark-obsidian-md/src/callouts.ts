@@ -13,6 +13,7 @@ import type {
   CalloutsPluginOptions,
   CalloutTypeDefinition,
 } from "./types.js";
+import { offsetBy } from "./utils.js";
 
 /**
  * The 13 canonical Callout types and the icon each one exposes to the theme.
@@ -190,7 +191,7 @@ function parseCallout(
   if (!match) return undefined;
 
   const rawType = match[1] ?? "";
-  const { type, definition, defaultTitle } = resolveType(
+  const { type, definition, defaultTitle } = resolveCalloutType(
     rawType,
     options.types,
   );
@@ -275,14 +276,6 @@ function splitFirstLine(
 
 type Point = NonNullable<Text["position"]>["start"];
 
-function offsetBy(point: Point, columns: number): Point {
-  return {
-    line: point.line,
-    column: point.column + columns,
-    offset: (point.offset ?? 0) + columns,
-  };
-}
-
 /** A copy of a text node with its own value and source range. */
 function withRange(
   node: Text,
@@ -333,7 +326,11 @@ function nextLineStart(
   };
 }
 
-function resolveType(
+/**
+ * Resolves a Callout marker's type label against the canonical and custom
+ * types. Pure, so the editor shares it with the renderer.
+ */
+export function resolveCalloutType(
   raw: string,
   custom: CalloutsPluginOptions["types"] = {},
 ): { type: string; definition: CalloutTypeDefinition; defaultTitle: string } {

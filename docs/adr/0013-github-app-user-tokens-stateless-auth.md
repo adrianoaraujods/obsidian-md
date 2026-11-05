@@ -1,5 +1,7 @@
 # Sign in with a GitHub App, commit as the user, keep Better Auth stateless
 
+> **Superseded in part by [ADR 0015](0015-commit-with-a-shared-credential-name-the-editor-in-a-trailer.md).** Commit identity changed: Saves are committed by one shared server-side credential, not the signed-in user's token, and sign-in is plain GitHub OAuth with no repo scope. The stateless Better Auth setup, the no-database decision and the no-separate-server decision still stand.
+
 The authenticated Example uses Better Auth with no database and a GitHub App as the social provider. Anyone can read the Wiki; the editor requires sign-in. Whoever signs in commits as themselves with their own GitHub App user token, and GitHub decides whether they may: a user without push access to the Vault repo gets a 403 on Save. There is no allow-list in the app.
 
 The GitHub App is installed on the Vault repo only, with the Contents read/write permission, so a token can reach nothing else. Better Auth runs in stateless mode (no `database`, no `secondaryStorage`): the session and the encrypted account data, including the user token, live in cookies. The token is read server-side in the Save and load route handlers.

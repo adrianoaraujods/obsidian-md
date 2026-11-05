@@ -1,20 +1,25 @@
 import { DocsBody, DocsPage, DocsTitle } from "fumadocs-ui/layouts/docs/page";
 import { notFound } from "next/navigation";
 
+import { NoteEditor } from "@/components/editor/note-editor";
 import { isEditEnabled } from "@/lib/page-actions";
 import { source } from "@/lib/source";
 
-/** Placeholder: the editor itself lands in a later ticket. */
+/** The raw-Markdown editor, loaded client-side on this route only. */
 export default async function EditPage(props: PageProps<"/edit/[[...slug]]">) {
   const { slug } = await props.params;
   const page = source.getPage(slug);
   if (!page || !isEditEnabled()) notFound();
 
+  const candidates = source
+    .getPages()
+    .map((p) => ({ path: p.path, title: p.data.title }));
+
   return (
-    <DocsPage>
+    <DocsPage full>
       <DocsTitle>Editing {page.data.title}</DocsTitle>
       <DocsBody>
-        <p data-testid="editor-placeholder">The editor is coming soon.</p>
+        <NoteEditor candidates={candidates} path={page.path} />
         <p>
           <a href={page.url}>Back to the Note</a>
         </p>

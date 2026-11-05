@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
-const PROD_PORT = 3101;
-const DEV_PORT = 3102;
+const PROD_PORT = Number(process.env.E2E_PROD_PORT ?? 3101);
+const DEV_PORT = Number(process.env.E2E_DEV_PORT ?? 3102);
 
 // Browser tests run against the *fixture* Vault, never public/vault. VAULT_DIR
 // points the build at it (see src/lib/vault-dir.ts).

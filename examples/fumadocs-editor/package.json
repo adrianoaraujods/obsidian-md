@@ -13,7 +13,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
     "clsx": "^2.1.1",
+    "codemirror-obsidian-md": "^0.0.0",
     "fumadocs-core": "16.17.7",
     "fumadocs-mdx": "14.3.2",
     "fumadocs-obsidian-md": "^0.1.0",

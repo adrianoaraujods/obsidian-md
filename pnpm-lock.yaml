@@ -233,9 +233,18 @@ importers:
 
   examples/fumadocs-editor:
     dependencies:
+      '@codemirror/state':
+        specifier: ^6.7.6
+        version: 6.7.6
+      '@codemirror/view':
+        specifier: ^6.43.15
+        version: 6.43.15
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      codemirror-obsidian-md:
+        specifier: workspace:*
+        version: link:../../packages/codemirror-obsidian-md
       fumadocs-core:
         specifier: 16.17.7
         version: 16.17.7(patch_hash=7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de)(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@0.564.0(react@19.2.3))(next@16.4.2(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(supports-color@7.2.0)(zod@4.6.7)

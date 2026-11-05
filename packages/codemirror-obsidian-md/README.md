@@ -105,6 +105,8 @@ Later Live Preview work adds to the core without changing it.
 - **Parser.** Pass `parser: (text) => Construct[]` to replace the default, e.g. to add block-level scans such as `scanBlockIds`.
 - **Extra extensions** (autocomplete picker, keymaps, save flow): pass `extensions`, or use `obsidianMd(doc, options)` to compose the core into your own `EditorState`. `reparse(view)` forces a re-parse; `constructsField` and `decorationsField` expose the state.
 
+- **Callouts and Embeds.** `calloutEmbed({ types?, resolveAsset? })` (pass it in `extensions`) renders Callouts, Asset Embeds (images) and Note Embeds (chips) with the plugin Stylesheet class names; import `remark-obsidian-md/styles.css` for the colors and icons. The editor gets the `markdown-rendered` class.
+
 Decorations are rebuilt when a re-parse lands or the selection moves, and only mapped while typing.
 
 Line breaks: the document always splits on `\n`, so a `\r` stays a character and positions equal text offsets. In a Note that is purely CRLF, Enter inserts `\r\n`.

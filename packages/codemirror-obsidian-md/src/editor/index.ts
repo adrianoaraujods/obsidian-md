@@ -10,6 +10,10 @@ export {
   PLAIN_SOURCE_TYPES,
 } from "./parse.js";
 export {
+  type CalloutEmbedOptions,
+  calloutEmbed,
+} from "./providers/callout-embed.js";
+export {
   constructProviders,
   constructsField,
   DEFAULT_IDLE_MS,

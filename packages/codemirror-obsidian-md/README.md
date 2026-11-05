@@ -111,6 +111,10 @@ Decorations are rebuilt when a re-parse lands or the selection moves, and only m
 
 Line breaks: the document always splits on `\n`, so a `\r` stays a character and positions equal text offsets. In a Note that is purely CRLF, Enter inserts `\r\n`.
 
+### Save flow
+
+`createSaveFlow({ storage, path, content, sha, getText, confirm })` saves through a `Storage`. Pass `saveFlowExtension(flow)` in `extensions` (dirty tracking, Mod-s), call `flow.attachBeforeUnload()` for the leave-page warning and `mountConflictBanner(flow, parent)` for the conflict banner. `confirm(request)` is the host's dialog (`kind` is `save`, `overwrite` or `reload`; `request.message` is ready to show). A stale SHA commits nothing and sets `state.status` to `conflict`; `flow.overwrite()` refetches the base SHA and re-asks through `confirm`. `flow.subscribe` and `flow.onSaved` (with the `commit` for `Storage.lock`) are the hooks for lock handling.
+
 ## New Note screen
 
 `codemirror-obsidian-md/new-note` is a framework-agnostic DOM component (the package has no React) plus the pure validation it uses. `Storage` cannot list files, so the host passes the Vault-relative paths of existing Notes.

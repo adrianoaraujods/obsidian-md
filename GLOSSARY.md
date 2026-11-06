@@ -118,6 +118,18 @@ _Avoid_: style, theme class
 The editing mode where a Note shows its constructs rendered, and reveals a construct's raw syntax only while the cursor is inside it. The Note's text is what is edited and saved, so saving never changes syntax the reader did not touch.
 _Avoid_: WYSIWYG, rich-text mode, split preview
 
+**Editing Shortcut**:
+A key binding that formats or restructures the Note's text in the editor, matching the one Obsidian ships by default (bold, italic, insert link, indent, unindent, toggle checkbox). A consumer may rebind or disable each one.
+_Avoid_: hotkey, keybinding, command
+
+**Selection Wrap**:
+Typing a marker or opening-bracket character while text is selected wraps the selection in it instead of replacing it, and typing it again wraps once more (`*` then `*` makes bold).
+_Avoid_: surround, auto-format
+
+**Auto-pair**:
+Typing an opening bracket or quote with nothing selected inserts its closer too and leaves the cursor between them; typing the closer steps over it.
+_Avoid_: auto-close, bracket matching
+
 ## Styling
 
 **Stylesheet**:

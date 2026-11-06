@@ -81,7 +81,8 @@ for (const theme of THEMES) {
     }) => {
       const content = await openRichNote(page, theme);
       await content.click();
-      const cursor = await css(page, ".cm-content", "caret-color");
+      // Several cursors need the drawn cursor, which hides the native caret.
+      const cursor = await css(page, ".cm-cursor", "border-left-color");
       const text = await css(page, ".cm-content", "color");
       const background = await css(page, ".cm-editor", "background-color");
       expect(cursor).toBe(text);
@@ -96,10 +97,12 @@ for (const theme of THEMES) {
       const content = await openRichNote(page, theme);
       await content.click();
       await page.keyboard.press("ControlOrMeta+a");
-      const selection = await page
-        .locator(".cm-line")
-        .first()
-        .evaluate((el) => getComputedStyle(el, "::selection").backgroundColor);
+      // The drawn selection layer stands in for the browser's own.
+      const selection = await css(
+        page,
+        ".cm-selectionBackground",
+        "background-color",
+      );
       const background = await css(page, ".cm-editor", "background-color");
       expect(selection).not.toBe("rgba(0, 0, 0, 0)");
       expect(selection).not.toBe(background);

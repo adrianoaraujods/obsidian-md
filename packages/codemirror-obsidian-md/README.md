@@ -134,6 +134,10 @@ Decorations are rebuilt when a re-parse lands or the selection moves, and only m
 
 Line breaks: the document always splits on `\n`, so a `\r` stays a character and positions equal text offsets. In a Note that is purely CRLF, Enter inserts `\r\n`.
 
+### Multiple cursors
+
+`createEditor` supports several cursors, drawn by CodeMirror (the native caret and selection are hidden, so the Stylesheet styles `.cm-cursor` and `.cm-selectionBackground`). Ctrl-click (Cmd-click on macOS) adds a cursor, Alt-drag selects a rectangle, Ctrl-Alt-Up/Down (Cmd-Alt on macOS) adds a cursor above or below, and Escape collapses to one. Typing and deleting apply to every cursor, and the `[[` picker stays closed while there are several.
+
 ### `[[` picker
 
 `pickerExtension({ candidates, resolver?, maxResults? })` (pass it in `extensions`) opens a Note picker when `[[` is typed. `candidates` is `NoteCandidate[]` (`{ path, title?, aliases? }`) or a getter, ranked by `rankCandidates`. Choosing one inserts a closed Wiki Link; `wikiLinkTarget` uses the bare name when the injected `Resolver` (or, by default, name uniqueness) reaches that Note, else the path.

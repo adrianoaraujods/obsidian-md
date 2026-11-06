@@ -32,6 +32,9 @@ const authEnv = (port: number) =>
     "EDITOR_LOCK_TIMEOUT_MS=2500",
   ].join(" ");
 
+// The servers start with `npm run`, not `pnpm`: pnpm inside an Example re-installs
+// it under its own standalone lockfile and swaps the workspace packages for the
+// published ones, so the browser tests would run stale package code.
 export default defineConfig({
   testDir: "e2e",
   // The specs that save share one fake GitHub repo, so files run one at a time.
@@ -65,13 +68,13 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: `VAULT_DIR=tests/fixtures/vault GITHUB_REPO=acme/wiki GITHUB_BRANCH=main VAULT_PATH=tests/fixtures/vault pnpm build && ${authEnv(PROD_PORT)} GITHUB_REPO=acme/wiki GITHUB_BRANCH=main VAULT_PATH=tests/fixtures/vault GITHUB_TOKEN=ghp_fake pnpm start -p ${PROD_PORT}`,
+      command: `VAULT_DIR=tests/fixtures/vault GITHUB_REPO=acme/wiki GITHUB_BRANCH=main VAULT_PATH=tests/fixtures/vault npm run build && ${authEnv(PROD_PORT)} GITHUB_REPO=acme/wiki GITHUB_BRANCH=main VAULT_PATH=tests/fixtures/vault GITHUB_TOKEN=ghp_fake npm run start -- -p ${PROD_PORT}`,
       url: `http://localhost:${PROD_PORT}`,
       timeout: 300_000,
       reuseExistingServer: false,
     },
     {
-      command: `VAULT_DIR=tests/fixtures/vault DIST_DIR=.next-dev ${authEnv(DEV_PORT)} pnpm dev -p ${DEV_PORT}`,
+      command: `VAULT_DIR=tests/fixtures/vault DIST_DIR=.next-dev ${authEnv(DEV_PORT)} npm run dev -- -p ${DEV_PORT}`,
       url: `http://localhost:${DEV_PORT}`,
       timeout: 300_000,
       reuseExistingServer: false,

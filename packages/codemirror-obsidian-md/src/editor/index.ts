@@ -43,6 +43,7 @@ export {
   obsidianMd,
   reparse,
 } from "./state.js";
+export { livePreviewTheme } from "./theme.js";
 export type {
   Construct,
   ConstructProvider,

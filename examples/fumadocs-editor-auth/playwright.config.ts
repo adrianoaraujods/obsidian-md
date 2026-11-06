@@ -47,6 +47,7 @@ export default defineConfig({
         "new-note.spec.ts",
         "lock.spec.ts",
         "save-ux.spec.ts",
+        "live-preview.spec.ts",
         "startup.spec.ts",
       ],
       use: { baseURL: `http://localhost:${PROD_PORT}` },

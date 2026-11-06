@@ -20,7 +20,7 @@ export default defineConfig({
     },
     {
       name: "development",
-      testMatch: "development.spec.ts",
+      testMatch: ["development.spec.ts", "live-preview.spec.ts"],
       use: { baseURL: `http://localhost:${DEV_PORT}` },
     },
   ],

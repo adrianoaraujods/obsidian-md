@@ -1,6 +1,7 @@
 import { type Extension, Prec } from "@codemirror/state";
 import { type Command, type KeyBinding, keymap } from "@codemirror/view";
 
+import { selectionWrap } from "./editing/selection-wrap.js";
 import { toggleBold, toggleItalic } from "./editing/emphasis.js";
 import { listContinuation } from "./editing/list-continuation.js";
 
@@ -63,8 +64,11 @@ export function editingShortcuts(
       preventDefault: true,
     });
   }
+  const extensions: Extension[] = [keymap.of(bindings)];
+  if (options.selectionWrap !== false)
+    extensions.push(selectionWrap(composing));
   return [
-    Prec.high(keymap.of(bindings)),
+    Prec.high(extensions),
     options.listContinuation === false ? [] : listContinuation(),
   ];
 }

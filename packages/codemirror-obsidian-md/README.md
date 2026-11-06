@@ -89,8 +89,14 @@ body {
   --obsidian-editor-fg: var(--foreground);
   --obsidian-editor-bg: var(--background);
   --obsidian-editor-cursor: var(--foreground);
-  --obsidian-editor-selection: color-mix(in oklab, var(--primary) 30%, transparent);
-  --obsidian-editor-popover-bg: var(--popover); /* the `[[` picker mounts on body */
+  --obsidian-editor-selection: color-mix(
+    in oklab,
+    var(--primary) 30%,
+    transparent
+  );
+  --obsidian-editor-popover-bg: var(
+    --popover
+  ); /* the `[[` picker mounts on body */
 }
 ```
 
@@ -118,12 +124,16 @@ Later Live Preview work adds to the core without changing it.
     types: ["obsidianHighlight"], // MDAST node types: wikiLink, embed, obsidianComment, obsidianFootnote, blockquote, heading, ...
     decorate(construct, { revealed }) {
       if (revealed) return null; // cursor inside: show the raw syntax
-      return Decoration.mark({ class: "obsidian-highlight" }).range(construct.from, construct.to);
+      return Decoration.mark({ class: "obsidian-highlight" }).range(
+        construct.from,
+        construct.to,
+      );
     },
   };
   ```
 
   A provider returns one `Range<Decoration>`, an array of them, or nothing. Decorations may hide, replace or restyle text, never change it. Widgets are CodeMirror widgets reusing the plugin Stylesheet class names.
+
 - **Cursor reveal.** `context.revealed` is `isRevealed(state, construct.from, construct.to)`. Call `isRevealed(state, from, to)` yourself for another range (a whole Callout, a line).
 - **Parser.** Pass `parser: (text) => Construct[]` to replace the default, e.g. to add block-level scans such as `scanBlockIds`.
 - **Extra extensions** (autocomplete picker, keymaps, save flow): pass `extensions`, or use `obsidianMd(doc, options)` to compose the core into your own `EditorState`. `reparse(view)` forces a re-parse; `constructsField` and `decorationsField` expose the state.
@@ -146,6 +156,8 @@ Shipped so far: `Mod-b` and `Mod-i` toggle bold and italic. They detect either m
 
 Enter continues a bullet (`-`, `*`, `+`), numbered (`1.`, `1)`, counting up), task (`- [ ]`, continued unchecked), quote and Callout (`>`) line with the same marker and indentation, and splits an item at the cursor. Enter on an empty item and Backspace on an empty marker remove the marker. It does nothing inside a fenced code block, treats a `%%` Comment as ordinary text, keeps a CRLF Note on `\r\n`, and is switched off with `listContinuation: false`.
 
+Selection Wrap (`selectionWrap`): typing `*`, `_`, `` ` ``, `~`, `=`, `[`, `(`, `{`, `"` or `'` over a selection wraps it (`[`, `(`, `{` close with `]`, `)`, `}`) and leaves the inner text selected, so a repeat of the same key nests (`*` twice gives `**x**`). Each wrap is its own undo step and applies to every range. With nothing selected it does nothing.
+
 ```ts
 editingShortcuts({
   // Keyed by command name, merged over the defaults. `false` disables one.
@@ -159,14 +171,14 @@ editingShortcuts({
 });
 ```
 
-| Command      | Default     | Status      |
-| ------------ | ----------- | ----------- |
-| `bold`       | `Mod-b`     | shipped     |
-| `italic`     | `Mod-i`     | shipped     |
-| `link`       | `Mod-k`     | not yet     |
-| `indent`     | `Mod-]`     | not yet     |
-| `unindent`   | `Mod-[`     | not yet     |
-| `toggleTask` | `Mod-Enter` | not yet     |
+| Command      | Default     | Status  |
+| ------------ | ----------- | ------- |
+| `bold`       | `Mod-b`     | shipped |
+| `italic`     | `Mod-i`     | shipped |
+| `link`       | `Mod-k`     | not yet |
+| `indent`     | `Mod-]`     | not yet |
+| `unindent`   | `Mod-[`     | not yet |
+| `toggleTask` | `Mod-Enter` | not yet |
 
 The flags are accepted now and take effect as each behavior ships. Which characters wrap or pair is fixed. `DEFAULT_EDITING_KEYS` exports the defaults.
 
@@ -187,7 +199,12 @@ The flags are accepted now and take effect as each behavior ships. Which charact
 `inlineProviders` renders Wiki Links, Highlights (with Highlight Color), Comments, inline Footnotes and Block IDs, revealing the raw syntax under the cursor. Block IDs are not parse nodes, so wrap the parser with `blockIdParser()`:
 
 ```ts
-createEditor({ parent, doc, providers: inlineProviders, parser: blockIdParser() });
+createEditor({
+  parent,
+  doc,
+  providers: inlineProviders,
+  parser: blockIdParser(),
+});
 ```
 
 ## New Note screen

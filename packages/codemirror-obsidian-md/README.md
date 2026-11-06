@@ -138,6 +138,36 @@ Line breaks: the document always splits on `\n`, so a `\r` stays a character and
 
 `createEditor` supports several cursors, drawn by CodeMirror (the native caret and selection are hidden, so the Stylesheet styles `.cm-cursor` and `.cm-selectionBackground`). Ctrl-click (Cmd-click on macOS) adds a cursor, Alt-drag selects a rectangle, Ctrl-Alt-Up/Down (Cmd-Alt on macOS) adds a cursor above or below, and Escape collapses to one. Typing and deleting apply to every cursor, and the `[[` picker stays closed while there are several.
 
+### Editing Shortcuts
+
+`editingShortcuts(options?)` (pass it in `extensions`, from `codemirror-obsidian-md/editor`) gives the editor Obsidian's editing feel. It is opt-in, runs at high precedence so it beats the stock `defaultKeymap`, applies at every cursor, and does nothing while an IME is composing. Mobile and soft keyboards are best effort.
+
+Shipped so far: `Mod-b` and `Mod-i` toggle bold and italic. They detect either marker style (`**`/`__`, `*`/`_`), always wrap with `**` and `*`, leave the inner text selected, and insert an empty pair with the cursor inside when nothing is selected. Each range toggles by its own state.
+
+```ts
+editingShortcuts({
+  // Keyed by command name, merged over the defaults. `false` disables one.
+  keys: { bold: "Mod-j", italic: false },
+  // Typing behaviors, each on by default.
+  listContinuation: true,
+  autoPair: true,
+  wikiLinkAutoClose: true,
+  pasteUrlAsLink: true,
+  selectionWrap: true,
+});
+```
+
+| Command      | Default     | Status      |
+| ------------ | ----------- | ----------- |
+| `bold`       | `Mod-b`     | shipped     |
+| `italic`     | `Mod-i`     | shipped     |
+| `link`       | `Mod-k`     | not yet     |
+| `indent`     | `Mod-]`     | not yet     |
+| `unindent`   | `Mod-[`     | not yet     |
+| `toggleTask` | `Mod-Enter` | not yet     |
+
+The flags are accepted now and take effect as each behavior ships. Which characters wrap or pair is fixed. `DEFAULT_EDITING_KEYS` exports the defaults.
+
 ### `[[` picker
 
 `pickerExtension({ candidates, resolver?, maxResults? })` (pass it in `extensions`) opens a Note picker when `[[` is typed. `candidates` is `NoteCandidate[]` (`{ path, title?, aliases? }`) or a getter, ranked by `rankCandidates`. Choosing one inserts a closed Wiki Link; `wikiLinkTarget` uses the bare name when the injected `Resolver` (or, by default, name uniqueness) reaches that Note, else the path.

@@ -3,6 +3,7 @@ import {
   calloutEmbed,
   createEditor,
   createSaveFlow,
+  editingShortcuts,
   inlineProviders,
   markdownProvider,
   mountConflictBanner,
@@ -55,6 +56,7 @@ export async function setupEditor(options: EditorSetupOptions) {
     extensions: [
       pickerExtension({ candidates }),
       calloutEmbed({ resolveAsset }),
+      editingShortcuts(),
       saveFlowExtension(flow),
     ],
   });

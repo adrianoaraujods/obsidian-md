@@ -1,6 +1,7 @@
 import { type Extension, Prec } from "@codemirror/state";
 import { type Command, type KeyBinding, keymap } from "@codemirror/view";
 
+import { selectionWrap } from "./editing/selection-wrap.js";
 import { toggleBold, toggleItalic } from "./editing/emphasis.js";
 
 /** The Editing Shortcuts, by command name. */
@@ -62,7 +63,10 @@ export function editingShortcuts(
       preventDefault: true,
     });
   }
-  return Prec.high(keymap.of(bindings));
+  const extensions: Extension[] = [keymap.of(bindings)];
+  if (options.selectionWrap !== false)
+    extensions.push(selectionWrap(composing));
+  return Prec.high(extensions);
 }
 
 function composing(view: { composing: boolean; compositionStarted: boolean }) {

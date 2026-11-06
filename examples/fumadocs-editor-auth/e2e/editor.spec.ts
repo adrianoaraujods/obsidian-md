@@ -88,7 +88,7 @@ test("confirming makes one commit as described", async ({ page }) => {
   const trailer = await dialog.getByTestId("commit-trailer").inputValue();
   await dialog.getByRole("button", { name: "Commit" }).click();
 
-  await expect(page.getByText("No changes")).toBeVisible();
+  await expect(page.getByTestId("status")).toHaveText("Saved");
   await expect.poll(async () => (await state()).commits).toHaveLength(1);
   const { commits, files } = await state();
   expect(commits[0]?.path).toBe(REPO_PATH);

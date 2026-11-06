@@ -13,12 +13,23 @@ import {
   saveFlowExtension,
 } from "codemirror-obsidian-md/editor";
 import { createStorageClient } from "codemirror-obsidian-md/storage/client";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 import { type CommitEditor, commitPreview } from "@/lib/commit-preview";
 import { editorSetup } from "@/lib/editor-setup";
 import type { LockTimings } from "@/lib/lock-timings";
 import { saveErrorMessage } from "@/lib/save-errors";
+import {
+  deployToast,
+  type SaveToast,
+  savedToast,
+  statusLabel,
+} from "@/lib/save-status";
 import { CommitDialog, type PendingConfirm } from "./commit-dialog";
 import { DeployLockPanel, startDeployLock, useLockState } from "./deploy-lock";
 
@@ -33,6 +44,8 @@ type Props = {
   lockTimings?: LockTimings;
   /** Open locked on this commit until it is deployed (a just-created Note). */
   lockedCommit?: string;
+  /** The Note's page, for the "View note" action once it is deployed. */
+  viewHref: string;
 };
 
 type Phase =
@@ -60,6 +73,7 @@ export function NoteEditor({
   candidates,
   lockTimings,
   lockedCommit,
+  viewHref,
 }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const banner = useRef<HTMLDivElement>(null);
@@ -68,6 +82,8 @@ export function NoteEditor({
   const [state, setState] = useState<SaveFlowState>(idle);
   const [pending, setPending] = useState<PendingConfirm | null>(null);
   const [lock, setLock] = useState<SaveLock | null>(null);
+  const [savedHere, setSavedHere] = useState(false);
+  const router = useRouter();
   const lockState = useLockState(lock);
   // Read when the editor mounts. Keeping them out of the effect's deps means a
   // re-render with new object identities never reloads the Note and loses text.
@@ -76,10 +92,12 @@ export function NoteEditor({
     candidates,
     lockTimings,
     lockedCommit,
+    viewHref,
   });
   useEffect(() => {
-    props.current = { editor, candidates, lockTimings, lockedCommit };
+    props.current = { editor, candidates, lockTimings, lockedCommit, viewHref };
   });
+  const noteName = title;
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +106,26 @@ export function NoteEditor({
     let offUnload = () => {};
     let offState = () => {};
     let offReload = () => {};
+    let offSaved = () => {};
+    let offLock = () => {};
+    const toastId = `save-${path}`;
+    // One toast per Save: it is created by the Save and updated in place as
+    // the deploy lock moves, so "View note" only appears once it is live.
+    const show = (next: SaveToast) => {
+      const options = {
+        id: toastId,
+        duration: next.kind === "loading" ? Number.POSITIVE_INFINITY : 8000,
+        action: next.action
+          ? {
+              label: "View note",
+              onClick: () => router.push(props.current.viewHref),
+            }
+          : null,
+      };
+      if (next.kind === "loading") toast.loading(next.message, options);
+      else if (next.kind === "error") toast.error(next.message, options);
+      else toast.success(next.message, options);
+    };
     let saveLock: SaveLock | null = null;
 
     const storage = createStorageClient({ url: "/api/notes", lock: true });
@@ -139,7 +177,32 @@ export function NoteEditor({
         });
         offBanner = mountConflictBanner(flow, banner.current);
         offUnload = flow.attachBeforeUnload();
-        offState = flow.subscribe(setState);
+        let previousStatus: SaveFlowState["status"] = flow.state.status;
+        offState = flow.subscribe((next) => {
+          setState(next);
+          if (next.status !== previousStatus) {
+            if (next.status === "error") {
+              toast.error(`Could not save ${noteName}`, { id: toastId });
+            } else if (next.status === "conflict") {
+              toast.error(`Could not save ${noteName}: it changed elsewhere`, {
+                id: toastId,
+              });
+            }
+          }
+          previousStatus = next.status;
+        });
+        offSaved = flow.onSaved(() => {
+          setSavedHere(true);
+          // The lock locks in its own listener, which runs after this one.
+          queueMicrotask(() => {
+            if (cancelled) return;
+            if (saveLock?.state.status === "locked") {
+              show(deployToast("unlocked", "locked", noteName) as SaveToast);
+            } else {
+              show(savedToast(noteName));
+            }
+          });
+        });
         void startDeployLock(
           flow,
           storage,
@@ -150,6 +213,12 @@ export function NoteEditor({
           if (cancelled) return started.dispose();
           saveLock = started;
           setLock(started);
+          let from = started.state.status;
+          offLock = started.subscribe((next) => {
+            const change = deployToast(from, next.status, noteName);
+            from = next.status;
+            if (change) show(change);
+          });
         });
         setPhase({ kind: "ready" });
       },
@@ -164,12 +233,34 @@ export function NoteEditor({
       offUnload();
       offState();
       offReload();
+      offSaved();
+      offLock();
+      toast.dismiss(toastId);
       saveLock?.dispose();
       setLock(null);
       handle?.destroy();
       flowRef.current = null;
     };
-  }, [path]);
+  }, [path, noteName, router]);
+
+  // Ctrl/Cmd+S saves from anywhere on the page. The editor binds it too and
+  // marks the event handled, so a save started there is not repeated here.
+  useEffect(() => {
+    if (phase.kind !== "ready") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
+      if (
+        !(event.ctrlKey || event.metaKey) ||
+        event.key.toLowerCase() !== "s"
+      ) {
+        return;
+      }
+      event.preventDefault();
+      void flowRef.current?.save();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [phase.kind]);
 
   const saving = state.status === "saving";
   const locked = lockState.status !== "unlocked";
@@ -177,16 +268,20 @@ export function NoteEditor({
   return (
     <div data-testid="note-editor">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <button
-          className="rounded-md border border-fd-primary bg-fd-primary px-3 py-1.5 font-medium text-fd-primary-foreground text-sm disabled:opacity-50"
+        <Button
           disabled={phase.kind !== "ready" || !state.dirty || saving || locked}
           onClick={() => void flowRef.current?.save()}
+          size="sm"
           type="button"
         >
-          {saving ? "Saving…" : "Save"}
-        </button>
-        <span className="text-fd-muted-foreground text-sm">
-          {state.dirty ? "Unsaved changes" : "No changes"}
+          Save
+        </Button>
+        <span
+          className="flex items-center gap-1.5 text-muted-foreground text-sm"
+          data-testid="status"
+        >
+          {saving && <Spinner />}
+          {statusLabel(state, lockState.status, savedHere)}
         </span>
       </div>
 

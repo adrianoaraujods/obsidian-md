@@ -54,6 +54,7 @@ export default async function EditPage(props: PageProps<"/edit/[[...slug]]">) {
           lockTimings={lockTimings(process.env)}
           path={path}
           title={title}
+          viewHref={`/${slug.join("/")}`}
         />
         <p>
           {page && <a href={page.url}>Back to the Note</a>}

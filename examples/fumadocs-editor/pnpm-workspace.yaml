@@ -1,0 +1,14 @@
+# Used when this example is copied out with `degit`. Inside the monorepo the
+# root pnpm-workspace.yaml is authoritative and carries the same settings.
+allowBuilds:
+  esbuild: true
+  sharp: true
+  msw: true
+# Regenerate the patch when upgrading fumadocs-core, or drop it once Fumadocs
+# ships a tolerant Frontmatter parser upstream.
+minimumReleaseAgeExclude:
+  - fumadocs-obsidian-md@0.1.0
+  - react-obsidian-md@0.1.0
+  - remark-obsidian-md@3.0.0
+patchedDependencies:
+  fumadocs-core@16.17.7: patches/fumadocs-core@16.17.7.patch

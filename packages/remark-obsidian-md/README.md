@@ -17,6 +17,7 @@
 - [Styling](#styling)
 - [Deliberately unsupported](#deliberately-unsupported)
 - [Frontmatter helper](#frontmatter-helper)
+- [Browser-safe entry](#browser-safe-entry)
 - [Types](#types)
 - [Migrating from 2.0.0 to 3.0.0](#migrating-from-200-to-300)
 - [Credits](#credits)
@@ -354,6 +355,12 @@ const frontmatter = getFrontmatter(note.data.frontmatter, {
 ```ts
 import type { FrontmatterValue } from "remark-obsidian-md";
 ```
+
+## Browser-safe entry
+
+`remark-obsidian-md/syntax` holds everything that runs without Node: the plugins (including `remarkObsidianMd`), the micromark and mdast-util extensions (`wikiLinkSyntax`, `embedSyntax`, `commentSyntax`, `highlightSyntax`, `footnoteSyntax` and their `…FromMarkdown` pairs), the node types and the pure helpers (`parseWikiLink`, `slugify`, `mapResolver`, `scanBlockIds`, `CALLOUT_TYPES`, `HIGHLIGHT_COLORS`, `getFrontmatter`, `createSlugifyPath`). It never imports a Node built-in, so an editor can bundle it for the browser. Only `filesystemResolver` and `filesystemPropertyTypes` are left out. The main entry re-exports all of it.
+
+The nodes carry source positions covering their raw syntax: Wiki Links, Embeds, Highlights, Footnotes, Callouts (the whole blockquote) and Comments. A Block ID's range is on its block's `data.blockId`. The composed plugin removes Comments from the tree; parse with `commentSyntax` and `commentFromMarkdown` alone to see them.
 
 ## Types
 

@@ -1,0 +1,275 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@import "remark-obsidian-md/styles/base.css";
+@import "remark-obsidian-md/styles/dark-class.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.541 0.281 293.009);
+  --primary-foreground: oklch(0.969 0.016 293.756);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.705 0.015 286.067);
+  --chart-1: oklch(0.811 0.111 293.571);
+  --chart-2: oklch(0.606 0.25 292.717);
+  --chart-3: oklch(0.541 0.281 293.009);
+  --chart-4: oklch(0.491 0.27 292.581);
+  --chart-5: oklch(0.432 0.232 292.759);
+  --radius: 0.45rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: oklch(0.541 0.281 293.009);
+  --sidebar-primary-foreground: oklch(0.969 0.016 293.756);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.705 0.015 286.067);
+}
+
+.dark {
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.21 0.006 285.885);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.606 0.25 292.717);
+  --primary-foreground: oklch(0.969 0.016 293.756);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.552 0.016 285.938);
+  --chart-1: oklch(0.811 0.111 293.571);
+  --chart-2: oklch(0.606 0.25 292.717);
+  --chart-3: oklch(0.541 0.281 293.009);
+  --chart-4: oklch(0.491 0.27 292.581);
+  --chart-5: oklch(0.432 0.232 292.759);
+  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.606 0.25 292.717);
+  --sidebar-primary-foreground: oklch(0.969 0.016 293.756);
+  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.552 0.016 285.938);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Hover Preview from react-obsidian-md, styled the same way. */
+[data-hover-preview-positioner] {
+  @apply z-50;
+}
+[data-hover-preview] {
+  @apply max-h-[min(24rem,70vh)] w-[min(28rem,92vw)] overflow-y-auto rounded-lg border bg-popover text-popover-foreground shadow-lg;
+}
+[data-hover-preview-content] {
+  @apply p-4;
+}
+[data-hover-preview-body] {
+  @apply text-sm;
+}
+
+/* Properties Panel from react-obsidian-md: the package is headless, so every
+   style lives here, keyed on its stable data-* attributes. */
+[data-properties-panel] {
+  @apply mb-8;
+}
+[data-properties-trigger] {
+  @apply flex items-center gap-1 rounded-[6px] py-1 pr-2 text-muted-foreground text-sm hover:text-foreground;
+}
+[data-properties-expand-icon] {
+  @apply inline-flex size-4 transition-transform;
+}
+[data-properties-expand-icon] svg {
+  @apply size-4;
+}
+[data-properties-panel][data-open="true"] [data-properties-expand-icon] {
+  @apply rotate-90;
+}
+[data-properties-panel][data-open="true"] [data-properties-content] {
+  @apply block;
+}
+[data-properties-panel][data-open="false"] [data-properties-content] {
+  @apply hidden;
+}
+[data-properties-list] {
+  @apply flex flex-col gap-1 py-2;
+}
+[data-properties-row] {
+  @apply grid grid-cols-[7.5rem_minmax(0,1fr)] items-start rounded-[6px] focus-within:ring-1 focus-within:ring-ring hover:ring-1 hover:ring-border sm:grid-cols-[9rem_minmax(0,1fr)];
+}
+[data-properties-key] {
+  @apply flex min-h-7 min-w-0 items-center gap-2 py-1 pr-2 pl-1 text-muted-foreground;
+}
+[data-properties-type-icon] {
+  @apply inline-flex size-4 shrink-0;
+}
+[data-properties-type-icon] svg {
+  @apply size-4;
+}
+[data-properties-name] {
+  @apply truncate text-sm;
+}
+[data-properties-value] {
+  @apply flex min-h-7 min-w-0 flex-wrap items-center gap-3 py-1 pr-2 text-foreground text-sm;
+}
+[data-properties-item] {
+  @apply inline-flex min-w-0 items-center;
+}
+[data-property-link]:not([data-property-tag]) {
+  @apply text-primary underline decoration-primary/40 underline-offset-2 transition-colors hover:decoration-primary;
+}
+[data-property-link][data-unresolved]:not([data-property-tag]) {
+  @apply text-muted-foreground decoration-muted-foreground decoration-dotted hover:decoration-muted-foreground;
+}
+[data-property-tag] {
+  @apply inline-flex max-w-full items-center rounded-full bg-primary/10 px-[0.65em] py-[0.25em] leading-none text-primary no-underline transition-colors hover:bg-primary/20;
+}
+[data-property-number] {
+  @apply tabular-nums;
+}
+[data-property-checkbox] {
+  @apply inline-flex size-4 shrink-0 items-center justify-center rounded-[3px] border border-input bg-transparent;
+}
+[data-property-checkbox][data-checked="true"] {
+  @apply border-primary bg-primary text-primary-foreground;
+}
+[data-property-checkbox] svg {
+  @apply size-3;
+}
+
+/* The Note editor (CodeMirror). */
+.note-editor .cm-editor {
+  min-height: 24rem;
+  background: var(--color-fd-background);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.5rem;
+}
+.note-editor .cm-editor.cm-focused {
+  outline: 2px solid var(--color-fd-ring);
+}
+.note-editor .cm-content {
+  padding: 0.75rem;
+  font-family: var(--font-mono, monospace);
+}
+.note-editor-banner [data-save-flow-banner] {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: var(--color-fd-muted);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.5rem;
+}
+.note-editor-banner [data-save-flow-banner] button {
+  padding: 0.25rem 0.75rem;
+  margin: 0.5rem 0.5rem 0 0;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.375rem;
+}
+
+.new-note form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 28rem;
+}
+
+.new-note-field {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.new-note input {
+  padding: 0.375rem 0.5rem;
+  font-weight: 400;
+  background: var(--color-fd-background);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.375rem;
+}
+
+.new-note button {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.375rem;
+}
+
+.new-note button[type="submit"] {
+  color: var(--color-fd-primary-foreground);
+  background: var(--color-fd-primary);
+  border-color: var(--color-fd-primary);
+}

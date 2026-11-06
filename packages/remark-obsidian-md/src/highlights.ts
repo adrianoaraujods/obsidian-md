@@ -25,7 +25,7 @@ import {
   parseInlineContent,
 } from "./inline.js";
 import type { ObsidianHighlightNode } from "./types.js";
-import { isLineEnding } from "./utils.js";
+import { isLineEnding, keepPosition } from "./utils.js";
 
 declare module "micromark-util-types" {
   interface TokenTypeMap {
@@ -196,22 +196,26 @@ export function configureHighlights(
  * Color the content's first emoji names, if any.
  */
 export function transformHighlights(tree: Root): void {
-  visit(tree, "obsidianHighlight", (node, index, parent) => {
-    if (index === undefined || !parent) return;
+  visit(
+    tree,
+    "obsidianHighlight",
+    keepPosition((node, index, parent) => {
+      if (index === undefined || !parent) return;
 
-    // A Highlight holding parsed content is already a container; only a
-    // Highlight of plain text becomes a text node.
-    if ("children" in node) return;
+      // A Highlight holding parsed content is already a container; only a
+      // Highlight of plain text becomes a text node.
+      if ("children" in node) return;
 
-    const content = node.value.slice(2, -2);
-    const { highlightColor, length } = parseHighlightColor(content);
+      const content = node.value.slice(2, -2);
+      const { highlightColor, length } = parseHighlightColor(content);
 
-    parent.children[index] = {
-      type: "text",
-      value: content.slice(length),
-      data: highlightData(highlightColor),
-    };
-  });
+      parent.children[index] = {
+        type: "text",
+        value: content.slice(length),
+        data: highlightData(highlightColor),
+      };
+    }),
+  );
 }
 
 export function remarkObsidianHighlights(this: Processor): Transformer<Root> {

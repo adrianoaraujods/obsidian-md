@@ -33,7 +33,12 @@ import type {
   ResolvedTarget,
   WikiLinkContext,
 } from "./types.js";
-import { type ParsedWikiLink, parseWikiLink, textOf } from "./utils.js";
+import {
+  keepPosition,
+  type ParsedWikiLink,
+  parseWikiLink,
+  textOf,
+} from "./utils.js";
 import {
   defaultWikiLinkContext,
   transformWikiLinks,
@@ -150,13 +155,17 @@ export function transformEmbeds(
   context: EmbedContext,
   state: EmbedState = { depth: 0, visited: new Set() },
 ): void {
-  visit(tree, "embed", (node, index, parent) => {
-    if (index === undefined || !parent) return;
+  visit(
+    tree,
+    "embed",
+    keepPosition((node, index, parent) => {
+      if (index === undefined || !parent) return;
 
-    parent.children[index] = resolveEmbed(node, context, state);
-    // Children were already expanded at the correct depth.
-    return SKIP;
-  });
+      parent.children[index] = resolveEmbed(node, context, state);
+      // Children were already expanded at the correct depth.
+      return SKIP;
+    }),
+  );
 }
 
 /**

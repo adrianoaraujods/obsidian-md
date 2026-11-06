@@ -17,7 +17,7 @@ import { visit } from "unist-util-visit";
 
 import { scanBlockIds } from "./block-id.js";
 import { addExtension } from "./extensions.js";
-import { mapResolver } from "./resolver.js";
+import { mapResolver } from "./map-resolver.js";
 import type {
   WikiLinkContext,
   WikiLinkNode,
@@ -26,6 +26,7 @@ import type {
 import {
   anchorFor,
   githubSlugger,
+  keepPosition,
   type ParsedSubpath,
   type ParsedWikiLink,
   parseWikiLink,
@@ -111,54 +112,58 @@ export function transformWikiLinks(tree: Root, context: WikiLinkContext): void {
     return currentAnchors;
   };
 
-  visit(tree, "wikiLink", (node, index, parent) => {
-    if (index === undefined || !parent) return;
+  visit(
+    tree,
+    "wikiLink",
+    keepPosition((node, index, parent) => {
+      if (index === undefined || !parent) return;
 
-    const parsed = parseWikiLink(node.value);
-    if (!parsed) {
-      parent.children[index] = literal(node);
-      return;
-    }
+      const parsed = parseWikiLink(node.value);
+      if (!parsed) {
+        parent.children[index] = literal(node);
+        return;
+      }
 
-    const label = aliasOrTarget(parsed);
-    const anchor = anchorFor(parsed.subpath, context.slugger);
+      const label = aliasOrTarget(parsed);
+      const anchor = anchorFor(parsed.subpath, context.slugger);
 
-    // A same-Note Subpath (`[[#Heading]]`) only ever needs the fragment.
-    if (!parsed.target) {
-      parent.children[index] = parsed.subpath
-        ? subpathResolves(parsed.subpath, context, undefined, anchorsOf)
-          ? {
-              type: "link",
-              url: `#${anchor}`,
-              children: [{ type: "text", value: label }],
-            }
-          : unresolved(label, context)
-        : literal(node);
-      return;
-    }
+      // A same-Note Subpath (`[[#Heading]]`) only ever needs the fragment.
+      if (!parsed.target) {
+        parent.children[index] = parsed.subpath
+          ? subpathResolves(parsed.subpath, context, undefined, anchorsOf)
+            ? {
+                type: "link",
+                url: `#${anchor}`,
+                children: [{ type: "text", value: label }],
+              }
+            : unresolved(label, context)
+          : literal(node);
+        return;
+      }
 
-    const resolved = context.resolver.resolve(parsed.target);
+      const resolved = context.resolver.resolve(parsed.target);
 
-    if (
-      resolved.exists &&
-      resolved.kind === "note" &&
-      subpathResolves(parsed.subpath, context, resolved.path, anchorsOf)
-    ) {
-      parent.children[index] = {
-        type: "link",
-        url: slugifyUrl(resolved.path, {
-          slugify: context.slugify,
-          slugifyPath: context.slugifyPath,
-          urlPrefix: context.urlPrefix,
-          ...(anchor ? { anchor } : {}),
-        }),
-        children: [{ type: "text", value: label }],
-      };
-      return;
-    }
+      if (
+        resolved.exists &&
+        resolved.kind === "note" &&
+        subpathResolves(parsed.subpath, context, resolved.path, anchorsOf)
+      ) {
+        parent.children[index] = {
+          type: "link",
+          url: slugifyUrl(resolved.path, {
+            slugify: context.slugify,
+            slugifyPath: context.slugifyPath,
+            urlPrefix: context.urlPrefix,
+            ...(anchor ? { anchor } : {}),
+          }),
+          children: [{ type: "text", value: label }],
+        };
+        return;
+      }
 
-    parent.children[index] = unresolved(label, context);
-  });
+      parent.children[index] = unresolved(label, context);
+    }),
+  );
 }
 
 /**
@@ -252,9 +257,14 @@ function unresolved(label: string, context: WikiLinkContext) {
  */
 function literalizeLinkText(tree: Root): void {
   visit(tree, ["link", "linkReference"], (link) => {
-    visit(link, "wikiLink", (node, index, parent) => {
-      if (index !== undefined && parent) parent.children[index] = literal(node);
-    });
+    visit(
+      link,
+      "wikiLink",
+      keepPosition((node, index, parent) => {
+        if (index !== undefined && parent)
+          parent.children[index] = literal(node);
+      }),
+    );
   });
 }
 

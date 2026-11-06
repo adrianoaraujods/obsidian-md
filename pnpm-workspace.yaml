@@ -5,8 +5,16 @@ allowBuilds:
   esbuild: true
   sharp: true
   msw: true
+# The example declares real semver ranges so `degit` copies install cleanly;
+# inside the monorepo these overrides link the local packages instead.
+overrides:
+  remark-obsidian-md: workspace:*
+  fumadocs-obsidian-md: workspace:*
+  react-obsidian-md: workspace:*
+  codemirror-obsidian-md: workspace:*
 # Version-specific: examples/fumadocs pins fumadocs-core to the same version.
 # Regenerate the patch when upgrading, or drop it once Fumadocs ships a
 # tolerant Frontmatter parser upstream.
 patchedDependencies:
   fumadocs-core@16.17.7: examples/fumadocs/patches/fumadocs-core@16.17.7.patch
+linkWorkspacePackages: true

@@ -112,6 +112,12 @@ _Avoid_: frontmatter table, metadata box, header
 A class name listed in a Note's `cssclasses` Frontmatter property, applied to that Note's rendered container and carried along when the Note is embedded.
 _Avoid_: style, theme class
 
+## Editing
+
+**Live Preview**:
+The editing mode where a Note shows its constructs rendered, and reveals a construct's raw syntax only while the cursor is inside it. The Note's text is what is edited and saved, so saving never changes syntax the reader did not touch.
+_Avoid_: WYSIWYG, rich-text mode, split preview
+
 ## Styling
 
 **Stylesheet**:

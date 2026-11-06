@@ -1,0 +1,112 @@
+{
+  "name": "codemirror-obsidian-md",
+  "version": "0.0.0",
+  "author": "Adriano Araújo (adrianoaraujodsantos@hotmail.com)",
+  "description": "CodeMirror 6 editor with Live Preview for Obsidian.md syntax, plus the storage interface it saves through",
+  "license": "MIT",
+  "keywords": [
+    "codemirror",
+    "obsidian",
+    "markdown",
+    "editor",
+    "live-preview"
+  ],
+  "homepage": "https://github.com/adrianoaraujods/obsidian-md/tree/main/packages/codemirror-obsidian-md#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrianoaraujods/obsidian-md.git",
+    "directory": "packages/codemirror-obsidian-md"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "default": "./dist/storage/index.js"
+    },
+    "./storage/filesystem": {
+      "types": "./dist/storage/filesystem.d.ts",
+      "default": "./dist/storage/filesystem.js"
+    },
+    "./storage/contract": {
+      "types": "./dist/storage/contract.d.ts",
+      "default": "./dist/storage/contract.js"
+    },
+    "./storage/github": {
+      "types": "./dist/storage/github.d.ts",
+      "default": "./dist/storage/github.js"
+    },
+    "./storage/github-fake": {
+      "types": "./dist/storage/github-fake.d.ts",
+      "default": "./dist/storage/github-fake.js"
+    },
+    "./storage/client": {
+      "types": "./dist/storage/client.d.ts",
+      "default": "./dist/storage/client.js"
+    },
+    "./storage/http": {
+      "types": "./dist/storage/http.d.ts",
+      "default": "./dist/storage/http.js"
+    },
+    "./new-note": {
+      "types": "./dist/new-note/index.d.ts",
+      "default": "./dist/new-note/index.js"
+    },
+    "./editor": {
+      "types": "./dist/editor/index.d.ts",
+      "default": "./dist/editor/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --coverage",
+    "prepublishOnly": "pnpm run build",
+    "lint": "biome check",
+    "format": "biome format --write"
+  },
+  "peerDependencies": {
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "remark-obsidian-md": "^3.0.0",
+    "vitest": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^25.2.0",
+    "@vitest/coverage-v8": "^5.0.5",
+    "jsdom": "^30.1.3",
+    "remark-obsidian-md": "workspace:*",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  },
+  "bugs": {
+    "url": "https://github.com/adrianoaraujods/obsidian-md/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
+    "@codemirror/commands": "^6.11.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5"
+  }
+}

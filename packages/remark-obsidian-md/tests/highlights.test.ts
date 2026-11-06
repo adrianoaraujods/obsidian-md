@@ -2,6 +2,7 @@ import type { Paragraph, Root, Strong } from "mdast";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
+import type { Node } from "unist";
 import { visit } from "unist-util-visit";
 import { describe, expect, it } from "vitest";
 
@@ -358,16 +359,37 @@ describe("Highlights", () => {
     });
   });
 
-  it("points the parsed children at the highlight's content range", () => {
+  it("gives each parsed child its own source position", () => {
     const tree = process("==**bold**==");
     const strong = (highlightOf(tree) as { children: Strong[] }).children[0];
-    const range = {
+
+    expect(strong?.position).toEqual({
       start: { line: 1, column: 3, offset: 2 },
       end: { line: 1, column: 11, offset: 10 },
-    };
+    });
+    expect(strong?.children?.[0]?.position).toEqual({
+      start: { line: 1, column: 5, offset: 4 },
+      end: { line: 1, column: 9, offset: 8 },
+    });
+  });
 
-    expect(strong?.position).toEqual(range);
-    expect(strong?.children?.[0]?.position).toEqual(range);
+  it("positions a Wiki Link inside a Highlight on the link itself", () => {
+    const source = "a ==see [[Wiki Links]]== b";
+    // The editor reads the parsed tree, before the plugin's transform.
+    const tree = unified()
+      .use(remarkParse)
+      .use(remarkObsidianMd, { resolver })
+      .parse(source);
+    let link: Node | undefined;
+    visit(tree, "wikiLink", (node) => {
+      link = node;
+    });
+
+    expect(link?.position).toEqual({
+      start: { line: 1, column: 9, offset: 8 },
+      end: { line: 1, column: 23, offset: 22 },
+    });
+    expect(source.slice(8, 22)).toBe("[[Wiki Links]]");
   });
 
   it("leaves highlights inside code alone", () => {

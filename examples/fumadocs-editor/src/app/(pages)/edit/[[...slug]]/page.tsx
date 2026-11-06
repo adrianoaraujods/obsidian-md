@@ -19,7 +19,11 @@ export default async function EditPage(props: PageProps<"/edit/[[...slug]]">) {
     <DocsPage full>
       <DocsTitle>Editing {page.data.title}</DocsTitle>
       <DocsBody>
-        <NoteEditor candidates={candidates} path={page.path} />
+        <NoteEditor
+          candidates={candidates}
+          path={page.path}
+          viewHref={page.url}
+        />
         <p>
           <a href={page.url}>Back to the Note</a>
         </p>

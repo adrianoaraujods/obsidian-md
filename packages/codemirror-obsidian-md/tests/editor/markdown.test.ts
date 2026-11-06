@@ -146,3 +146,18 @@ describe("markdown Live Preview", () => {
     expect(state.doc.toString()).toBe(doc);
   });
 });
+
+describe("emphasis inside a Highlight", () => {
+  // ==**bold** and *it*==
+  it("hides each marker at its own position", () => {
+    const doc = "==**bold** and *it*==";
+    expect(
+      hidden(decorate(doc, doc.length + 0)).sort((a, b) => a[0]! - b[0]!),
+    ).toEqual([
+      [2, 4],
+      [8, 10],
+      [15, 16],
+      [18, 19],
+    ]);
+  });
+});

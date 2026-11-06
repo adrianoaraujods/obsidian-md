@@ -54,8 +54,46 @@ export function createNoteParser(): NoteParser {
     }
     const out: Construct[] = [];
     walk(tree, offset, out);
-    return out;
+    return withBlockComments(text, out);
   };
+}
+
+/**
+ * A line-start `%%…%%` block can span blank lines and Markdown, so the parse
+ * leaves it as ordinary paragraphs: the plugin removes it in its transform,
+ * which the editor never runs. The opener is a paragraph that starts a line
+ * with `%%`, the closer is the next `%%` (or the end of the Note when
+ * unclosed), as in the plugin. Each block becomes one `obsidianComment`
+ * construct and the constructs inside it are dropped.
+ */
+function withBlockComments(text: string, constructs: Construct[]): Construct[] {
+  const openers = constructs
+    .filter(
+      (c) =>
+        c.type === "paragraph" &&
+        text.startsWith("%%", c.from) &&
+        (c.from === 0 || text[c.from - 1] === "\n"),
+    )
+    .sort((a, b) => a.from - b.from);
+
+  const blocks: Construct[] = [];
+  let end = 0;
+  for (const opener of openers) {
+    if (opener.from < end) continue;
+    const close = text.indexOf("%%", opener.from + 2);
+    end = close === -1 ? text.length : close + 2;
+    blocks.push({
+      type: "obsidianComment",
+      from: opener.from,
+      to: end,
+      node: { type: "text", value: text.slice(opener.from, end) },
+    });
+  }
+  if (blocks.length === 0) return constructs;
+
+  const inside = (c: Construct) =>
+    blocks.some((b) => c.from >= b.from && c.from < b.to);
+  return [...constructs.filter((c) => !inside(c)), ...blocks];
 }
 
 function walk(node: Nodes, offset: number, out: Construct[]): void {

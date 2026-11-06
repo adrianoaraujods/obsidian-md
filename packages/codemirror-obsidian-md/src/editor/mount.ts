@@ -3,6 +3,7 @@ import { EditorState, type Extension } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 
 import { type ObsidianMdOptions, obsidianMd, reparse } from "./state.js";
+import { livePreviewTheme } from "./theme.js";
 
 export interface CreateEditorOptions extends ObsidianMdOptions {
   /** Element the editor mounts into. */
@@ -35,6 +36,7 @@ export function createEditor(options: CreateEditorOptions): EditorHandle {
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         EditorView.lineWrapping,
+        livePreviewTheme,
         obsidianMd(doc, options),
         onChange
           ? EditorView.updateListener.of((u) => {

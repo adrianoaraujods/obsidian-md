@@ -1,8 +1,9 @@
 import { type Extension, Prec } from "@codemirror/state";
 import { type Command, type KeyBinding, keymap } from "@codemirror/view";
 
-import { selectionWrap } from "./editing/selection-wrap.js";
+import { autoPair } from "./editing/auto-pair.js";
 import { toggleBold, toggleItalic } from "./editing/emphasis.js";
+import { selectionWrap } from "./editing/selection-wrap.js";
 
 /** The Editing Shortcuts, by command name. */
 export type EditingCommand =
@@ -66,6 +67,12 @@ export function editingShortcuts(
   const extensions: Extension[] = [keymap.of(bindings)];
   if (options.selectionWrap !== false)
     extensions.push(selectionWrap(composing));
+  if (options.autoPair !== false)
+    extensions.push(
+      autoPair(composing, {
+        wikiLinkAutoClose: options.wikiLinkAutoClose !== false,
+      }),
+    );
   return Prec.high(extensions);
 }
 

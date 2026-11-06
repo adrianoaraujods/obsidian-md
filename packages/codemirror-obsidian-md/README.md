@@ -156,6 +156,8 @@ Shipped so far: `Mod-b` and `Mod-i` toggle bold and italic. They detect either m
 
 Selection Wrap (`selectionWrap`): typing `*`, `_`, `` ` ``, `~`, `=`, `[`, `(`, `{`, `"` or `'` over a selection wraps it (`[`, `(`, `{` close with `]`, `)`, `}`) and leaves the inner text selected, so a repeat of the same key nests (`*` twice gives `**x**`). Each wrap is its own undo step and applies to every range. With nothing selected it does nothing.
 
+Auto-pair (`autoPair`): with nothing selected, typing `(`, `[`, `{`, `"`, `'` or `` ` `` inserts the closer too with the cursor between, typing a closer steps over an identical next character, and Backspace between an opener and its closer deletes both. `'` and `"` do not pair after a word character, so "don't" is untouched. The markers `*`, `_`, `~` and `=` never pair. Typing `[` twice gives `[[]]` with the cursor inside, which opens the `[[` picker when `pickerExtension` is installed; `wikiLinkAutoClose: false` turns off only that `[[` to `[[]]` close (`[[` then leaves a single `]`). `Ctrl-Space` inside `[[…]]` reopens the picker after it was dismissed. With several cursors every pair applies at each cursor and the picker stays closed.
+
 ```ts
 editingShortcuts({
   // Keyed by command name, merged over the defaults. `false` disables one.

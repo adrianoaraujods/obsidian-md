@@ -99,7 +99,7 @@
     "url": "https://github.com/adrianoaraujods/obsidian-md/issues"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.4",

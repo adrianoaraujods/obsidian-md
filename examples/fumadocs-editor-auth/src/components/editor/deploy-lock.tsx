@@ -58,7 +58,8 @@ function noticeOnlyLock(flow: SaveFlow): SaveLock {
  * The deploy lock for the authenticated Example. When `/api/build` reports no
  * commit (or cannot be reached) the host cannot tell us when a change is live,
  * so nothing locks and the person sees a one-time notice after their first
- * Save. `storage` must have the `lock` capability (`createStorageClient({
+ * Save. `lockedCommit` starts the lock locked on a commit made before the
+ * editor opened (a just-created Note). `storage` must have the `lock` capability (`createStorageClient({
  * lock: true })`).
  */
 export async function startDeployLock(
@@ -66,10 +67,11 @@ export async function startDeployLock(
   storage: Storage,
   timings: LockTimings = {},
   readBuildSha: () => Promise<string | null> = fetchBuildSha,
+  lockedCommit?: string,
 ): Promise<SaveLock> {
   const sha = await readBuildSha().catch(() => null);
   if (!sha) return noticeOnlyLock(flow);
-  return createSaveLock(flow, { storage, ...timings });
+  return createSaveLock(flow, { storage, ...timings, lockedCommit });
 }
 
 /** The lock's current state, re-rendering on change. */

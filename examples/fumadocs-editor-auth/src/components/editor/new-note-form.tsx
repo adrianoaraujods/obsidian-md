@@ -41,10 +41,13 @@ export function NewNoteForm({ existingPaths, folder }: Props) {
     setBusy(true);
     setError(null);
     try {
-      await createStorageClient({ url: "/api/notes" }).create(target, "");
-      location.assign(
-        `/edit/new/open?${new URLSearchParams({ path: target })}`,
-      );
+      const { commit } = await createStorageClient({
+        url: "/api/notes",
+      }).create(target, "");
+      const query = new URLSearchParams({ path: target });
+      // The editor opens locked on this commit until it is deployed.
+      if (commit) query.set("commit", commit);
+      location.assign(`/edit/new/open?${query}`);
     } catch (cause) {
       setError(
         (cause as { code?: string } | null)?.code === "already-exists"

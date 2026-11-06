@@ -111,6 +111,10 @@ Decorations are rebuilt when a re-parse lands or the selection moves, and only m
 
 Line breaks: the document always splits on `\n`, so a `\r` stays a character and positions equal text offsets. In a Note that is purely CRLF, Enter inserts `\r\n`.
 
+### `[[` picker
+
+`pickerExtension({ candidates, resolver?, maxResults? })` (pass it in `extensions`) opens a Note picker when `[[` is typed. `candidates` is `NoteCandidate[]` (`{ path, title?, aliases? }`) or a getter, ranked by `rankCandidates`. Choosing one inserts a closed Wiki Link; `wikiLinkTarget` uses the bare name when the injected `Resolver` (or, by default, name uniqueness) reaches that Note, else the path.
+
 ### Save flow
 
 `createSaveFlow({ storage, path, content, sha, getText, confirm })` saves through a `Storage`. Pass `saveFlowExtension(flow)` in `extensions` (dirty tracking, Mod-s), call `flow.attachBeforeUnload()` for the leave-page warning and `mountConflictBanner(flow, parent)` for the conflict banner. `confirm(request)` is the host's dialog (`kind` is `save`, `overwrite` or `reload`; `request.message` is ready to show). A stale SHA commits nothing and sets `state.status` to `conflict`; `flow.overwrite()` refetches the base SHA and re-asks through `confirm`. `flow.subscribe` and `flow.onSaved` (with the `commit` for `Storage.lock`) are the hooks for lock handling.
@@ -118,6 +122,14 @@ Line breaks: the document always splits on `\n`, so a `\r` stays a character and
 ### Lock after Save
 
 `createSaveLock(flow, { storage, firstPollMs, intervalMs, timeoutMs })` listens to `flow.onSaved`. When `storage.lock` exists and the Save returned a `commit`, `lock.state.status` becomes `locked`; it polls `storage.lock.isDeployed(commit)` first after `firstPollMs` (1 minute), then every `intervalMs` (5 seconds), and returns to `unlocked` as soon as the deploy is live. After `timeoutMs` (5 minutes) the status is `timeout`: offer `lock.reload()` (Reload from GitHub, through the flow's `confirm`) and `lock.keepWaiting()`. If the Save returns no `commit`, `state.notice` is set once and nothing locks. Without `storage.lock`, and on a conflict, it never locks. Use `lock.subscribe` to disable the editor and `lock.dispose()` on unmount.
+
+### Inline Live Preview
+
+`inlineProviders` renders Wiki Links, Highlights (with Highlight Color), Comments, inline Footnotes and Block IDs, revealing the raw syntax under the cursor. Block IDs are not parse nodes, so wrap the parser with `blockIdParser()`:
+
+```ts
+createEditor({ parent, doc, providers: inlineProviders, parser: blockIdParser() });
+```
 
 ## New Note screen
 
@@ -135,15 +147,3 @@ const screen = createNewNoteScreen({
 ```
 
 The folder field offers existing folders and accepts a typed nested one; a folder exists only once a Note is created in it. `resolveNewNote({ folder, name, existing })` returns `{ ok: true, path }` or `{ ok: false, error }` (empty name, leading `/`, `..` segment, characters GitHub paths reject, existing path, case-only difference). `listFolders(paths)` derives the picker list.
-
-### Inline Live Preview
-
-`inlineProviders` renders Wiki Links, Highlights (with Highlight Color), Comments, inline Footnotes and Block IDs, revealing the raw syntax under the cursor. Block IDs are not parse nodes, so wrap the parser with `blockIdParser()`:
-
-```ts
-createEditor({ parent, doc, providers: inlineProviders, parser: blockIdParser() });
-```
-
-### `[[` picker
-
-`pickerExtension({ candidates, resolver?, maxResults? })` (pass it in `extensions`) opens a Note picker when `[[` is typed. `candidates` is `NoteCandidate[]` (`{ path, title?, aliases? }`) or a getter, ranked by `rankCandidates`. Choosing one inserts a closed Wiki Link; `wikiLinkTarget` uses the bare name when the injected `Resolver` (or, by default, name uniqueness) reaches that Note, else the path.

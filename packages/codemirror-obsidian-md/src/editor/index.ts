@@ -10,7 +10,6 @@ export {
   frontmatterLength,
   PLAIN_SOURCE_TYPES,
 } from "./parse.js";
-export { markdownProvider } from "./providers/markdown.js";
 export {
   type NoteCandidate,
   type PickerOptions,
@@ -22,6 +21,7 @@ export {
   type CalloutEmbedOptions,
   calloutEmbed,
 } from "./providers/callout-embed.js";
+
 export {
   blockIdParser,
   blockIdProvider,
@@ -31,6 +31,7 @@ export {
   inlineProviders,
   wikiLinkProvider,
 } from "./providers/inline.js";
+export { markdownProvider } from "./providers/markdown.js";
 export * from "./save-flow.js";
 export {
   constructProviders,

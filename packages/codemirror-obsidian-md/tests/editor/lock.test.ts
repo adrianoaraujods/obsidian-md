@@ -57,6 +57,16 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe("save lock", () => {
+  it("starts locked on a commit made before the editor opened", async () => {
+    const t = setup({}, { lockedCommit: "c0" });
+    expect(t.lock.state.status).toBe("locked");
+
+    t.deployed.add("c0");
+    await vi.advanceTimersByTimeAsync(MIN);
+    expect(t.polls).toEqual(["c0"]);
+    expect(t.lock.state.status).toBe("unlocked");
+  });
+
   it("locks after a successful save and unlocks once deployed", async () => {
     const t = setup();
     expect(t.lock.state.status).toBe("unlocked");

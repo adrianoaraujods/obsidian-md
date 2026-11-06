@@ -22,6 +22,12 @@ export interface SaveLockOptions {
   intervalMs?: number;
   /** Total wait, from the Save, before the timeout. Default 5 minutes. */
   timeoutMs?: number;
+  /**
+   * Start locked on a commit made before the editor opened (for example the
+   * commit that created the Note), as if a Save had just produced it. Needs
+   * `storage.lock`; without it nothing locks.
+   */
+  lockedCommit?: string;
 }
 
 export interface SaveLock {
@@ -92,6 +98,8 @@ export function createSaveLock(
     };
     timer = setTimeout(poll, Math.min(firstPollMs, timeoutMs));
   }
+
+  if (options.lockedCommit && storage.lock) start(options.lockedCommit);
 
   const offSaved = flow.onSaved((result) => {
     if (!storage.lock) return;

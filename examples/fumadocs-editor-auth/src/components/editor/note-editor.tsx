@@ -31,6 +31,8 @@ type Props = {
   candidates: NoteCandidate[];
   /** Deploy lock poll timings; the defaults suit a real deploy. */
   lockTimings?: LockTimings;
+  /** Open locked on this commit until it is deployed (a just-created Note). */
+  lockedCommit?: string;
 };
 
 type Phase =
@@ -57,6 +59,7 @@ export function NoteEditor({
   editor,
   candidates,
   lockTimings,
+  lockedCommit,
 }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const banner = useRef<HTMLDivElement>(null);
@@ -68,9 +71,14 @@ export function NoteEditor({
   const lockState = useLockState(lock);
   // Read when the editor mounts. Keeping them out of the effect's deps means a
   // re-render with new object identities never reloads the Note and loses text.
-  const props = useRef({ editor, candidates, lockTimings });
+  const props = useRef({
+    editor,
+    candidates,
+    lockTimings,
+    lockedCommit,
+  });
   useEffect(() => {
-    props.current = { editor, candidates, lockTimings };
+    props.current = { editor, candidates, lockTimings, lockedCommit };
   });
 
   useEffect(() => {
@@ -132,13 +140,17 @@ export function NoteEditor({
         offBanner = mountConflictBanner(flow, banner.current);
         offUnload = flow.attachBeforeUnload();
         offState = flow.subscribe(setState);
-        void startDeployLock(flow, storage, props.current.lockTimings).then(
-          (started) => {
-            if (cancelled) return started.dispose();
-            saveLock = started;
-            setLock(started);
-          },
-        );
+        void startDeployLock(
+          flow,
+          storage,
+          props.current.lockTimings,
+          undefined,
+          props.current.lockedCommit,
+        ).then((started) => {
+          if (cancelled) return started.dispose();
+          saveLock = started;
+          setLock(started);
+        });
         setPhase({ kind: "ready" });
       },
       (error) => {

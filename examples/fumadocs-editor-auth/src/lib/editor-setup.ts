@@ -1,7 +1,7 @@
 import {
   blockIdParser,
-  calloutEmbed,
   type ConstructProvider,
+  calloutEmbed,
   inlineProviders,
   markdownProvider,
   type NoteCandidate,
@@ -22,7 +22,10 @@ export function editorSetup(options: {
 }): {
   providers: readonly ConstructProvider[];
   parser: ReturnType<typeof blockIdParser>;
-  extensions: (ReturnType<typeof pickerExtension> | ReturnType<typeof calloutEmbed>)[];
+  extensions: (
+    | ReturnType<typeof pickerExtension>
+    | ReturnType<typeof calloutEmbed>
+  )[];
 } {
   return {
     providers: [...inlineProviders, markdownProvider],

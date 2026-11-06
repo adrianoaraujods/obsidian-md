@@ -1,6 +1,6 @@
 {
   "name": "codemirror-obsidian-md",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": "Adriano Araújo (adrianoaraujodsantos@hotmail.com)",
   "description": "CodeMirror 6 editor with Live Preview for Obsidian.md syntax, plus the storage interface it saves through",
   "license": "MIT",
@@ -76,7 +76,7 @@
   "peerDependencies": {
     "@codemirror/state": "^6.7.6",
     "@codemirror/view": "^6.43.15",
-    "remark-obsidian-md": "^3.0.0",
+    "remark-obsidian-md": "^3.1.0",
     "vitest": "^5.0.0"
   },
   "peerDependenciesMeta": {

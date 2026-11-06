@@ -1,8 +1,9 @@
 import { EditorSelection, type EditorState, Prec } from "@codemirror/state";
-import { type KeyBinding, keymap } from "@codemirror/view";
+import { type Command, keymap } from "@codemirror/view";
 
 import { isCrlf } from "../state.js";
 import { inFencedCode } from "./code-fence.js";
+import { indentListItem, unindentListItem } from "./list-indent.js";
 import { continuationPrefix, parseListLine } from "./list-line.js";
 
 /** Where the line at `pos` ends, before any `\r` of a CRLF line break. */
@@ -12,7 +13,7 @@ function contentEnd(state: EditorState, pos: number): number {
 }
 
 /** Enter continues the list item, quote or Callout line the cursor is on. */
-const continueList: KeyBinding["run"] = (view) => {
+const continueList: Command = (view) => {
   if (view.composing || view.compositionStarted) return false;
   const { state } = view;
   const crlf = isCrlf(state.doc.toString());
@@ -58,7 +59,7 @@ const continueList: KeyBinding["run"] = (view) => {
 };
 
 /** Backspace after an empty marker removes the marker. */
-const removeEmptyMarker: KeyBinding["run"] = (view) => {
+const removeEmptyMarker: Command = (view) => {
   if (view.composing || view.compositionStarted) return false;
   const { state } = view;
   const emptyLines = state.selection.ranges.map((range) => {
@@ -93,6 +94,8 @@ export function listContinuation() {
     keymap.of([
       { key: "Enter", run: continueList },
       { key: "Backspace", run: removeEmptyMarker },
+      { key: "Tab", run: indentListItem },
+      { key: "Shift-Tab", run: unindentListItem },
     ]),
   );
 }

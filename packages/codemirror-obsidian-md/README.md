@@ -144,6 +144,8 @@ Line breaks: the document always splits on `\n`, so a `\r` stays a character and
 
 Shipped so far: `Mod-b` and `Mod-i` toggle bold and italic. They detect either marker style (`**`/`__`, `*`/`_`), always wrap with `**` and `*`, leave the inner text selected, and insert an empty pair with the cursor inside when nothing is selected. Each range toggles by its own state.
 
+`Mod-k` makes the selection `[selection]()` with the cursor in the parentheses, or inserts `[]()` with the cursor in the brackets when nothing is selected. While the editor handles `Mod-k` it stops the event from propagating, so a host's global `Mod-k` (the Fumadocs search dialog) does not also fire; outside the editor it is untouched. With `pasteUrlAsLink`, pasting a single http(s) URL over selected text makes `[text](url)` and leaves the cursor after it. Both apply per range and are skipped while composing.
+
 ```ts
 editingShortcuts({
   // Keyed by command name, merged over the defaults. `false` disables one.
@@ -161,7 +163,7 @@ editingShortcuts({
 | ------------ | ----------- | ----------- |
 | `bold`       | `Mod-b`     | shipped     |
 | `italic`     | `Mod-i`     | shipped     |
-| `link`       | `Mod-k`     | not yet     |
+| `link`       | `Mod-k`     | shipped     |
 | `indent`     | `Mod-]`     | not yet     |
 | `unindent`   | `Mod-[`     | not yet     |
 | `toggleTask` | `Mod-Enter` | not yet     |

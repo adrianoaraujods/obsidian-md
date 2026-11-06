@@ -2,6 +2,8 @@ import { type Extension, Prec } from "@codemirror/state";
 import { type Command, type KeyBinding, keymap } from "@codemirror/view";
 
 import { toggleBold, toggleItalic } from "./editing/emphasis.js";
+import { insertLink } from "./editing/link.js";
+import { pasteUrlAsLink } from "./editing/paste-url.js";
 
 /** The Editing Shortcuts, by command name. */
 export type EditingCommand =
@@ -40,6 +42,7 @@ export const DEFAULT_EDITING_KEYS: Readonly<Record<EditingCommand, string>> = {
 const COMMANDS: Partial<Record<EditingCommand, Command>> = {
   bold: toggleBold,
   italic: toggleItalic,
+  link: insertLink,
 };
 
 /**
@@ -60,9 +63,13 @@ export function editingShortcuts(
       key,
       run: (view) => !composing(view) && command(view),
       preventDefault: true,
+      // A host's global Mod-k (Fumadocs search) must not also fire.
+      stopPropagation: name === "link",
     });
   }
-  return Prec.high(keymap.of(bindings));
+  const extensions: Extension[] = [keymap.of(bindings)];
+  if (options.pasteUrlAsLink !== false) extensions.push(pasteUrlAsLink);
+  return Prec.high(extensions);
 }
 
 function composing(view: { composing: boolean; compositionStarted: boolean }) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useId } from "react";
+import { type ReactNode, useId, useSyncExternalStore } from "react";
 
 import {
   Collapsible,
@@ -8,6 +8,22 @@ import {
   CollapsibleTrigger,
 } from "./collapsible.js";
 import { persistedOpenScript, usePersistedOpen } from "./use-persisted-open.js";
+
+const noop = () => () => {};
+
+/**
+ * True for the server render and the hydration pass, false for a render made
+ * only on the client (a client-side navigation). React rejects a `<script>`
+ * rendered there, and the script has nothing left to do: the panel's state is
+ * already read from storage by then.
+ */
+function useServerOrHydrating(): boolean {
+  return useSyncExternalStore(
+    noop,
+    () => false,
+    () => true,
+  );
+}
 
 /**
  * Collapsible shell around the Properties rows. Remembers its state in
@@ -38,6 +54,7 @@ export function PropertiesPanel({
 }) {
   const id = useId();
   const [open, setOpen] = usePersistedOpen(storageKey, defaultOpen);
+  const serverOrHydrating = useServerOrHydrating();
 
   return (
     <>
@@ -61,7 +78,7 @@ export function PropertiesPanel({
           </CollapsiblePanel>
         </Collapsible>
       </div>
-      {noFlash ? (
+      {noFlash && serverOrHydrating ? (
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: no-flash script, content is built from constants
           dangerouslySetInnerHTML={{

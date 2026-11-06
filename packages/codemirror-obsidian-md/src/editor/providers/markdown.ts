@@ -90,8 +90,12 @@ export const markdownProvider: ConstructProvider = {
           ),
         );
         const marker = /^#{1,6}[ \t]+/.exec(doc.sliceString(from, to));
-        if (marker && !revealed) {
-          out.push(hide.range(from, from + marker[0].length));
+        if (marker) {
+          out.push(
+            revealed
+              ? mark("cm-obsidian-heading-mark", from, from + marker[0].length)
+              : hide.range(from, from + marker[0].length),
+          );
         }
         break;
       }

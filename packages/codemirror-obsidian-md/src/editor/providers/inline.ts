@@ -12,12 +12,21 @@ import type {
 /** Hides source text; the document is untouched. */
 const hide = Decoration.replace({});
 
+/**
+ * The raw syntax of a construct the cursor is inside: a class-only mark, so
+ * the source stays legible and styled instead of reverting to plain text.
+ */
+const raw = (cls: string, c: Construct) =>
+  c.to > c.from
+    ? Decoration.mark({ class: `cm-obsidian-${cls}-raw` }).range(c.from, c.to)
+    : null;
+
 /** Wiki Link (`[[Note|Alias]]`): the label as a link, markers hidden. */
 export const wikiLinkProvider: ConstructProvider = {
   name: "wiki-link",
   types: ["wikiLink"],
   decorate(c, { revealed }): ProviderResult {
-    if (revealed) return null;
+    if (revealed) return raw("wikilink", c);
     const value = (c.node as { value?: string }).value ?? "";
     const pipe = value.indexOf("|");
     const labelFrom = c.from + (pipe === -1 ? 2 : 2 + pipe + 1);
@@ -39,7 +48,7 @@ export const highlightProvider: ConstructProvider = {
   name: "highlight",
   types: ["obsidianHighlight"],
   decorate(c, { revealed, state }): ProviderResult {
-    if (revealed) return null;
+    if (revealed) return raw("highlight", c);
     const contentFrom = c.from + 2;
     const contentTo = c.to - 2;
     if (contentTo <= contentFrom) return null;
@@ -67,7 +76,11 @@ export const commentProvider: ConstructProvider = {
   name: "comment",
   types: ["obsidianComment"],
   decorate: (c, { revealed }) =>
-    revealed || c.to <= c.from ? null : hide.range(c.from, c.to),
+    revealed
+      ? raw("comment", c)
+      : c.to <= c.from
+        ? null
+        : hide.range(c.from, c.to),
 };
 
 /** Inline Footnote (`^[text]`): superscript content, markers hidden. */
@@ -75,7 +88,8 @@ export const footnoteProvider: ConstructProvider = {
   name: "footnote",
   types: ["obsidianFootnote"],
   decorate(c, { revealed }): ProviderResult {
-    if (revealed || c.to - c.from < 3) return null;
+    if (revealed) return raw("footnote", c);
+    if (c.to - c.from < 3) return null;
     return [
       hide.range(c.from, c.from + 2),
       ...(c.to - 1 > c.from + 2
@@ -91,7 +105,11 @@ export const blockIdProvider: ConstructProvider = {
   name: "block-id",
   types: ["blockId"],
   decorate: (c, { revealed }) =>
-    revealed || c.to <= c.from ? null : hide.range(c.from, c.to),
+    revealed
+      ? raw("block-id", c)
+      : c.to <= c.from
+        ? null
+        : hide.range(c.from, c.to),
 };
 
 /** All Live Preview providers for Obsidian inline syntax. */

@@ -6,7 +6,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/); a c
 
 ## Adding a changeset
 
-The publishable packages (`remark-obsidian-md`, `react-obsidian-md`, `fumadocs-obsidian-md`) are versioned independently with [Changesets](https://github.com/changesets/changesets). The private `examples/fumadocs` app is ignored.
+The publishable packages (`remark-obsidian-md`, `react-obsidian-md`, `fumadocs-obsidian-md`, `codemirror-obsidian-md`) are versioned independently with [Changesets](https://github.com/changesets/changesets). The private `examples/fumadocs`, `examples/fumadocs-editor` and `examples/fumadocs-editor-auth` apps are ignored.
 
 For any user-visible change to a package (feature, fix, breaking change), add a changeset in the same pull request:
 

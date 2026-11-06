@@ -61,13 +61,14 @@
       "types": "./dist/new-note/index.d.ts",
       "default": "./dist/new-note/index.js"
     },
+    "./styles.css": "./dist/styles.css",
     "./editor": {
       "types": "./dist/editor/index.d.ts",
       "default": "./dist/editor/index.js"
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/copy-styles.mjs",
     "test": "vitest run --coverage",
     "prepublishOnly": "pnpm run build",
     "lint": "biome check",

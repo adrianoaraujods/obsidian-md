@@ -222,39 +222,6 @@ function createEmbedProvider(options: CalloutEmbedOptions): ConstructProvider {
 
 // -- Packaging --------------------------------------------------------------
 
-const theme = EditorView.baseTheme({
-  ".cm-callout": {
-    paddingLeft: "12px",
-    paddingRight: "12px",
-    borderLeft:
-      "1px solid color-mix(in srgb, var(--callout-color) 30%, transparent)",
-    borderRight:
-      "1px solid color-mix(in srgb, var(--callout-color) 30%, transparent)",
-    backgroundColor:
-      "color-mix(in srgb, var(--callout-color) 10%, transparent)",
-  },
-  ".cm-callout-first": {
-    borderTop:
-      "1px solid color-mix(in srgb, var(--callout-color) 30%, transparent)",
-    borderTopLeftRadius: "6px",
-    borderTopRightRadius: "6px",
-    paddingTop: "8px",
-  },
-  ".cm-callout-last": {
-    borderBottom:
-      "1px solid color-mix(in srgb, var(--callout-color) 30%, transparent)",
-    borderBottomLeftRadius: "6px",
-    borderBottomRightRadius: "6px",
-    paddingBottom: "8px",
-  },
-  ".cm-embed-chip": {
-    padding: "0 6px",
-    borderRadius: "4px",
-    backgroundColor: "color-mix(in srgb, currentColor 10%, transparent)",
-  },
-  ".cm-content img.internal-embed": { maxWidth: "100%" },
-});
-
 /**
  * Live Preview for Callouts and Embeds (a Callout renders with its type's
  * color and icon, an Asset Embed as its image, a Note Embed as a chip; each
@@ -269,6 +236,5 @@ export function calloutEmbed(options: CalloutEmbedOptions = {}): Extension {
     constructProviders.of(createCalloutProvider(options)),
     constructProviders.of(createEmbedProvider(options)),
     EditorView.editorAttributes.of({ class: "markdown-rendered" }),
-    theme,
   ];
 }

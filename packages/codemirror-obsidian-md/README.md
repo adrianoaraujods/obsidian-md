@@ -73,6 +73,29 @@ editor.destroy();
 
 Peer dependencies: `remark-obsidian-md` (the parser, ADR 0014), `@codemirror/state` and `@codemirror/view`.
 
+### Editor Stylesheet
+
+`createEditor` emits `cm-*` classes and styles nothing. For the Live Preview look, opt in with one import, like the plugin Stylesheet (ADR 0008):
+
+```ts
+import "codemirror-obsidian-md/styles.css";
+import "remark-obsidian-md/styles.css"; // Highlights and Callouts, as on the Wiki
+```
+
+The Stylesheet covers headings (2em to 1em, bold, `#` markers dimmed on the cursor line), emphasis, inline code, quotes, bullets, task checkboxes, Wiki Links, Embeds, a Callout drawn as one box, the `[[` picker, and a cursor and selection that follow the theme. It has no dark-mode logic and does not read `prefers-color-scheme`: set the CSS variables from your own tokens, under `.dark` too. Every variable is optional and defaults to the inherited text colour or a neutral value.
+
+```css
+body {
+  --obsidian-editor-fg: var(--foreground);
+  --obsidian-editor-bg: var(--background);
+  --obsidian-editor-cursor: var(--foreground);
+  --obsidian-editor-selection: color-mix(in oklab, var(--primary) 30%, transparent);
+  --obsidian-editor-popover-bg: var(--popover); /* the `[[` picker mounts on body */
+}
+```
+
+Variables: `--obsidian-editor-` + `font`, `mono-font`, `line-height`, `fg`, `bg`, `cursor`, `selection`, `muted`, `accent`, `border`, `code-bg`, `popover-fg`, `popover-bg`, `popover-border`, `active-fg`, `active-bg`, `radius`, `heading-weight`, `h1-size` to `h6-size`. Define them on `body` or an ancestor that also contains the picker, which CodeMirror mounts outside the editor.
+
 ### How it works
 
 1. `createNoteParser()` parses the Note with `unified().use(remarkParse).use(remarkGfm).use(remarkMath).use(remarkObsidianMd)` (parse only, no transform, so Comments keep their positions). Frontmatter is skipped. Tables, fenced code, math, Mermaid and reference footnotes (`PLAIN_SOURCE_TYPES`) yield no constructs, so they stay plain source.
@@ -105,7 +128,7 @@ Later Live Preview work adds to the core without changing it.
 - **Parser.** Pass `parser: (text) => Construct[]` to replace the default, e.g. to add block-level scans such as `scanBlockIds`.
 - **Extra extensions** (autocomplete picker, keymaps, save flow): pass `extensions`, or use `obsidianMd(doc, options)` to compose the core into your own `EditorState`. `reparse(view)` forces a re-parse; `constructsField` and `decorationsField` expose the state.
 
-- **Callouts and Embeds.** `calloutEmbed({ types?, resolveAsset? })` (pass it in `extensions`) renders Callouts, Asset Embeds (images) and Note Embeds (chips) with the plugin Stylesheet class names; import `remark-obsidian-md/styles.css` for the colors and icons. The editor gets the `markdown-rendered` class.
+- **Callouts and Embeds.** `calloutEmbed({ types?, resolveAsset? })` (pass it in `extensions`) renders Callouts, Asset Embeds (images) and Note Embeds (chips) with the plugin Stylesheet class names; import `remark-obsidian-md/styles.css` for the colors and icons. The editor gets the `markdown-rendered` class (the Stylesheet above joins a Callout's lines into one box).
 
 Decorations are rebuilt when a re-parse lands or the selection moves, and only mapped while typing.
 

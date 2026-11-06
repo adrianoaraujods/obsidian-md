@@ -2,6 +2,7 @@ import { type Extension, Prec } from "@codemirror/state";
 import { type Command, type KeyBinding, keymap } from "@codemirror/view";
 
 import { toggleBold, toggleItalic } from "./editing/emphasis.js";
+import { listContinuation } from "./editing/list-continuation.js";
 
 /** The Editing Shortcuts, by command name. */
 export type EditingCommand =
@@ -62,7 +63,10 @@ export function editingShortcuts(
       preventDefault: true,
     });
   }
-  return Prec.high(keymap.of(bindings));
+  return [
+    Prec.high(keymap.of(bindings)),
+    options.listContinuation === false ? [] : listContinuation(),
+  ];
 }
 
 function composing(view: { composing: boolean; compositionStarted: boolean }) {

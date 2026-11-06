@@ -144,6 +144,8 @@ Line breaks: the document always splits on `\n`, so a `\r` stays a character and
 
 Shipped so far: `Mod-b` and `Mod-i` toggle bold and italic. They detect either marker style (`**`/`__`, `*`/`_`), always wrap with `**` and `*`, leave the inner text selected, and insert an empty pair with the cursor inside when nothing is selected. Each range toggles by its own state.
 
+Enter continues a bullet (`-`, `*`, `+`), numbered (`1.`, `1)`, counting up), task (`- [ ]`, continued unchecked), quote and Callout (`>`) line with the same marker and indentation, and splits an item at the cursor. Enter on an empty item and Backspace on an empty marker remove the marker. It does nothing inside a fenced code block, treats a `%%` Comment as ordinary text, keeps a CRLF Note on `\r\n`, and is switched off with `listContinuation: false`.
+
 ```ts
 editingShortcuts({
   // Keyed by command name, merged over the defaults. `false` disables one.

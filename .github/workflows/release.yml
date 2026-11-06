@@ -30,6 +30,7 @@ jobs:
       - run: npm --version
       - run: pnpm install --frozen-lockfile
       - uses: changesets/action@v1
+        id: changesets
         with:
           version: pnpm version-packages
           publish: pnpm release
@@ -43,3 +44,11 @@ jobs:
           # Authentication is OIDC trusted publishing: no NPM_TOKEN. Provenance
           # attestations are requested explicitly for every publish.
           NPM_CONFIG_PROVENANCE: "true"
+      # Tag and create a GitHub Release for each newly published version. The
+      # action does this only when it can parse tags from the publish output,
+      # which is not reliable, so derive them from the package versions.
+      - name: Tag and release published versions
+        if: steps.changesets.outcome == 'success'
+        run: .github/scripts/tag-releases.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

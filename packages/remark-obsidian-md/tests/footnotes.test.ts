@@ -146,16 +146,18 @@ describe("Inline Footnotes", () => {
     });
   });
 
-  it("points the parsed children at the footnote's content range", () => {
+  it("gives each parsed child its own source position", () => {
     const tree = process("Note^[*em*]");
     const emphasis = footnoteOf(tree).children?.[0] as Emphasis;
-    const range = {
+
+    expect(emphasis.position).toEqual({
       start: { line: 1, column: 7, offset: 6 },
       end: { line: 1, column: 11, offset: 10 },
-    };
-
-    expect(emphasis.position).toEqual(range);
-    expect(emphasis.children?.[0]?.position).toEqual(range);
+    });
+    expect(emphasis.children?.[0]?.position).toEqual({
+      start: { line: 1, column: 8, offset: 7 },
+      end: { line: 1, column: 10, offset: 9 },
+    });
   });
 
   it("keeps a footnote that holds elements a container instead of raw text", () => {
@@ -716,8 +718,14 @@ describe("Highlight Colors in Footnotes", () => {
       end: { line: 1, column: 36, offset: 35 },
     });
     expect(highlight.position).toEqual(contentRange);
-    expect(strong.position).toEqual(contentRange);
-    expect(strong.children?.[0]?.position).toEqual(contentRange);
+    expect(strong.position).toEqual({
+      start: { line: 1, column: 11, offset: 10 },
+      end: { line: 1, column: 19, offset: 18 },
+    });
+    expect(strong.children?.[0]?.position).toEqual({
+      start: { line: 1, column: 13, offset: 12 },
+      end: { line: 1, column: 17, offset: 16 },
+    });
     expect(source.slice(6, 34)).toBe("==🔴**bold** [[Wiki Link]]==");
   });
 

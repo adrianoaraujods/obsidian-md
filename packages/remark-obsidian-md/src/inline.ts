@@ -50,6 +50,25 @@ export function parseInlineContent(
   const [child] = tree.children;
   if (child?.type !== "paragraph") return undefined;
 
+  // Positions count from the content's start, without the added space.
+  if (source !== content) {
+    const unshift = (point: Position["start"]): Position["start"] => ({
+      line: point.line,
+      column: point.line === 1 ? point.column - 1 : point.column,
+      offset: (point.offset ?? 0) - 1,
+    });
+    for (const node of child.children) {
+      visit(node, (n) => {
+        if (n.position) {
+          n.position = {
+            start: unshift(n.position.start),
+            end: unshift(n.position.end),
+          };
+        }
+      });
+    }
+  }
+
   return child.children;
 }
 
@@ -83,14 +102,23 @@ export function contentPosition(
 }
 
 /**
- * Points every descendant of a construct at its content range: the nested
- * parse's own positions are relative to it.
- * ponytail: no per-node positions inside a Footnote or a Highlight; offset the
- * nested parse's positions by the content's start offset.
+ * Moves every descendant of a construct from the nested parse's own
+ * coordinates (line 1, column 1, offset 0 is the content's start) into the
+ * Note's, so each keeps the position of its own source. `position` is the
+ * content range; only its start is used.
  */
 export function applyContentPosition(node: Node, position: Position): void {
+  const origin = position.start;
+  const shift = (point: Position["start"]): Position["start"] => ({
+    line: point.line + origin.line - 1,
+    column: point.line === 1 ? point.column + origin.column - 1 : point.column,
+    offset: (point.offset ?? 0) + (origin.offset ?? 0),
+  });
   visit(node, (child) => {
-    if (child === node) return;
-    child.position = position;
+    if (child === node || !child.position) return;
+    child.position = {
+      start: shift(child.position.start),
+      end: shift(child.position.end),
+    };
   });
 }

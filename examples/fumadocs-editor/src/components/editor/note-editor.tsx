@@ -8,13 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
-/** What the toolbar shows; `error` and `conflict` keep their own banner. */
-function statusLabel(state: SaveFlow["state"]) {
-  if (state.status === "saving") return "Saving…";
-  if (state.status === "conflict") return "Conflict";
-  if (state.status === "error") return "Save failed";
-  return state.dirty ? "Unsaved changes" : "All changes saved";
-}
+import { failureMessage, savedMessage, statusLabel } from "@/lib/save-status";
 
 /**
  * The live editor. The editor code is imported dynamically, so only the edit
@@ -32,6 +26,10 @@ export function NoteEditor(props: {
   // the editor and silently reloads the file under the writer.
   const candidatesRef = useRef(props.candidates);
   candidatesRef.current = props.candidates;
+  // Also a ref: a new href (the route changed under us) must not remount the
+  // editor either. The "View note" action reads it when it is clicked.
+  const viewHrefRef = useRef(viewHref);
+  viewHrefRef.current = viewHref;
   const parentRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
   const [flow, setFlow] = useState<SaveFlow | null>(null);
@@ -60,19 +58,18 @@ export function NoteEditor(props: {
         let previous = setup.flow.state.status;
         const offState = setup.flow.subscribe((next) => {
           setState(next);
-          if (next.status !== previous && next.status === "error") {
-            toast.error(`Could not save ${noteName}`);
-          }
-          if (next.status !== previous && next.status === "conflict") {
-            toast.error(`Could not save ${noteName}: it changed elsewhere`);
-          }
+          const failure =
+            next.status === previous
+              ? null
+              : failureMessage(next.status, noteName);
+          if (failure) toast.error(failure);
           previous = next.status;
         });
         const offSaved = setup.flow.onSaved(() =>
-          toast.success(`Saved ${noteName}`, {
+          toast.success(savedMessage(noteName), {
             action: {
               label: "View note",
-              onClick: () => router.push(viewHref),
+              onClick: () => router.push(viewHrefRef.current),
             },
           }),
         );
@@ -89,7 +86,7 @@ export function NoteEditor(props: {
       cancelled = true;
       destroy?.();
     };
-  }, [path, noteName, viewHref, router]);
+  }, [path, noteName, router]);
 
   // Ctrl/Cmd+S saves from anywhere on the page. The editor binds it too and
   // marks the event handled, so a save started there is not repeated here.

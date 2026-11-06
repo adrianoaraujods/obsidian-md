@@ -126,12 +126,17 @@
    already redefines, so the editor follows the theme. They sit on body so the
    `[[` picker, which CodeMirror mounts outside the editor, reads them too. */
 body {
-  --obsidian-editor-font: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --obsidian-editor-font:
+    var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --obsidian-editor-mono-font: var(--font-geist-mono), ui-monospace, monospace;
   --obsidian-editor-fg: var(--foreground);
   --obsidian-editor-bg: var(--background);
   --obsidian-editor-cursor: var(--foreground);
-  --obsidian-editor-selection: color-mix(in oklab, var(--primary) 30%, transparent);
+  --obsidian-editor-selection: color-mix(
+    in oklab,
+    var(--primary) 30%,
+    transparent
+  );
   --obsidian-editor-muted: var(--muted-foreground);
   --obsidian-editor-accent: var(--primary);
   --obsidian-editor-border: var(--border);
@@ -144,7 +149,11 @@ body {
 }
 .dark body {
   /* A dark background needs a stronger tint to read as selected. */
-  --obsidian-editor-selection: color-mix(in oklab, var(--primary) 55%, transparent);
+  --obsidian-editor-selection: color-mix(
+    in oklab,
+    var(--primary) 55%,
+    transparent
+  );
 }
 
 @layer base {

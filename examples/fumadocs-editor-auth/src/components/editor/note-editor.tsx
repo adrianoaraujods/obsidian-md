@@ -13,9 +13,7 @@ import {
   saveFlowExtension,
 } from "codemirror-obsidian-md/editor";
 import { createStorageClient } from "codemirror-obsidian-md/storage/client";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -24,14 +22,10 @@ import { type CommitEditor, commitPreview } from "@/lib/commit-preview";
 import { editorSetup } from "@/lib/editor-setup";
 import type { LockTimings } from "@/lib/lock-timings";
 import { saveErrorMessage } from "@/lib/save-errors";
-import {
-  deployToast,
-  type SaveToast,
-  savedToast,
-  statusLabel,
-} from "@/lib/save-status";
+import { statusLabel } from "@/lib/save-status";
 import { CommitDialog, type PendingConfirm } from "./commit-dialog";
 import { DeployLockPanel, startDeployLock, useLockState } from "./deploy-lock";
+import { useSaveToasts } from "./use-save-toasts";
 
 type Props = {
   /** The Note's path in the Vault, e.g. `Folder/Note.md`. */
@@ -83,21 +77,14 @@ export function NoteEditor({
   const [pending, setPending] = useState<PendingConfirm | null>(null);
   const [lock, setLock] = useState<SaveLock | null>(null);
   const [savedHere, setSavedHere] = useState(false);
-  const router = useRouter();
   const lockState = useLockState(lock);
   // Read when the editor mounts. Keeping them out of the effect's deps means a
   // re-render with new object identities never reloads the Note and loses text.
-  const props = useRef({
-    editor,
-    candidates,
-    lockTimings,
-    lockedCommit,
-    viewHref,
-  });
+  const latest = useRef({ editor, candidates, lockTimings, lockedCommit });
   useEffect(() => {
-    props.current = { editor, candidates, lockTimings, lockedCommit, viewHref };
+    latest.current = { editor, candidates, lockTimings, lockedCommit };
   });
-  const noteName = title;
+  const toasts = useSaveToasts(path, title, viewHref);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,25 +94,8 @@ export function NoteEditor({
     let offState = () => {};
     let offReload = () => {};
     let offSaved = () => {};
+    let offToasts = () => {};
     let offLock = () => {};
-    const toastId = `save-${path}`;
-    // One toast per Save: it is created by the Save and updated in place as
-    // the deploy lock moves, so "View note" only appears once it is live.
-    const show = (next: SaveToast) => {
-      const options = {
-        id: toastId,
-        duration: next.kind === "loading" ? Number.POSITIVE_INFINITY : 8000,
-        action: next.action
-          ? {
-              label: "View note",
-              onClick: () => router.push(props.current.viewHref),
-            }
-          : null,
-      };
-      if (next.kind === "loading") toast.loading(next.message, options);
-      else if (next.kind === "error") toast.error(next.message, options);
-      else toast.success(next.message, options);
-    };
     let saveLock: SaveLock | null = null;
 
     const storage = createStorageClient({ url: "/api/notes", lock: true });
@@ -137,7 +107,7 @@ export function NoteEditor({
           preview:
             request.kind === "reload"
               ? null
-              : commitPreview(path, props.current.editor),
+              : commitPreview(path, latest.current.editor),
           resolve: (answer) => {
             setPending(null);
             resolve(answer);
@@ -149,7 +119,7 @@ export function NoteEditor({
       (file) => {
         if (cancelled || !host.current || !banner.current) return;
         const setup = editorSetup({
-          candidates: props.current.candidates,
+          candidates: latest.current.candidates,
         });
         // The flow needs the handle's text and the handle needs the flow's
         // extension, so the flow reads through this late-bound getter.
@@ -177,48 +147,20 @@ export function NoteEditor({
         });
         offBanner = mountConflictBanner(flow, banner.current);
         offUnload = flow.attachBeforeUnload();
-        let previousStatus: SaveFlowState["status"] = flow.state.status;
-        offState = flow.subscribe((next) => {
-          setState(next);
-          if (next.status !== previousStatus) {
-            if (next.status === "error") {
-              toast.error(`Could not save ${noteName}`, { id: toastId });
-            } else if (next.status === "conflict") {
-              toast.error(`Could not save ${noteName}: it changed elsewhere`, {
-                id: toastId,
-              });
-            }
-          }
-          previousStatus = next.status;
-        });
-        offSaved = flow.onSaved(() => {
-          setSavedHere(true);
-          // The lock locks in its own listener, which runs after this one.
-          queueMicrotask(() => {
-            if (cancelled) return;
-            if (saveLock?.state.status === "locked") {
-              show(deployToast("unlocked", "locked", noteName) as SaveToast);
-            } else {
-              show(savedToast(noteName));
-            }
-          });
-        });
+        offState = flow.subscribe(setState);
+        offToasts = toasts.watchFlow(flow, () => saveLock);
+        offSaved = flow.onSaved(() => setSavedHere(true));
         void startDeployLock(
           flow,
           storage,
-          props.current.lockTimings,
+          latest.current.lockTimings,
           undefined,
-          props.current.lockedCommit,
+          latest.current.lockedCommit,
         ).then((started) => {
           if (cancelled) return started.dispose();
           saveLock = started;
           setLock(started);
-          let from = started.state.status;
-          offLock = started.subscribe((next) => {
-            const change = deployToast(from, next.status, noteName);
-            from = next.status;
-            if (change) show(change);
-          });
+          offLock = toasts.watchLock(started);
         });
         setPhase({ kind: "ready" });
       },
@@ -234,14 +176,15 @@ export function NoteEditor({
       offState();
       offReload();
       offSaved();
+      offToasts();
       offLock();
-      toast.dismiss(toastId);
+      toasts.dismiss();
       saveLock?.dispose();
       setLock(null);
       handle?.destroy();
       flowRef.current = null;
     };
-  }, [path, noteName, router]);
+  }, [path, toasts]);
 
   // Ctrl/Cmd+S saves from anywhere on the page. The editor binds it too and
   // marks the event handled, so a save started there is not repeated here.

@@ -26,17 +26,13 @@ const CONFIRM_LABEL = {
   reload: "Reload",
 } as const;
 
-/**
- * The confirmation before a Save commits: the host's answer to the save
- * flow's `confirm` hook. It shows the commit subject and the read-only
- * trailer; the overwrite wording names who changed the Note and when.
- */
 const TABBABLE =
   "button:not([disabled]), textarea, input, [tabindex]:not([tabindex='-1'])";
 
 /**
- * Base UI's modal Dialog leaves Tab free to reach the page behind it in a
- * browser without chrome focus to hand back to, so wrap Tab at both ends.
+ * Wraps Tab at both ends of the dialog. Base UI's modal Dialog does not stop
+ * Tab from reaching the page behind it (the focus-trap e2e fails without
+ * this), so the dialog keeps focus itself.
  */
 function trapTab(event: KeyboardEvent<HTMLElement>) {
   if (event.key !== "Tab") return;
@@ -55,6 +51,11 @@ function trapTab(event: KeyboardEvent<HTMLElement>) {
   }
 }
 
+/**
+ * The confirmation before a Save commits: the host's answer to the save
+ * flow's `confirm` hook. It shows the commit subject and the read-only
+ * trailer; the overwrite wording names who changed the Note and when.
+ */
 export function CommitDialog({ pending }: { pending: PendingConfirm }) {
   const { request, preview, resolve } = pending;
 

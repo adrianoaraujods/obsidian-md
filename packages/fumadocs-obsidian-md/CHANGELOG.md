@@ -1,5 +1,14 @@
 # fumadocs-obsidian-md
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [9f41b51]
+- Updated dependencies [7d4c949]
+  - remark-obsidian-md@3.1.1
+  - react-obsidian-md@0.1.1
+
 ## 0.1.1
 
 ### Patch Changes

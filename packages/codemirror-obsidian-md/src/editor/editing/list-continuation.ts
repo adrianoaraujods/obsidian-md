@@ -3,7 +3,7 @@ import { type Command, keymap } from "@codemirror/view";
 
 import { isCrlf } from "../state.js";
 import { plainBackspace } from "./backspace.js";
-import { inFencedCode } from "./code-fence.js";
+import { fencedLines } from "./code-fence.js";
 import { isComposing } from "./composition.js";
 import { contentEnd } from "./line-text.js";
 import { indentListItem, unindentListItem } from "./list-indent.js";
@@ -21,9 +21,10 @@ const continueList: Command = (view) => {
   const { state } = view;
   const crlf = isCrlf(state.doc.toString());
   const lineBreak = crlf ? "\r\n" : "\n";
+  const fenced = fencedLines(state.doc);
   const ranges = state.selection.ranges.map((range) => {
     const line = state.doc.lineAt(range.from);
-    if (inFencedCode(state.doc, line.number)) return null;
+    if (fenced.has(line.number)) return null;
     const item = parseListLine(line.text);
     return item && range.from - line.from >= item.contentStart ? item : null;
   });
@@ -72,10 +73,11 @@ const continueList: Command = (view) => {
 const removeEmptyMarker: Command = (view) => {
   if (isComposing(view)) return false;
   const { state } = view;
+  const fenced = fencedLines(state.doc);
   const emptyLines = state.selection.ranges.map((range) => {
     if (!range.empty) return null;
     const line = state.doc.lineAt(range.from);
-    if (inFencedCode(state.doc, line.number)) return null;
+    if (fenced.has(line.number)) return null;
     const item = parseListLine(line.text);
     return item &&
       !item.content.trim() &&
@@ -105,7 +107,13 @@ const removeEmptyMarker: Command = (view) => {
   return true;
 };
 
-/** List continuation (Enter, Backspace), above the stock and CRLF Enter. */
+/**
+ * List continuation (Enter, Backspace), above the stock and CRLF Enter.
+ *
+ * Tab and Shift-Tab are registered here too, on purpose: they are part of the
+ * list behavior and have no key override of their own, so the
+ * `listContinuation` flag switches them off with Enter and Backspace (ADR 0016).
+ */
 export function listContinuation() {
   return Prec.highest(
     keymap.of([

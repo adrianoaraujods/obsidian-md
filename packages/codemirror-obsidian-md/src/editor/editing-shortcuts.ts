@@ -6,12 +6,9 @@ import { isComposing } from "./editing/composition.js";
 import { toggleBold, toggleItalic } from "./editing/emphasis.js";
 import { insertLink } from "./editing/link.js";
 import { listContinuation } from "./editing/list-continuation.js";
-import {
-  indentSelection,
-  toggleTask,
-  unindentSelection,
-} from "./editing/list-indent.js";
+import { indentSelection, unindentSelection } from "./editing/list-indent.js";
 import { pasteUrlAsLink } from "./editing/paste-url.js";
+import { toggleTask } from "./editing/task-toggle.js";
 import { typingBehaviors } from "./editing/typing.js";
 
 /** The Editing Shortcuts, by command name. */

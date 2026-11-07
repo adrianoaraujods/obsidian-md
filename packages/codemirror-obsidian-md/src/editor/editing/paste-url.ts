@@ -1,6 +1,8 @@
 import { EditorSelection } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
+import { isComposing } from "./composition.js";
+
 const URL_PATTERN = /^https?:\/\/\S+$/i;
 
 /**
@@ -10,7 +12,7 @@ const URL_PATTERN = /^https?:\/\/\S+$/i;
  */
 export const pasteUrlAsLink = EditorView.domEventHandlers({
   paste(event, view) {
-    if (view.composing || view.compositionStarted) return false;
+    if (isComposing(view)) return false;
     const url = event.clipboardData?.getData("text/plain").trim() ?? "";
     if (!URL_PATTERN.test(url)) return false;
     const { state } = view;

@@ -119,7 +119,7 @@ The editing mode where a Note shows its constructs rendered, and reveals a const
 _Avoid_: WYSIWYG, rich-text mode, split preview
 
 **Editing Shortcut**:
-A key binding that formats or restructures the Note's text in the editor, matching the one Obsidian ships by default (bold, italic, insert link, indent, unindent, toggle checkbox). A consumer may rebind or disable each one.
+A key binding that formats or restructures the Note's text in the editor, matching the one Obsidian ships by default (bold, italic, insert link, indent, unindent, toggle task). A consumer may rebind or disable each one.
 _Avoid_: hotkey, keybinding, command
 
 **Selection Wrap**:
@@ -127,7 +127,7 @@ Typing a marker or opening-bracket character while text is selected wraps the se
 _Avoid_: surround, auto-format
 
 **Auto-pair**:
-Typing an opening bracket or quote with nothing selected inserts its closer too and leaves the cursor between them; typing the closer steps over it.
+Typing an opening bracket or quote with nothing selected inserts its closer too and leaves the cursor between them; typing the closer steps over it, and Backspace on an empty pair removes both. A quote typed after a word character does not pair, so apostrophes in prose are left alone.
 _Avoid_: auto-close, bracket matching
 
 ## Styling

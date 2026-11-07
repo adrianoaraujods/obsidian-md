@@ -2,9 +2,10 @@
 
 `codemirror-obsidian-md` ships one opt-in extension that gives the editor Obsidian's editing feel: Editing Shortcuts, Selection Wrap, Auto-pair, list continuation and Tab indentation. It runs at high precedence so it beats the stock `defaultKeymap`. Each Example calls it with no options and gets Obsidian's defaults. We first meant the shortcuts to be hardcoded, but they live in a published package, so a consumer must be able to rebind them.
 
-- **Keys** are overridden per named command (bold, italic, link, indent, unindent, toggle checkbox). `false` disables one. Overrides merge over the defaults.
+- **Keys** are overridden per named command (bold, italic, link, indent, unindent, toggle task). `false` disables one. Overrides merge over the defaults.
 - **Typing behaviors** (list continuation, Auto-pair, `[[` auto-close, paste-URL-as-link, Selection Wrap) each have an on/off flag.
 - **Not configurable**: which characters wrap a selection and which pairs close. These are Obsidian's behavior, not a preference.
+- **Tab and Shift-Tab** are not named commands. They belong to list behavior, so the `listContinuation` flag switches them off together with Enter and Backspace; there is no separate key override or flag for them.
 - Every behavior is skipped while an IME is composing.
 - Every behavior is a plain text edit, so saving never rewrites syntax the reader did not touch (Live Preview).
 - With several cursors, every edit applies per range, and the `[[` picker stays closed.

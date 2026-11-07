@@ -1,3 +1,5 @@
+import { stripCr } from "./line-text.js";
+
 /** What kind of list marker a line starts with. */
 export type ListKind = "bullet" | "numbered" | "quote";
 
@@ -29,7 +31,7 @@ const TASK = /^\[(.)\]([ \t]+|$)/;
  * line; `null` when it is none of them.
  */
 export function parseListLine(line: string): ListLine | null {
-  const text = line.replace(/\r$/, "");
+  const text = stripCr(line);
   const list = LIST.exec(text);
   if (list) {
     const [whole, indent = "", bullet, digits, delimiter, gap = ""] = list;

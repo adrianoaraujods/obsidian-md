@@ -8,7 +8,13 @@ import type { Command } from "@codemirror/view";
 const MARKER_CHARS = ["*", "_"] as const;
 
 /** How many `ch` repeat going away from `pos` (backward or forward). */
-function run(doc: Text, pos: number, dir: -1 | 1, ch: string, limit: number) {
+function markerRun(
+  doc: Text,
+  pos: number,
+  dir: -1 | 1,
+  ch: string,
+  limit: number,
+) {
   let n = 0;
   while (n < limit) {
     const at = dir < 0 ? pos - n - 1 : pos + n;
@@ -27,8 +33,8 @@ function findMarkers(doc: Text, range: SelectionRange, size: 1 | 2) {
   const fits = (n: number) => (size === 2 ? n >= 2 : n % 2 === 1);
   for (const ch of MARKER_CHARS) {
     const outside = Math.min(
-      run(doc, range.from, -1, ch, 3),
-      run(doc, range.to, 1, ch, 3),
+      markerRun(doc, range.from, -1, ch, 3),
+      markerRun(doc, range.to, 1, ch, 3),
     );
     if (fits(outside)) {
       return { open: range.from - size, close: range.to, inside: false };
@@ -38,8 +44,8 @@ function findMarkers(doc: Text, range: SelectionRange, size: 1 | 2) {
   const half = Math.floor((range.to - range.from) / 2);
   for (const ch of MARKER_CHARS) {
     const inside = Math.min(
-      run(doc, range.from, 1, ch, Math.min(3, half)),
-      run(doc, range.to, -1, ch, Math.min(3, half)),
+      markerRun(doc, range.from, 1, ch, Math.min(3, half)),
+      markerRun(doc, range.to, -1, ch, Math.min(3, half)),
     );
     if (fits(inside)) {
       return { open: range.from, close: range.to - size, inside: true };

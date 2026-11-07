@@ -1,7 +1,8 @@
 import type { ChangeSpec, EditorState } from "@codemirror/state";
-import type { Command } from "@codemirror/view";
+import type { Command, EditorView } from "@codemirror/view";
 
-import { inFencedCode } from "./code-fence.js";
+import { fencedLines } from "./code-fence.js";
+import { isComposing } from "./composition.js";
 import { parseListLine } from "./list-line.js";
 
 /** One indent level, as Obsidian writes it. */
@@ -20,8 +21,9 @@ function touchedLines(state: EditorState): number[] {
 
 /** The touched lines that are list items outside fenced code. */
 function listItemLines(state: EditorState): number[] {
+  const fenced = fencedLines(state.doc);
   return touchedLines(state).filter(
-    (n) => parseListLine(state.doc.line(n).text) && !inFencedCode(state.doc, n),
+    (n) => parseListLine(state.doc.line(n).text) && !fenced.has(n),
   );
 }
 
@@ -107,51 +109,53 @@ function lineEdit(from: number, before: string, after: string): ChangeSpec {
   };
 }
 
-function shiftLines(lineNumbers: number[], direction: 1 | -1): Command {
-  return (view) => {
-    const { state } = view;
-    const before = state.doc.toString().split("\n");
-    const lines = [...before];
-    const moved = new Set<number>();
-    const followers: number[] = [];
-    for (const n of lineNumbers) {
-      const i = n - 1;
-      const text = lines[i]!;
-      const oldLevel = levelOf(text) ?? width(/^[ \t]*/.exec(text)![0]);
-      if (direction === 1) lines[i] = INDENT + text;
-      else lines[i] = text.replace(LEADING, "");
-      if (lines[i] === text) continue;
-      moved.add(i);
-      followers.push(followerAt(lines, i, oldLevel));
-    }
-    for (const i of followers) if (i >= 0) renumberRun(lines, i, moved);
-    for (const i of moved) renumberRun(lines, i, moved);
-    const changes: ChangeSpec[] = [];
-    let from = 0;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i] !== before[i])
-        changes.push(lineEdit(from, before[i]!, lines[i]!));
-      from += before[i]!.length + 1;
-    }
-    if (changes.length)
-      view.dispatch(state.update({ changes, userEvent: "input.indent" }));
-    return true;
-  };
+/** Indents (`1`) or unindents (`-1`) the given lines, renumbering lists. */
+function shiftLines(
+  view: EditorView,
+  lineNumbers: number[],
+  direction: 1 | -1,
+): boolean {
+  const { state } = view;
+  const before = state.doc.toString().split("\n");
+  const lines = [...before];
+  const moved = new Set<number>();
+  const followers: number[] = [];
+  for (const n of lineNumbers) {
+    const i = n - 1;
+    const text = lines[i]!;
+    const oldLevel = levelOf(text) ?? width(/^[ \t]*/.exec(text)![0]);
+    if (direction === 1) lines[i] = INDENT + text;
+    else lines[i] = text.replace(LEADING, "");
+    if (lines[i] === text) continue;
+    moved.add(i);
+    followers.push(followerAt(lines, i, oldLevel));
+  }
+  for (const i of followers) if (i >= 0) renumberRun(lines, i, moved);
+  for (const i of moved) renumberRun(lines, i, moved);
+  const changes: ChangeSpec[] = [];
+  let from = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i] !== before[i])
+      changes.push(lineEdit(from, before[i]!, lines[i]!));
+    from += before[i]!.length + 1;
+  }
+  if (changes.length)
+    view.dispatch(state.update({ changes, userEvent: "input.indent" }));
+  return true;
 }
 
 /** Tab on a list item indents it. */
 export const indentListItem: Command = (view) => {
-  if (view.composing || view.compositionStarted) return false;
-  const { state } = view;
-  const items = listItemLines(state);
-  return items.length > 0 && shiftLines(items, 1)(view);
+  if (isComposing(view)) return false;
+  const items = listItemLines(view.state);
+  return items.length > 0 && shiftLines(view, items, 1);
 };
 
 /** Shift-Tab on a list item unindents it. */
 export const unindentListItem: Command = (view) => {
-  if (view.composing || view.compositionStarted) return false;
+  if (isComposing(view)) return false;
   const items = listItemLines(view.state);
-  return items.length > 0 && shiftLines(items, -1)(view);
+  return items.length > 0 && shiftLines(view, items, -1);
 };
 
 /** The touched lines that carry text, or the one line a cursor is on. */
@@ -163,35 +167,8 @@ function textLines(state: EditorState): number[] {
 
 /** Mod-] indents every selected line, list or not. */
 export const indentSelection: Command = (view) =>
-  shiftLines(textLines(view.state), 1)(view);
+  shiftLines(view, textLines(view.state), 1);
 
 /** Mod-[ unindents every selected line, list or not. */
 export const unindentSelection: Command = (view) =>
-  shiftLines(textLines(view.state), -1)(view);
-
-/** Mod-Enter toggles the task on the list item at each cursor. */
-export const toggleTask: Command = (view) => {
-  const { state } = view;
-  const seen = new Set<number>();
-  const changes: ChangeSpec[] = [];
-  for (const range of state.selection.ranges) {
-    const line = state.doc.lineAt(range.head);
-    if (seen.has(line.number) || inFencedCode(state.doc, line.number)) continue;
-    seen.add(line.number);
-    const item = parseListLine(line.text);
-    if (!item || item.kind === "quote") continue;
-    if (item.task === null) {
-      changes.push({ from: line.from + item.contentStart, insert: "[ ] " });
-      continue;
-    }
-    const box = item.indent.length + item.marker.length + item.gap.length;
-    changes.push({
-      from: line.from + box + 1,
-      to: line.from + box + 2,
-      insert: item.task === " " ? "x" : " ",
-    });
-  }
-  if (changes.length)
-    view.dispatch(state.update({ changes, userEvent: "input.toggle" }));
-  return true;
-};
+  shiftLines(view, textLines(view.state), -1);

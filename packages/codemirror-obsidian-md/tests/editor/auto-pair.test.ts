@@ -46,7 +46,11 @@ const sel = (e: EditorHandle) =>
   e.view.state.selection.ranges.map((r) => [r.anchor, r.head]);
 const tick = () => new Promise((r) => setTimeout(r, 80));
 
-/** Types `text` at the main selection as CodeMirror receives input. */
+/**
+ * Types `text` at the main selection as CodeMirror receives input. jsdom has
+ * no real keyboard events, so typing is simulated through the
+ * `EditorView.inputHandler` facet.
+ */
 function type(e: EditorHandle, text: string) {
   const { view } = e;
   const { from, to } = view.state.selection.main;
@@ -161,15 +165,37 @@ describe("Auto-pair", () => {
     expect(completionStatus(e.view.state)).toBe("active");
   });
 
-  it("wikiLinkAutoClose: false stops only the [[ -> [[]] close", () => {
+  it("wikiLinkAutoClose: false never leaves an unbalanced [[", () => {
     const e = mount("", { wikiLinkAutoClose: false });
     type(e, "[");
     type(e, "[");
-    expect(e.getText()).toBe("[[]");
+    expect(e.getText()).toBe("[[]]");
     expect(sel(e)).toEqual([[2, 2]]);
     const f = mount("", { wikiLinkAutoClose: false });
     type(f, "(");
     expect(f.getText()).toBe("()");
+  });
+
+  it("autoPair: false keeps the [[ close on its own", () => {
+    const e = mount("", { autoPair: false });
+    type(e, "[");
+    expect(e.getText()).toBe("[");
+    type(e, "[");
+    expect(e.getText()).toBe("[[]]");
+    expect(sel(e)).toEqual([[2, 2]]);
+    type(e, "x");
+    type(e, "]");
+    type(e, "]");
+    expect(e.getText()).toBe("[[x]]");
+    expect(sel(e)).toEqual([[5, 5]]);
+  });
+
+  it("autoPair: false and wikiLinkAutoClose: false type brackets plainly", () => {
+    const e = mount("", { autoPair: false, wikiLinkAutoClose: false });
+    type(e, "[");
+    type(e, "[");
+    type(e, "(");
+    expect(e.getText()).toBe("[[(");
   });
 
   it("autoPair: false turns pairing and the Backspace pair-delete off", () => {

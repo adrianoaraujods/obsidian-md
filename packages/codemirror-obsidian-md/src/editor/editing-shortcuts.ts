@@ -1,17 +1,18 @@
 import { type Extension, Prec } from "@codemirror/state";
 import { type Command, type KeyBinding, keymap } from "@codemirror/view";
 
-import { autoPair } from "./editing/auto-pair.js";
+import { autoPairBackspace } from "./editing/auto-pair.js";
+import { isComposing } from "./editing/composition.js";
 import { toggleBold, toggleItalic } from "./editing/emphasis.js";
 import { insertLink } from "./editing/link.js";
-import { pasteUrlAsLink } from "./editing/paste-url.js";
 import { listContinuation } from "./editing/list-continuation.js";
 import {
   indentSelection,
   toggleTask,
   unindentSelection,
 } from "./editing/list-indent.js";
-import { selectionWrap } from "./editing/selection-wrap.js";
+import { pasteUrlAsLink } from "./editing/paste-url.js";
+import { typingBehaviors } from "./editing/typing.js";
 
 /** The Editing Shortcuts, by command name. */
 export type EditingCommand =
@@ -46,8 +47,7 @@ export const DEFAULT_EDITING_KEYS: Readonly<Record<EditingCommand, string>> = {
   toggleTask: "Mod-Enter",
 };
 
-/** Commands implemented so far; later tickets add the rest. */
-const COMMANDS: Partial<Record<EditingCommand, Command>> = {
+const COMMANDS: Record<EditingCommand, Command> = {
   bold: toggleBold,
   italic: toggleItalic,
   link: insertLink,
@@ -69,12 +69,12 @@ export function editingShortcuts(
   for (const name of Object.keys(COMMANDS) as EditingCommand[]) {
     const key = keys[name];
     const command = COMMANDS[name];
-    if (!key || !command) continue;
+    if (!key) continue;
     bindings.push({
       key,
       // While composing, claim the key and do nothing, so a stock binding
       // (Mod-Enter inserts a line) cannot fire in the middle of an IME.
-      run: (view) => composing(view) || command(view),
+      run: (view) => isComposing(view) || command(view),
       preventDefault: true,
       // A host's global Mod-k (Fumadocs search) must not also fire.
       stopPropagation: name === "link",
@@ -82,20 +82,14 @@ export function editingShortcuts(
   }
   const extensions: Extension[] = [keymap.of(bindings)];
   if (options.pasteUrlAsLink !== false) extensions.push(pasteUrlAsLink);
-  if (options.selectionWrap !== false)
-    extensions.push(selectionWrap(composing));
-  if (options.autoPair !== false)
-    extensions.push(
-      autoPair(composing, {
-        wikiLinkAutoClose: options.wikiLinkAutoClose !== false,
-      }),
-    );
+  const wrap = options.selectionWrap !== false;
+  const pair = options.autoPair !== false;
+  const wikiLinkAutoClose = options.wikiLinkAutoClose !== false;
+  if (wrap || pair || wikiLinkAutoClose)
+    extensions.push(typingBehaviors({ wrap, pair, wikiLinkAutoClose }));
+  if (pair) extensions.push(autoPairBackspace);
   return [
     Prec.high(extensions),
     options.listContinuation === false ? [] : listContinuation(),
   ];
-}
-
-function composing(view: { composing: boolean; compositionStarted: boolean }) {
-  return view.composing || view.compositionStarted;
 }

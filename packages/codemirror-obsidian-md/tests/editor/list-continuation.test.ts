@@ -162,6 +162,17 @@ describe("options and environment", () => {
     expect(e.getText()).toBe("\nx\n");
   });
 
+  it("removes the marker at one cursor and deletes a character at another", () => {
+    const e = mount("- \nabc");
+    select(e, [2, 2], [6, 6]);
+    press(e, "Backspace");
+    expect(e.getText()).toBe("\nab");
+    expect(sel(e)).toEqual([
+      [0, 0],
+      [3, 3],
+    ]);
+  });
+
   it("is off when listContinuation is false", () => {
     const e = mount("- a", { listContinuation: false });
     select(e, [3, 3]);

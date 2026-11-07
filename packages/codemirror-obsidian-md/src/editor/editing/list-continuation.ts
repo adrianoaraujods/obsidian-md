@@ -1,20 +1,17 @@
-import { EditorSelection, type EditorState, Prec } from "@codemirror/state";
+import { EditorSelection, Prec } from "@codemirror/state";
 import { type Command, keymap } from "@codemirror/view";
 
 import { isCrlf } from "../state.js";
+import { plainBackspace } from "./backspace.js";
 import { inFencedCode } from "./code-fence.js";
+import { isComposing } from "./composition.js";
+import { contentEnd } from "./line-text.js";
 import { indentListItem, unindentListItem } from "./list-indent.js";
 import { continuationPrefix, parseListLine } from "./list-line.js";
 
-/** Where the line at `pos` ends, before any `\r` of a CRLF line break. */
-function contentEnd(state: EditorState, pos: number): number {
-  const line = state.doc.lineAt(pos);
-  return Math.min(pos, line.from + line.text.replace(/\r$/, "").length);
-}
-
 /** Enter continues the list item, quote or Callout line the cursor is on. */
 const continueList: Command = (view) => {
-  if (view.composing || view.compositionStarted) return false;
+  if (isComposing(view)) return false;
   const { state } = view;
   const crlf = isCrlf(state.doc.toString());
   const lineBreak = crlf ? "\r\n" : "\n";
@@ -32,7 +29,7 @@ const continueList: Command = (view) => {
         const item = ranges[i++];
         if (item && !item.content.trim() && range.empty) {
           const line = state.doc.lineAt(range.from);
-          const end = line.from + line.text.replace(/\r$/, "").length;
+          const end = contentEnd(state, line.to);
           return {
             changes: { from: line.from, to: end, insert: "" },
             range: EditorSelection.cursor(line.from),
@@ -58,27 +55,37 @@ const continueList: Command = (view) => {
   return true;
 };
 
-/** Backspace after an empty marker removes the marker. */
+/**
+ * Backspace after an empty marker removes the marker. With several cursors
+ * each range decides for itself; the others delete a character as usual.
+ */
 const removeEmptyMarker: Command = (view) => {
-  if (view.composing || view.compositionStarted) return false;
+  if (isComposing(view)) return false;
   const { state } = view;
   const emptyLines = state.selection.ranges.map((range) => {
     if (!range.empty) return null;
     const line = state.doc.lineAt(range.from);
     if (inFencedCode(state.doc, line.number)) return null;
     const item = parseListLine(line.text);
-    const end = line.from + line.text.replace(/\r$/, "").length;
-    return item && !item.content.trim() && range.from >= end ? line : null;
+    return item &&
+      !item.content.trim() &&
+      range.from >= contentEnd(state, line.to)
+      ? line
+      : null;
   });
-  if (emptyLines.some((line) => !line)) return false;
+  if (!emptyLines.some(Boolean)) return false;
   let i = 0;
   view.dispatch(
     state.update(
       state.changeByRange((range) => {
-        const line = emptyLines[i++]!;
-        const end = line.from + line.text.replace(/\r$/, "").length;
+        const line = emptyLines[i++];
+        if (!line) return plainBackspace(state, range);
         return {
-          changes: { from: line.from, to: end, insert: "" },
+          changes: {
+            from: line.from,
+            to: contentEnd(state, line.to),
+            insert: "",
+          },
           range: EditorSelection.cursor(line.from),
         };
       }),

@@ -1,55 +1,35 @@
-import { isolateHistory } from "@codemirror/commands";
-import { EditorSelection, type Extension } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { EditorSelection, type SelectionRange } from "@codemirror/state";
+
+import { BRACKET_CLOSERS } from "./pairs.js";
 
 /** Typed characters that wrap a selection. Fixed, not configurable (ADR 0016). */
-const WRAP_CHARS = new Set(["*", "_", "`", "~", "=", "[", "(", "{", '"', "'"]);
-
-const CLOSERS: Record<string, string> = {
-  "[": "]",
-  "(": ")",
-  "{": "}",
-};
+export const WRAP_CHARS = new Set([
+  "*",
+  "_",
+  "`",
+  "~",
+  "=",
+  "[",
+  "(",
+  "{",
+  '"',
+  "'",
+]);
 
 /**
- * Typing a wrap character over a selection wraps it instead of replacing it,
- * leaving the inner text selected. With nothing selected it does nothing, so
- * Auto-pair can own that case.
+ * Typing a wrap character over a non-empty `range` wraps it instead of
+ * replacing it, leaving the inner text selected.
  */
-export function selectionWrap(
-  composing: (view: EditorView) => boolean,
-): Extension {
-  return EditorView.inputHandler.of((view, _from, _to, text) => {
-    if (!WRAP_CHARS.has(text) || composing(view)) return false;
-    const { state } = view;
-    if (state.selection.main.empty) return false;
-    const open = text;
-    const close = CLOSERS[text] ?? text;
-    view.dispatch(
-      state.changeByRange((range) => {
-        if (range.empty) {
-          return {
-            changes: { from: range.from, insert: text },
-            range: EditorSelection.cursor(range.from + text.length),
-          };
-        }
-        return {
-          changes: [
-            { from: range.from, insert: open },
-            { from: range.to, insert: close },
-          ],
-          range: EditorSelection.range(
-            range.anchor + open.length,
-            range.head + open.length,
-          ),
-        };
-      }),
-      {
-        userEvent: "input.type",
-        scrollIntoView: true,
-        annotations: isolateHistory.of("full"),
-      },
-    );
-    return true;
-  });
+export function wrapRange(range: SelectionRange, text: string) {
+  const close = BRACKET_CLOSERS[text] ?? text;
+  return {
+    changes: [
+      { from: range.from, insert: text },
+      { from: range.to, insert: close },
+    ],
+    range: EditorSelection.range(
+      range.anchor + text.length,
+      range.head + text.length,
+    ),
+  };
 }

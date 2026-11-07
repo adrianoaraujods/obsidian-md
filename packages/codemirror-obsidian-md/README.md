@@ -144,25 +144,9 @@ Decorations are rebuilt when a re-parse lands or the selection moves, and only m
 
 Line breaks: the document always splits on `\n`, so a `\r` stays a character and positions equal text offsets. In a Note that is purely CRLF, Enter inserts `\r\n`.
 
-### Multiple cursors
-
-`createEditor` supports several cursors, drawn by CodeMirror (the native caret and selection are hidden, so the Stylesheet styles `.cm-cursor` and `.cm-selectionBackground`). Ctrl-click (Cmd-click on macOS) adds a cursor, Alt-drag selects a rectangle, Ctrl-Alt-Up/Down (Cmd-Alt on macOS) adds a cursor above or below, and Escape collapses to one. Typing and deleting apply to every cursor, and the `[[` picker stays closed while there are several.
-
 ### Editing Shortcuts
 
-`editingShortcuts(options?)` (pass it in `extensions`, from `codemirror-obsidian-md/editor`) gives the editor Obsidian's editing feel. It is opt-in, runs at high precedence so it beats the stock `defaultKeymap`, applies at every cursor, and does nothing while an IME is composing. Mobile and soft keyboards are best effort.
-
-Shipped so far: `Mod-b` and `Mod-i` toggle bold and italic. They detect either marker style (`**`/`__`, `*`/`_`), always wrap with `**` and `*`, leave the inner text selected, and insert an empty pair with the cursor inside when nothing is selected. Each range toggles by its own state.
-
-`Mod-k` makes the selection `[selection]()` with the cursor in the parentheses, or inserts `[]()` with the cursor in the brackets when nothing is selected. While the editor handles `Mod-k` it stops the event from propagating, so a host's global `Mod-k` (the Fumadocs search dialog) does not also fire; outside the editor it is untouched. With `pasteUrlAsLink`, pasting a single http(s) URL over selected text makes `[text](url)` and leaves the cursor after it. Both apply per range and are skipped while composing.
-
-Enter continues a bullet (`-`, `*`, `+`), numbered (`1.`, `1)`, counting up), task (`- [ ]`, continued unchecked), quote and Callout (`>`) line with the same marker and indentation, and splits an item at the cursor. Enter on an empty item and Backspace on an empty marker remove the marker. It does nothing inside a fenced code block, treats a `%%` Comment as ordinary text, keeps a CRLF Note on `\r\n`, and is switched off with `listContinuation: false`.
-
-Indentation: Tab and Shift-Tab on a bullet, numbered, task or quote item indent and unindent it by one level (a tab character; Shift-Tab removes a tab or up to four spaces) and renumber the numbered items they affect and the ones that follow at that level. An item moved to the first place at its level restarts at 1. Tab and Shift-Tab are part of list behavior, not named commands, so `listContinuation: false` switches them off. Outside a list, and inside a fenced code block, they are not intercepted and the browser moves keyboard focus (Obsidian inserts a tab character instead; see ADR 0016). `Mod-]` and `Mod-[` (`indent`, `unindent`) shift the current line or every selected line, list or not, and renumber the same way. `Mod-Enter` (`toggleTask`) flips `- [ ]` and `- [x]`, turns a plain bullet or numbered item into an unchecked task, and does nothing on any other line. All of these apply at every cursor and are skipped while an IME is composing.
-
-Selection Wrap (`selectionWrap`): typing `*`, `_`, `` ` ``, `~`, `=`, `[`, `(`, `{`, `"` or `'` over a selection wraps it (`[`, `(`, `{` close with `]`, `)`, `}`) and leaves the inner text selected, so a repeat of the same key nests (`*` twice gives `**x**`). Each wrap is its own undo step and applies to every range. With nothing selected it does nothing.
-
-Auto-pair (`autoPair`): with nothing selected, typing `(`, `[`, `{`, `"`, `'` or `` ` `` inserts the closer too with the cursor between, typing a closer steps over an identical next character, and Backspace between an opener and its closer deletes both. `'` and `"` do not pair after a word character, so "don't" is untouched. The markers `*`, `_`, `~` and `=` never pair. Typing `[` twice gives `[[]]` with the cursor inside, which opens the `[[` picker when `pickerExtension` is installed; `wikiLinkAutoClose: false` turns off only that `[[` to `[[]]` close (`[[` then leaves a single `]`). `Ctrl-Space` inside `[[…]]` reopens the picker after it was dismissed. With several cursors every pair applies at each cursor and the picker stays closed.
+`editingShortcuts(options?)` (pass it in `extensions`, from `codemirror-obsidian-md/editor`) gives the editor Obsidian's editing feel: formatting and list keys, typing behaviors, and list continuation. It is opt-in, so an editor without it is unchanged. It runs at high precedence so it beats the stock `defaultKeymap`, applies at every cursor, and does nothing while an IME is composing. Every behavior is a plain text edit, so Live Preview and the Save payload are unchanged. Desktop is the target; mobile and soft keyboards are best effort, so do not promise them to your users.
 
 ```ts
 editingShortcuts({
@@ -177,16 +161,61 @@ editingShortcuts({
 });
 ```
 
-| Command      | Default     | Status  |
-| ------------ | ----------- | ------- |
-| `bold`       | `Mod-b`     | shipped |
-| `italic`     | `Mod-i`     | shipped |
-| `link`       | `Mod-k`     | shipped |
-| `indent`     | `Mod-]`     | shipped |
-| `unindent`   | `Mod-[`     | shipped |
-| `toggleTask` | `Mod-Enter` | shipped |
+#### Commands
 
-The flags are accepted now and take effect as each behavior ships. Which characters wrap or pair is fixed. `DEFAULT_EDITING_KEYS` exports the defaults.
+Rebind or disable a command by name through `keys`. `Mod` is Ctrl on Windows and Linux and Cmd on macOS. `DEFAULT_EDITING_KEYS` exports the defaults.
+
+| Command      | Default     | What it does                                                                                                                                                              |
+| ------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bold`       | `Mod-b`     | Toggles bold. Detects `**` and `__`, always wraps with `**`, leaves the inner text selected, and inserts an empty `****` with the cursor inside when nothing is selected. |
+| `italic`     | `Mod-i`     | The same for italic: detects `*` and `_`, wraps with `*`.                                                                                                                 |
+| `link`       | `Mod-k`     | Makes the selection `[selection]()` with the cursor in the parentheses, or inserts `[]()` with the cursor in the brackets.                                                |
+| `indent`     | `Mod-]`     | Indents the current line or every selected line by one tab, list or not, and renumbers numbered items.                                                                    |
+| `unindent`   | `Mod-[`     | Removes one tab (or up to four spaces) from those lines, and renumbers.                                                                                                   |
+| `toggleTask` | `Mod-Enter` | Flips `- [ ]` and `- [x]`, turns a plain bullet or numbered item into an unchecked task, and does nothing on any other line.                                              |
+
+Each range toggles by its own state, so a mix of bold and plain ranges is not wrongly unwrapped.
+
+#### Behavior flags
+
+| Flag                | Default | Behavior                                                                                                                                                                                                                                                                                                                               |
+| ------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `selectionWrap`     | `true`  | Typing a wrap character over a selection wraps it and leaves the inner text selected, so a repeat of the same key nests (`*` twice gives `**x**`). Each wrap is its own undo step. With nothing selected it does nothing.                                                                                                              |
+| `autoPair`          | `true`  | With nothing selected, typing an opener inserts its closer too with the cursor between. Typing a closer steps over an identical next character. Backspace between an opener and its closer deletes both. `'` and `"` do not pair after a word character, so "don't" is untouched.                                                      |
+| `wikiLinkAutoClose` | `true`  | Typing `[` twice gives `[[]]` with the cursor inside, which opens the `[[` picker when `pickerExtension` is installed. `false` turns off only that close (`[[` then leaves a single `]`). `Ctrl-Space` inside `[[…]]` reopens the picker after it was dismissed.                                                                       |
+| `pasteUrlAsLink`    | `true`  | Pasting a single http(s) URL over selected text makes `[text](url)` and leaves the cursor after it. With nothing selected the paste is left to the browser.                                                                                                                                                                            |
+| `listContinuation`  | `true`  | Enter continues a bullet (`-`, `*`, `+`), numbered (`1.`, `1)`, counting up), task (`- [ ]`, continued unchecked), quote or Callout (`>`) line with the same marker and indentation, and splits an item at the cursor. Enter on an empty item and Backspace on an empty marker remove the marker. Also owns Tab and Shift-Tab (below). |
+
+List continuation does nothing inside a fenced code block, treats a `%%` Comment as ordinary text, and keeps a CRLF Note on `\r\n`.
+
+Tab and Shift-Tab are part of list behavior, not named commands, so `listContinuation: false` switches them off. On a bullet, numbered, task or quote item they indent and unindent it by one level (a tab character; Shift-Tab removes a tab or up to four spaces) and renumber the numbered items they affect and the ones that follow at that level. An item moved to the first place at its level restarts at 1.
+
+#### Fixed character sets
+
+Which characters wrap and which pair is Obsidian's behavior, not a preference, and cannot be configured (ADR 0016).
+
+- **Selection Wrap:** `*`, `_`, `` ` ``, `~`, `=`, `[`, `(`, `{`, `"`, `'`. `[`, `(` and `{` close with `]`, `)` and `}`; the others close with themselves.
+- **Auto-pair:** `(`, `[`, `{`, `"`, `'`, `` ` ``. The markers `*`, `_`, `~` and `=` never pair.
+
+#### Multiple cursors
+
+`createEditor` supports several cursors, drawn by CodeMirror (the native caret and selection are hidden, so the Stylesheet styles `.cm-cursor` and `.cm-selectionBackground`):
+
+- Ctrl-click (Cmd-click on macOS) adds a cursor.
+- Alt-drag selects a rectangle.
+- Ctrl-Alt-Up and Ctrl-Alt-Down (Cmd-Alt on macOS) add a cursor above or below.
+- Escape collapses to one.
+
+Typing, deleting and every command and flag above apply at each cursor. The `[[` picker stays closed while there are several, and `Ctrl-Space` does nothing. See `docs/research/obsidian-editing-parity.md` for how these gestures compare to Obsidian's.
+
+#### Departures from Obsidian
+
+- **Tab outside a list** falls through, so the browser moves keyboard focus out of the editor. Obsidian inserts a tab character. The same holds inside a fenced code block.
+- **Shift-Tab on a list item** is always consumed, even on a top-level item that cannot be unindented, so it never moves focus from inside a list. Outside a list it falls through like Tab.
+- **`Mod-k` stops propagating** while the editor handles it, so a host's global `Mod-k` (the Fumadocs search dialog) does not also fire. Outside the editor it is untouched. Obsidian uses `Mod-k` for inserting a link, so the extension resolves the collision itself.
+- **Every Editing Shortcut key** is claimed even when it has nothing to do (`Mod-Enter` on a line that is not a list item, or any of them while composing), so the stock binding (`Mod-Enter` inserts a line) never fires instead.
+
+Pasting a multi-line list is not specially handled: the text is inserted as it is.
 
 ### `[[` picker
 

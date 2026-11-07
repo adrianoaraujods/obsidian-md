@@ -1,9 +1,17 @@
 import { type Extension, Prec } from "@codemirror/state";
 import { type Command, type KeyBinding, keymap } from "@codemirror/view";
 
+import { autoPair } from "./editing/auto-pair.js";
 import { toggleBold, toggleItalic } from "./editing/emphasis.js";
 import { insertLink } from "./editing/link.js";
 import { pasteUrlAsLink } from "./editing/paste-url.js";
+import { listContinuation } from "./editing/list-continuation.js";
+import {
+  indentSelection,
+  toggleTask,
+  unindentSelection,
+} from "./editing/list-indent.js";
+import { selectionWrap } from "./editing/selection-wrap.js";
 
 /** The Editing Shortcuts, by command name. */
 export type EditingCommand =
@@ -43,6 +51,9 @@ const COMMANDS: Partial<Record<EditingCommand, Command>> = {
   bold: toggleBold,
   italic: toggleItalic,
   link: insertLink,
+  indent: indentSelection,
+  unindent: unindentSelection,
+  toggleTask,
 };
 
 /**
@@ -61,7 +72,9 @@ export function editingShortcuts(
     if (!key || !command) continue;
     bindings.push({
       key,
-      run: (view) => !composing(view) && command(view),
+      // While composing, claim the key and do nothing, so a stock binding
+      // (Mod-Enter inserts a line) cannot fire in the middle of an IME.
+      run: (view) => composing(view) || command(view),
       preventDefault: true,
       // A host's global Mod-k (Fumadocs search) must not also fire.
       stopPropagation: name === "link",
@@ -69,7 +82,18 @@ export function editingShortcuts(
   }
   const extensions: Extension[] = [keymap.of(bindings)];
   if (options.pasteUrlAsLink !== false) extensions.push(pasteUrlAsLink);
-  return Prec.high(extensions);
+  if (options.selectionWrap !== false)
+    extensions.push(selectionWrap(composing));
+  if (options.autoPair !== false)
+    extensions.push(
+      autoPair(composing, {
+        wikiLinkAutoClose: options.wikiLinkAutoClose !== false,
+      }),
+    );
+  return [
+    Prec.high(extensions),
+    options.listContinuation === false ? [] : listContinuation(),
+  ];
 }
 
 function composing(view: { composing: boolean; compositionStarted: boolean }) {

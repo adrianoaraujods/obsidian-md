@@ -144,7 +144,7 @@ for (const theme of THEMES) {
     }) => {
       const content = await openRichNote(page, theme);
       await content.click();
-      await typeAtEnd(page, "\n\n- item\n- [ ] task\n\nend");
+      await typeAtEnd(page, "\n\n- item\n[ ] task\n\nend");
       await expect(page.locator(".cm-obsidian-bullet")).toHaveCount(1);
       const box = page.locator(".cm-obsidian-checkbox");
       await expect(box).toBeVisible();

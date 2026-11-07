@@ -89,8 +89,14 @@ body {
   --obsidian-editor-fg: var(--foreground);
   --obsidian-editor-bg: var(--background);
   --obsidian-editor-cursor: var(--foreground);
-  --obsidian-editor-selection: color-mix(in oklab, var(--primary) 30%, transparent);
-  --obsidian-editor-popover-bg: var(--popover); /* the `[[` picker mounts on body */
+  --obsidian-editor-selection: color-mix(
+    in oklab,
+    var(--primary) 30%,
+    transparent
+  );
+  --obsidian-editor-popover-bg: var(
+    --popover
+  ); /* the `[[` picker mounts on body */
 }
 ```
 
@@ -118,12 +124,16 @@ Later Live Preview work adds to the core without changing it.
     types: ["obsidianHighlight"], // MDAST node types: wikiLink, embed, obsidianComment, obsidianFootnote, blockquote, heading, ...
     decorate(construct, { revealed }) {
       if (revealed) return null; // cursor inside: show the raw syntax
-      return Decoration.mark({ class: "obsidian-highlight" }).range(construct.from, construct.to);
+      return Decoration.mark({ class: "obsidian-highlight" }).range(
+        construct.from,
+        construct.to,
+      );
     },
   };
   ```
 
   A provider returns one `Range<Decoration>`, an array of them, or nothing. Decorations may hide, replace or restyle text, never change it. Widgets are CodeMirror widgets reusing the plugin Stylesheet class names.
+
 - **Cursor reveal.** `context.revealed` is `isRevealed(state, construct.from, construct.to)`. Call `isRevealed(state, from, to)` yourself for another range (a whole Callout, a line).
 - **Parser.** Pass `parser: (text) => Construct[]` to replace the default, e.g. to add block-level scans such as `scanBlockIds`.
 - **Extra extensions** (autocomplete picker, keymaps, save flow): pass `extensions`, or use `obsidianMd(doc, options)` to compose the core into your own `EditorState`. `reparse(view)` forces a re-parse; `constructsField` and `decorationsField` expose the state.
@@ -146,6 +156,14 @@ Shipped so far: `Mod-b` and `Mod-i` toggle bold and italic. They detect either m
 
 `Mod-k` makes the selection `[selection]()` with the cursor in the parentheses, or inserts `[]()` with the cursor in the brackets when nothing is selected. While the editor handles `Mod-k` it stops the event from propagating, so a host's global `Mod-k` (the Fumadocs search dialog) does not also fire; outside the editor it is untouched. With `pasteUrlAsLink`, pasting a single http(s) URL over selected text makes `[text](url)` and leaves the cursor after it. Both apply per range and are skipped while composing.
 
+Enter continues a bullet (`-`, `*`, `+`), numbered (`1.`, `1)`, counting up), task (`- [ ]`, continued unchecked), quote and Callout (`>`) line with the same marker and indentation, and splits an item at the cursor. Enter on an empty item and Backspace on an empty marker remove the marker. It does nothing inside a fenced code block, treats a `%%` Comment as ordinary text, keeps a CRLF Note on `\r\n`, and is switched off with `listContinuation: false`.
+
+Indentation: Tab and Shift-Tab on a bullet, numbered, task or quote item indent and unindent it by one level (a tab character; Shift-Tab removes a tab or up to four spaces) and renumber the numbered items they affect and the ones that follow at that level. An item moved to the first place at its level restarts at 1. Tab and Shift-Tab are part of list behavior, not named commands, so `listContinuation: false` switches them off. Outside a list, and inside a fenced code block, they are not intercepted and the browser moves keyboard focus (Obsidian inserts a tab character instead; see ADR 0016). `Mod-]` and `Mod-[` (`indent`, `unindent`) shift the current line or every selected line, list or not, and renumber the same way. `Mod-Enter` (`toggleTask`) flips `- [ ]` and `- [x]`, turns a plain bullet or numbered item into an unchecked task, and does nothing on any other line. All of these apply at every cursor and are skipped while an IME is composing.
+
+Selection Wrap (`selectionWrap`): typing `*`, `_`, `` ` ``, `~`, `=`, `[`, `(`, `{`, `"` or `'` over a selection wraps it (`[`, `(`, `{` close with `]`, `)`, `}`) and leaves the inner text selected, so a repeat of the same key nests (`*` twice gives `**x**`). Each wrap is its own undo step and applies to every range. With nothing selected it does nothing.
+
+Auto-pair (`autoPair`): with nothing selected, typing `(`, `[`, `{`, `"`, `'` or `` ` `` inserts the closer too with the cursor between, typing a closer steps over an identical next character, and Backspace between an opener and its closer deletes both. `'` and `"` do not pair after a word character, so "don't" is untouched. The markers `*`, `_`, `~` and `=` never pair. Typing `[` twice gives `[[]]` with the cursor inside, which opens the `[[` picker when `pickerExtension` is installed; `wikiLinkAutoClose: false` turns off only that `[[` to `[[]]` close (`[[` then leaves a single `]`). `Ctrl-Space` inside `[[…]]` reopens the picker after it was dismissed. With several cursors every pair applies at each cursor and the picker stays closed.
+
 ```ts
 editingShortcuts({
   // Keyed by command name, merged over the defaults. `false` disables one.
@@ -159,14 +177,14 @@ editingShortcuts({
 });
 ```
 
-| Command      | Default     | Status      |
-| ------------ | ----------- | ----------- |
-| `bold`       | `Mod-b`     | shipped     |
-| `italic`     | `Mod-i`     | shipped     |
-| `link`       | `Mod-k`     | shipped     |
-| `indent`     | `Mod-]`     | not yet     |
-| `unindent`   | `Mod-[`     | not yet     |
-| `toggleTask` | `Mod-Enter` | not yet     |
+| Command      | Default     | Status  |
+| ------------ | ----------- | ------- |
+| `bold`       | `Mod-b`     | shipped |
+| `italic`     | `Mod-i`     | shipped |
+| `link`       | `Mod-k`     | shipped |
+| `indent`     | `Mod-]`     | shipped |
+| `unindent`   | `Mod-[`     | shipped |
+| `toggleTask` | `Mod-Enter` | shipped |
 
 The flags are accepted now and take effect as each behavior ships. Which characters wrap or pair is fixed. `DEFAULT_EDITING_KEYS` exports the defaults.
 
@@ -187,7 +205,12 @@ The flags are accepted now and take effect as each behavior ships. Which charact
 `inlineProviders` renders Wiki Links, Highlights (with Highlight Color), Comments, inline Footnotes and Block IDs, revealing the raw syntax under the cursor. Block IDs are not parse nodes, so wrap the parser with `blockIdParser()`:
 
 ```ts
-createEditor({ parent, doc, providers: inlineProviders, parser: blockIdParser() });
+createEditor({
+  parent,
+  doc,
+  providers: inlineProviders,
+  parser: blockIdParser(),
+});
 ```
 
 ## New Note screen

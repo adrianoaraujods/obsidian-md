@@ -3,25 +3,30 @@ import { EditorState, type Extension } from "@codemirror/state";
 import {
   crosshairCursor,
   drawSelection,
+  EditorView,
   keymap,
   rectangularSelection,
 } from "@codemirror/view";
 
 /**
- * Several cursors, as in Obsidian: Ctrl/Cmd-click adds one, Alt-drag selects
- * a rectangle, Ctrl-Alt-Up/Down (Cmd-Alt on macOS) adds one above or below,
- * and Escape collapses back to one. Editing applies to every range.
- *
- * The click modifier is CodeMirror's default (`clickAddsSelectionRange`:
- * Cmd on macOS, Ctrl elsewhere); Obsidian's own is unverified.
+ * Several cursors, with Obsidian's gestures (obsidian.md/help/multiple-cursors):
+ * Alt-click (Option on macOS) adds one, Shift-Alt-drag or a middle-mouse drag
+ * selects a rectangle, Ctrl-Alt-Up/Down (Cmd-Alt on macOS, CodeMirror's keys)
+ * adds one above or below, and Escape collapses back to one. Editing applies
+ * to every range.
  */
 export function multiCursor(): Extension {
   return [
     EditorState.allowMultipleSelections.of(true),
     // The native selection can only show one range.
     drawSelection(),
-    rectangularSelection(),
-    crosshairCursor(),
+    EditorView.clickAddsSelectionRange.of((event) => event.altKey),
+    rectangularSelection({
+      eventFilter: (event) =>
+        (event.altKey && event.shiftKey && event.button === 0) ||
+        event.button === 1,
+    }),
+    crosshairCursor({ key: "Alt" }),
     keymap.of([
       { key: "Mod-Alt-ArrowUp", run: addCursorAbove, preventDefault: true },
       { key: "Mod-Alt-ArrowDown", run: addCursorBelow, preventDefault: true },

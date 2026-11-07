@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { completionStatus } from "@codemirror/autocomplete";
+import { undo } from "@codemirror/commands";
 import { EditorSelection } from "@codemirror/state";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -56,6 +57,24 @@ describe("multi-cursor", () => {
     ]);
     e.view.dispatch(e.view.state.replaceSelection("-"));
     expect(e.getText()).toBe("-one\n-two\n-three");
+  });
+
+  it("reverts an edit at every cursor in one Undo", () => {
+    const e = mount("one\ntwo\nthree");
+    e.view.dispatch({
+      selection: EditorSelection.create([
+        EditorSelection.cursor(0),
+        EditorSelection.cursor(4),
+        EditorSelection.cursor(8),
+      ]),
+    });
+    e.view.dispatch({
+      ...e.view.state.replaceSelection("-"),
+      userEvent: "input.type",
+    });
+    expect(e.getText()).toBe("-one\n-two\n-three");
+    undo(e.view);
+    expect(e.getText()).toBe("one\ntwo\nthree");
   });
 
   it("Escape collapses several cursors to one", () => {

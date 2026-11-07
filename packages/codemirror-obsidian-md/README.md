@@ -201,8 +201,8 @@ Which characters wrap and which pair is Obsidian's behavior, not a preference, a
 
 `createEditor` supports several cursors, drawn by CodeMirror (the native caret and selection are hidden, so the Stylesheet styles `.cm-cursor` and `.cm-selectionBackground`):
 
-- Ctrl-click (Cmd-click on macOS) adds a cursor.
-- Alt-drag selects a rectangle.
+- Alt-click (Option-click on macOS) adds a cursor.
+- Shift-Alt-drag (Shift-Option on macOS) or a middle-mouse drag selects a rectangle.
 - Ctrl-Alt-Up and Ctrl-Alt-Down (Cmd-Alt on macOS) add a cursor above or below.
 - Escape collapses to one.
 

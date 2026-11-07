@@ -13,7 +13,7 @@ Source: [Multiple cursors](https://obsidian.md/help/multiple-cursors) (official 
 - Clear cursors: click without a modifier, or Escape.
 - Forum confirmation: [No more multiple cursors with alt + mouse-drag](https://forum.obsidian.md/t/no-more-multiple-cursors-with-alt-mouse-drag/53215) (macOS, v1.1.9): a plain Alt-drag no longer works, "alt shift drag" does.
 
-Built: Ctrl-click / Cmd-click adds a cursor (CodeMirror's `clickAddsSelectionRange` default), and plain Alt-drag selects a rectangle (`rectangularSelection()` default). Both differ from Obsidian. `src/editor/multi-cursor.ts` still says the modifier is "unverified"; that comment is now stale. No code changed.
+Resolved: the editor now matches. Alt-click (Option on macOS) adds a cursor (`clickAddsSelectionRange`), and Shift+Alt-drag or a middle-mouse drag selects a rectangle (`rectangularSelection` with an event filter). Ctrl/Cmd-click and plain Alt-drag no longer do either. Ctrl-Alt-Up/Down (CodeMirror's) is unchanged.
 
 ### (b) Multi-line list paste keeps indentation — UNVERIFIED, leaning "no"
 
@@ -34,10 +34,10 @@ No official source describes Obsidian's behavior. Forum reports say pasting a bu
 
 ## Contradictions with what was built (summary)
 
-1. Add-cursor click modifier: Obsidian = Alt/Option-click; built = Ctrl/Cmd-click.
-2. Column selection: Obsidian = Shift+Alt-drag (or middle-drag); built = plain Alt-drag.
+1. ~~Add-cursor click modifier~~ — fixed: Alt/Option-click.
+2. ~~Column selection~~ — fixed: Shift+Alt-drag or middle-drag.
 3. `toggleTask` default: Obsidian's default may be `Mod-L`, not `Mod-Enter`.
-4. Stale comment in `src/editor/multi-cursor.ts` ("Obsidian's own is unverified").
+4. ~~Stale comment in `src/editor/multi-cursor.ts`~~ — fixed.
 
 ## Manual checklist
 
@@ -86,8 +86,8 @@ For pasting into the PR. Run each step in an Example's editor and in real Obsidi
 
 ### Multiple cursors
 
-- [ ] Alt-click (Option-click on macOS) in Obsidian adds a cursor. Try Alt-click and Ctrl/Cmd-click in the Example: record which one adds a cursor (built: Ctrl/Cmd).
-- [ ] Rectangle: try Shift+Alt-drag and plain Alt-drag in both (built: plain Alt-drag).
+- [ ] Alt-click (Option-click on macOS) in Obsidian adds a cursor. Alt-click in the Example adds a cursor too; Ctrl/Cmd-click does not.
+- [ ] Rectangle: Shift+Alt-drag and middle-mouse drag select one in both; plain Alt-drag does not in the Example.
 - [ ] Press the add-cursor-above / below keys in both (built: `Mod-Alt-Up/Down`; in Obsidian they may be unbound by default).
 - [ ] With several cursors, type text, press Backspace, `Mod-b`, `Mod-k`, Enter in a list: every cursor changes.
 - [ ] With several cursors, one in bold text and one in plain text, press `Mod-b`: each toggles by its own state.

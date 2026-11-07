@@ -213,3 +213,30 @@ for (const theme of THEMES) {
     });
   });
 }
+
+test.describe("clicking a Callout title", () => {
+  // [target, fraction of its width to click at, where typed "!" ends up]
+  const cases = [
+    [".callout-title-inner", 0.95, /\[!warning\] Careful!$/],
+    [".callout-title-icon", 0.5, /\[!warning\] !Careful$/],
+  ] as const;
+
+  for (const [target, at, expected] of cases) {
+    test(`on ${target} reveals the raw line and edits the title`, async ({
+      page,
+    }) => {
+      await page.goto("/edit/rich-note");
+      await expect(page.locator(".cm-content")).toContainText(
+        "Callout body text.",
+      );
+      const box = await page.locator(target).first().boundingBox();
+      if (!box) throw new Error("no title box");
+      await page.mouse.click(box.x + box.width * at, box.y + box.height / 2);
+      const first = page.locator(".cm-callout-first");
+      await expect(first).toContainText("[!warning]");
+      await expect(page.locator(".callout-title")).toHaveCount(0);
+      await page.keyboard.type("!");
+      await expect(first).toHaveText(expected);
+    });
+  }
+});

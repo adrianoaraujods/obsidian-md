@@ -27,6 +27,39 @@ afterEach(() => {
 const CALLOUT = "intro\n\n> [!warning] Careful\n> body line\n\nafter";
 
 describe("Callout Live Preview", () => {
+  it("clicking the rendered title reveals the raw line with the cursor in the title", () => {
+    const editor = mount(CALLOUT);
+    const dom = editor.view.dom;
+    dom
+      .querySelector(".callout-title-inner")
+      ?.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
+      );
+    expect(dom.querySelector(".callout-title")).toBeNull();
+    expect(dom.querySelector(".cm-callout-first")?.textContent).toBe(
+      "> [!warning] Careful",
+    );
+    const head = editor.view.state.selection.main.head;
+    expect(editor.view.state.doc.lineAt(head).text).toBe(
+      "> [!warning] Careful",
+    );
+    expect(head).toBeGreaterThanOrEqual(CALLOUT.indexOf("Careful"));
+  });
+
+  it("clicking the icon reveals the raw line too", () => {
+    const editor = mount(CALLOUT);
+    const dom = editor.view.dom;
+    dom
+      .querySelector(".callout-title-icon")
+      ?.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
+      );
+    expect(dom.querySelector(".callout-title")).toBeNull();
+    expect(dom.querySelector(".cm-callout-first")?.textContent).toContain(
+      "[!warning]",
+    );
+  });
+
   it("renders the type's name, icon and title like the Wiki", () => {
     const editor = mount(CALLOUT);
     const dom = editor.view.dom;

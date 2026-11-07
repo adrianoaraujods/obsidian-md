@@ -50,12 +50,15 @@ export function typingBehaviors(options: TypingOptions): Extension {
       };
     });
     if (!handled) return false;
-    view.dispatch(transaction, {
-      userEvent: "input.type",
-      scrollIntoView: true,
+    view.dispatch(
+      transaction,
+      {
+        userEvent: "input.type",
+        scrollIntoView: true,
+      },
       // Each wrap is its own undo step.
-      ...(wrapped && { annotations: isolateHistory.of("full") }),
-    });
+      ...(wrapped ? [{ annotations: isolateHistory.of("full") }] : []),
+    );
     return true;
   });
 }

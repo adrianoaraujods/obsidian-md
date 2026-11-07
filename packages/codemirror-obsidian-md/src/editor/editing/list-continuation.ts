@@ -1,4 +1,4 @@
-import { EditorSelection, Prec } from "@codemirror/state";
+import { EditorSelection, type EditorState, Prec } from "@codemirror/state";
 import { type Command, keymap } from "@codemirror/view";
 
 import { isCrlf } from "../state.js";
@@ -8,6 +8,12 @@ import { isComposing } from "./composition.js";
 import { contentEnd } from "./line-text.js";
 import { indentListItem, unindentListItem } from "./list-indent.js";
 import { continuationPrefix, parseListLine } from "./list-line.js";
+
+/** The whitespace a line starts with, up to `pos`. */
+function leadingIndent(state: EditorState, pos: number): string {
+  const line = state.doc.lineAt(pos);
+  return /^[ \t]*/.exec(line.text.slice(0, pos - line.from))?.[0] ?? "";
+}
 
 /** Enter continues the list item, quote or Callout line the cursor is on. */
 const continueList: Command = (view) => {
@@ -35,7 +41,11 @@ const continueList: Command = (view) => {
             range: EditorSelection.cursor(line.from),
           };
         }
-        const prefix = item ? continuationPrefix(item) : "";
+        // Off a list line the new line keeps the indentation, as the stock
+        // Enter does.
+        const prefix = item
+          ? continuationPrefix(item)
+          : leadingIndent(state, range.from);
         const insert = lineBreak + prefix;
         // A cursor past a CRLF line's `\r` goes before it.
         const at =

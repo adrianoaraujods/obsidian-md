@@ -155,6 +155,13 @@ describe("options and environment", () => {
     expect(sel(e).map(([a]) => a)).toEqual([6, 15, 22, 31]);
   });
 
+  it("keeps the indentation of a plain line among several cursors", () => {
+    const e = mount("- a\n  plain");
+    select(e, [3, 3], [11, 11]);
+    press(e, "Enter");
+    expect(e.getText()).toBe("- a\n- \n  plain\n  ");
+  });
+
   it("removes every empty marker on Backspace with several cursors", () => {
     const e = mount("- \nx\n1. ");
     select(e, [2, 2], [8, 8]);

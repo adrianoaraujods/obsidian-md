@@ -1,5 +1,11 @@
 # remark-obsidian-md
 
+## 3.1.1
+
+### Patch Changes
+
+- 9f41b51: Give each node nested in a Highlight or an inline Footnote the position of its own source, instead of the whole content range.
+
 ## 3.1.0
 
 ### Minor Changes

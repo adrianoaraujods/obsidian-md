@@ -110,11 +110,11 @@ describe("Mod-b", () => {
 });
 
 describe("Mod-i", () => {
-  it("wraps in * and means italic, not select-parent", () => {
+  it("wraps in _ and means italic, not select-parent", () => {
     const e = mount("say hello");
     select(e, [4, 9]);
     press(e, "i");
-    expect(e.getText()).toBe("say *hello*");
+    expect(e.getText()).toBe("say _hello_");
     expect(sel(e)).toEqual([[5, 10]]);
   });
 
@@ -131,13 +131,13 @@ describe("Mod-i", () => {
     const e = mount("**a**");
     select(e, [2, 3]);
     press(e, "i");
-    expect(e.getText()).toBe("***a***");
+    expect(e.getText()).toBe("**_a_**");
   });
 
   it("inserts an empty pair", () => {
     const e = mount("");
     press(e, "i");
-    expect(e.getText()).toBe("**");
+    expect(e.getText()).toBe("__");
     expect(sel(e)).toEqual([[1, 1]]);
   });
 });
@@ -284,7 +284,7 @@ describe("configuration", () => {
     press(e, "b");
     expect(e.getText()).toBe("x");
     press(e, "i");
-    expect(e.getText()).toBe("*x*");
+    expect(e.getText()).toBe("_x_");
   });
 
   it("accepts every command name and flag", () => {

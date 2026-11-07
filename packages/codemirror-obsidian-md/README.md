@@ -168,7 +168,7 @@ Rebind or disable a command by name through `keys`. `Mod` is Ctrl on Windows and
 | Command      | Default     | What it does                                                                                                                                                              |
 | ------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bold`       | `Mod-b`     | Toggles bold. Detects `**` and `__`, always wraps with `**`, leaves the inner text selected, and inserts an empty `****` with the cursor inside when nothing is selected. |
-| `italic`     | `Mod-i`     | The same for italic: detects `*` and `_`, wraps with `*`.                                                                                                                 |
+| `italic`     | `Mod-i`     | The same for italic: detects `*` and `_`, wraps with `_`, and inserts an empty `__` with the cursor inside when nothing is selected.                                      |
 | `link`       | `Mod-k`     | Makes the selection `[selection]()` with the cursor in the parentheses, or inserts `[]()` with the cursor in the brackets.                                                |
 | `indent`     | `Mod-]`     | Indents the current line or every selected line by one tab, list or not, and renumbers numbered items.                                                                    |
 | `unindent`   | `Mod-[`     | Removes one tab (or up to four spaces) from those lines, and renumbers.                                                                                                   |

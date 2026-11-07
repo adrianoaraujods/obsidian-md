@@ -89,4 +89,4 @@ function toggle(marker: string): Command {
 }
 
 export const toggleBold = toggle("**");
-export const toggleItalic = toggle("*");
+export const toggleItalic = toggle("_");

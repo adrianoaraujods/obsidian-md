@@ -110,7 +110,7 @@ test("a null build shows a one-time notice and never locks", async ({
     .getByRole("dialog")
     .getByRole("button", { name: "Commit" })
     .click();
-  await expect(page.getByText("No changes")).toBeVisible();
+  await expect(page.getByTestId("status")).toHaveText("Saved");
   await expect(page.getByTestId("lock-notice")).toHaveCount(0);
 });
 

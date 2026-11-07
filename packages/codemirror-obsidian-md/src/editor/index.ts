@@ -1,4 +1,10 @@
 export { isRevealed } from "./cursor.js";
+export {
+  DEFAULT_EDITING_KEYS,
+  type EditingCommand,
+  type EditingShortcutsOptions,
+  editingShortcuts,
+} from "./editing-shortcuts.js";
 export * from "./lock.js";
 export {
   type CreateEditorOptions,

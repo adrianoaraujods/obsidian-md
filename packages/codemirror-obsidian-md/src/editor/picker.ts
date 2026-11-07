@@ -155,10 +155,13 @@ function apply(link: string) {
 /**
  * The `[[` picker: typing `[[` opens a list of the host's Notes ranked by the
  * text typed after it; choosing one inserts a closed Wiki Link.
+ * It stays closed while the selection has several ranges.
  */
 export function pickerExtension(options: PickerOptions): Extension {
   const { resolver, maxResults = 100 } = options;
   const source = (context: CompletionContext): CompletionResult | null => {
+    // One chosen Note must not be inserted into many links.
+    if (context.state.selection.ranges.length > 1) return null;
     const before = context.matchBefore(/\[\[[^\]\n|#^]*/);
     if (!before) return null;
     const from = before.from + 2;

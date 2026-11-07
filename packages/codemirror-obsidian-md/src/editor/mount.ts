@@ -2,6 +2,7 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { EditorState, type Extension } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 
+import { multiCursor } from "./multi-cursor.js";
 import { type ObsidianMdOptions, obsidianMd, reparse } from "./state.js";
 
 export interface CreateEditorOptions extends ObsidianMdOptions {
@@ -35,6 +36,7 @@ export function createEditor(options: CreateEditorOptions): EditorHandle {
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         EditorView.lineWrapping,
+        multiCursor(),
         obsidianMd(doc, options),
         onChange
           ? EditorView.updateListener.of((u) => {

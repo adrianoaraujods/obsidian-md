@@ -88,7 +88,7 @@ test("confirming makes one commit as described", async ({ page }) => {
   const trailer = await dialog.getByTestId("commit-trailer").inputValue();
   await dialog.getByRole("button", { name: "Commit" }).click();
 
-  await expect(page.getByText("No changes")).toBeVisible();
+  await expect(page.getByTestId("status")).toHaveText("Saved");
   await expect.poll(async () => (await state()).commits).toHaveLength(1);
   const { commits, files } = await state();
   expect(commits[0]?.path).toBe(REPO_PATH);
@@ -150,4 +150,24 @@ test("a credential failure keeps the text and offers no Overwrite", async ({
   await expect(page.getByRole("button", { name: "Overwrite" })).toHaveCount(0);
   await expect(page.getByTestId("editor")).toContainText("Kept.");
   expect((await state()).commits).toHaveLength(0);
+});
+
+test("Mod-k in the editor inserts a link and does not open site search", async ({
+  page,
+}) => {
+  await openEditor(page);
+  const content = page.getByTestId("editor").locator(".cm-content");
+  await type(page, " docs");
+  for (let i = 0; i < 4; i++) await page.keyboard.press("Shift+ArrowLeft");
+  await page.keyboard.press("ControlOrMeta+k");
+  await page.keyboard.type("https://example.com");
+  await expect(content).toContainText("[docs](https://example.com)");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("Mod-k outside the editor still opens site search", async ({ page }) => {
+  await openEditor(page);
+  await page.locator("body").click({ position: { x: 2, y: 2 } });
+  await page.keyboard.press("ControlOrMeta+k");
+  await expect(page.getByRole("dialog")).toBeVisible();
 });

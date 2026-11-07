@@ -1,0 +1,313 @@
+/*
+ * codemirror-obsidian-md editor Stylesheet (opt-in, never injected).
+ *
+ * Import it once: `import "codemirror-obsidian-md/styles.css";`. It gives Live
+ * Preview the look it has in Obsidian. Every colour, the cursor, the selection
+ * and the sizes read a CSS variable and fall back to the inherited text colour
+ * or a neutral default, so the editor follows the page. There is no dark-mode
+ * logic here and no `prefers-color-scheme`: map the variables below to your
+ * own tokens, under `.dark` too.
+ *
+ * Variables (all optional):
+ *   --obsidian-editor-font            body font
+ *   --obsidian-editor-mono-font       inline code font
+ *   --obsidian-editor-line-height     line height (1.5)
+ *   --obsidian-editor-fg              text colour (inherited)
+ *   --obsidian-editor-bg              editor background (transparent)
+ *   --obsidian-editor-cursor          cursor colour (the text colour)
+ *   --obsidian-editor-selection       selected text background
+ *   --obsidian-editor-muted           dimmed text: `#` markers, raw syntax, quotes
+ *   --obsidian-editor-accent          links, bullets and checkboxes
+ *   --obsidian-editor-border          quote bar and chip border
+ *   --obsidian-editor-code-bg         inline code and chip background
+ *   --obsidian-editor-popover-fg      `[[` picker text
+ *   --obsidian-editor-popover-bg      `[[` picker background
+ *   --obsidian-editor-popover-border  `[[` picker border
+ *   --obsidian-editor-active-fg       picked option text
+ *   --obsidian-editor-active-bg       picked option background
+ *   --obsidian-editor-radius          picker and chip radius (6px)
+ *   --obsidian-editor-h1-size … --obsidian-editor-h6-size
+ *   --obsidian-editor-heading-weight  (700)
+ *
+ * Highlights and Callouts reuse the plugin Stylesheet (`remark-obsidian-md`),
+ * so they match the Wiki; import it too.
+ *
+ * CodeMirror's own base theme is more specific than a bare class, so the
+ * cursor, selection and picker rules below add specificity on purpose.
+ */
+
+/* Page colours and type. */
+.cm-editor {
+  color: var(--obsidian-editor-fg, inherit);
+  background-color: var(--obsidian-editor-bg, transparent);
+}
+
+.cm-editor .cm-scroller {
+  font-family: var(
+    --obsidian-editor-font,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif
+  );
+  line-height: var(--obsidian-editor-line-height, 1.5);
+}
+
+/* Cursor. The base theme draws it black; follow the theme instead. */
+.cm-editor .cm-scroller .cm-content {
+  caret-color: var(--obsidian-editor-cursor, currentColor);
+}
+
+.cm-editor .cm-cursorLayer .cm-cursor,
+.cm-editor .cm-dropCursor {
+  border-left-color: var(--obsidian-editor-cursor, currentColor);
+}
+
+/* Selection: the browser's own, and CodeMirror's drawn one. */
+.cm-editor .cm-content::selection,
+.cm-editor .cm-content ::selection {
+  background-color: var(
+    --obsidian-editor-selection,
+    color-mix(in srgb, currentColor 25%, transparent)
+  );
+}
+
+.cm-editor .cm-selectionLayer .cm-selectionBackground,
+div.cm-editor.cm-editor.cm-editor
+  > .cm-scroller
+  > .cm-selectionLayer
+  .cm-selectionBackground {
+  background-color: var(
+    --obsidian-editor-selection,
+    color-mix(in srgb, currentColor 25%, transparent)
+  );
+}
+
+/*
+ * CodeMirror puts an empty `img.cm-widgetBuffer` beside every widget. Page CSS
+ * (images as blocks, size resets) inflates the line around it, so take it out.
+ */
+.cm-editor .cm-line .cm-widgetBuffer {
+  display: none;
+}
+
+/* Headings: Obsidian's Live Preview scale, set on the whole line. */
+.cm-editor .cm-obsidian-heading {
+  font-weight: var(--obsidian-editor-heading-weight, 700);
+  line-height: 1.3;
+}
+
+.cm-editor .cm-obsidian-h1 {
+  font-size: var(--obsidian-editor-h1-size, 2em);
+}
+.cm-editor .cm-obsidian-h2 {
+  font-size: var(--obsidian-editor-h2-size, 1.6em);
+}
+.cm-editor .cm-obsidian-h3 {
+  font-size: var(--obsidian-editor-h3-size, 1.37em);
+}
+.cm-editor .cm-obsidian-h4 {
+  font-size: var(--obsidian-editor-h4-size, 1.25em);
+}
+.cm-editor .cm-obsidian-h5 {
+  font-size: var(--obsidian-editor-h5-size, 1.12em);
+}
+.cm-editor .cm-obsidian-h6 {
+  font-size: var(--obsidian-editor-h6-size, 1em);
+}
+
+/* The `#` markers stay visible but quiet while the cursor is on the line. */
+.cm-editor .cm-obsidian-heading-mark {
+  color: var(
+    --obsidian-editor-muted,
+    color-mix(in srgb, currentColor 45%, transparent)
+  );
+  font-weight: 400;
+}
+
+/* Emphasis and code. */
+.cm-editor .cm-obsidian-strong {
+  font-weight: 700;
+}
+.cm-editor .cm-obsidian-em {
+  font-style: italic;
+}
+.cm-editor .cm-obsidian-code {
+  font-family: var(
+    --obsidian-editor-mono-font,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace
+  );
+  font-size: 0.9em;
+  padding: 0 0.3em;
+  border-radius: 4px;
+  background-color: var(
+    --obsidian-editor-code-bg,
+    color-mix(in srgb, currentColor 10%, transparent)
+  );
+}
+
+/* Quotes. */
+.cm-editor .cm-obsidian-quote {
+  padding-left: 0.9em;
+  border-left: 3px solid
+    var(
+      --obsidian-editor-border,
+      color-mix(in srgb, currentColor 30%, transparent)
+    );
+  color: var(
+    --obsidian-editor-muted,
+    color-mix(in srgb, currentColor 75%, transparent)
+  );
+}
+
+/* Lists and task lists. A wrapped line hangs under the item's text. */
+.cm-editor .cm-obsidian-li {
+  padding-left: 1.5em;
+  text-indent: -1.1em;
+}
+.cm-editor .cm-obsidian-bullet {
+  display: inline-block;
+  width: 1.1em;
+  color: var(--obsidian-editor-accent, var(--text-accent, currentColor));
+  text-align: center;
+}
+.cm-editor .cm-obsidian-checkbox {
+  width: 1em;
+  height: 1em;
+  margin: 0 0.45em 0 0.1em;
+  vertical-align: -0.1em;
+  accent-color: var(--obsidian-editor-accent, var(--text-accent, auto));
+  cursor: pointer;
+}
+.cm-editor .cm-obsidian-task-done {
+  color: var(
+    --obsidian-editor-muted,
+    color-mix(in srgb, currentColor 60%, transparent)
+  );
+  text-decoration: line-through;
+}
+
+/* Wiki Links (rendered and raw) and Embeds. */
+.cm-editor a.internal-link,
+.cm-editor .cm-obsidian-wikilink-raw {
+  color: var(--obsidian-editor-accent, var(--text-accent, currentColor));
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.cm-editor .cm-embed-chip {
+  padding: 0 0.4em;
+  border: 1px solid
+    var(
+      --obsidian-editor-border,
+      color-mix(in srgb, currentColor 25%, transparent)
+    );
+  border-radius: var(--obsidian-editor-radius, 6px);
+  background-color: var(
+    --obsidian-editor-code-bg,
+    color-mix(in srgb, currentColor 10%, transparent)
+  );
+}
+.cm-editor img.internal-embed {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
+
+/* Highlights. The rendered form is a <mark> the plugin Stylesheet colours. */
+.cm-editor .cm-obsidian-highlight-raw {
+  border-radius: 0.2em;
+  background-color: color-mix(
+    in srgb,
+    var(--color-yellow, #e0ac00) 30%,
+    transparent
+  );
+}
+
+/* Raw syntax of constructs that render as nothing or as a superscript. */
+.cm-editor .cm-obsidian-comment-raw,
+.cm-editor .cm-obsidian-block-id-raw,
+.cm-editor .cm-obsidian-footnote-raw {
+  color: var(
+    --obsidian-editor-muted,
+    color-mix(in srgb, currentColor 55%, transparent)
+  );
+}
+.cm-editor .cm-obsidian-comment-raw {
+  font-style: italic;
+}
+.cm-editor .cm-obsidian-block-id-raw {
+  font-size: 0.85em;
+}
+/* A superscript must not push its line taller than the others. */
+.cm-editor sup {
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+/*
+ * A Callout is several lines, each carrying the plugin's `.callout` box. Join
+ * them into one: no margin, side borders on every line, the top border and
+ * radius on the first line and the bottom on the last.
+ */
+.cm-editor .cm-callout {
+  --_callout-edge: color-mix(in srgb, var(--callout-color) 30%, transparent);
+  margin: 0;
+  padding: 0 0.75rem;
+  overflow: visible;
+  border-width: 0 1px;
+  border-style: solid;
+  border-color: var(--_callout-edge);
+  border-radius: 0;
+}
+.cm-editor .cm-callout-first {
+  padding-top: 0.25rem;
+  border-top-width: 1px;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+.cm-editor .cm-callout-last {
+  padding-bottom: 0.5rem;
+  border-bottom-width: 1px;
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+.cm-editor .cm-callout .callout-title {
+  padding: 0.25rem 0;
+}
+
+/* The `[[` picker. Tooltips mount outside the editor, so no `.cm-editor`. */
+div.cm-tooltip.cm-tooltip {
+  overflow: hidden;
+  border: 1px solid
+    var(
+      --obsidian-editor-popover-border,
+      color-mix(in srgb, currentColor 20%, transparent)
+    );
+  border-radius: var(--obsidian-editor-radius, 6px);
+  background-color: var(--obsidian-editor-popover-bg, Canvas);
+  color: var(--obsidian-editor-popover-fg, CanvasText);
+}
+div.cm-tooltip.cm-tooltip-autocomplete > ul {
+  font-family: inherit;
+}
+div.cm-tooltip.cm-tooltip-autocomplete > ul > li {
+  padding: 2px 8px;
+}
+div.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background-color: var(
+    --obsidian-editor-active-bg,
+    color-mix(in srgb, currentColor 12%, transparent)
+  );
+  color: var(--obsidian-editor-active-fg, inherit);
+}
+.cm-tooltip .cm-completionDetail {
+  opacity: 0.6;
+}

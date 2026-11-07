@@ -3,6 +3,7 @@ import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 
 import { AuthToast } from "@/components/auth-toast";
+import { Toaster } from "@/components/ui/sonner";
 import { THEMES } from "@/lib/config";
 
 export default function PagesLayout({ children }: LayoutProps<"/">) {
@@ -19,6 +20,7 @@ export default function PagesLayout({ children }: LayoutProps<"/">) {
           <AuthToast />
         </Suspense>
       </RootProvider>
+      <Toaster />
     </ThemeProvider>
   );
 }

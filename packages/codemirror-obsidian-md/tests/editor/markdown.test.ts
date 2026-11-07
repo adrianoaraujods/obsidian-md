@@ -49,6 +49,16 @@ describe("markdown Live Preview", () => {
     expect(hidden(inside)).toEqual([]);
   });
 
+  it("heading: dims the # markers only while the cursor is on the line", () => {
+    const doc = "## Title\n\nbody";
+    const marker = (d: Deco[]) =>
+      d
+        .filter((x) => x.cls === "cm-obsidian-heading-mark")
+        .map((x) => [x.from, x.to]);
+    expect(marker(decorate(doc, 4))).toEqual([[0, 3]]);
+    expect(marker(decorate(doc, doc.length))).toEqual([]);
+  });
+
   it("strong: hides ** outside, shows inside", () => {
     const doc = "a **bold** b";
     const out = decorate(doc, 0);
@@ -144,5 +154,20 @@ describe("markdown Live Preview", () => {
       extensions: obsidianMd(doc, { providers: [markdownProvider] }),
     });
     expect(state.doc.toString()).toBe(doc);
+  });
+});
+
+describe("emphasis inside a Highlight", () => {
+  // ==**bold** and *it*==
+  it("hides each marker at its own position", () => {
+    const doc = "==**bold** and *it*==";
+    expect(
+      hidden(decorate(doc, doc.length + 0)).sort((a, b) => a[0]! - b[0]!),
+    ).toEqual([
+      [2, 4],
+      [8, 10],
+      [15, 16],
+      [18, 19],
+    ]);
   });
 });

@@ -50,17 +50,50 @@ function resolveType(
   };
 }
 
+/** Character offset into `node`'s text under a viewport point, if the browser can say. */
+function textOffsetAt(node: Node, x: number, y: number): number | null {
+  const doc = node.ownerDocument as Document & {
+    caretPositionFromPoint?: (
+      x: number,
+      y: number,
+    ) => { offsetNode: Node; offset: number } | null;
+  };
+  const hit = doc.caretPositionFromPoint
+    ? doc.caretPositionFromPoint(x, y)
+    : doc.caretRangeFromPoint?.(x, y);
+  if (!hit) return null;
+  const target = "offsetNode" in hit ? hit.offsetNode : hit.startContainer;
+  const offset = "offset" in hit ? hit.offset : hit.startOffset;
+  return node.contains(target) ? offset : null;
+}
+
+/**
+ * The rendered title line. The editor ignores events inside a widget, so a
+ * click would leave the cursor outside the Callout and it would never reveal
+ * its raw `> [!type] Title`. The widget places the cursor itself: in the
+ * typed title where the click landed, or at the start of the title when the
+ * click is on the icon (or the title is the type's default one).
+ */
 class CalloutTitleWidget extends WidgetType {
   constructor(
     readonly icon: string,
     readonly title: string,
+    /** Document position where the typed title starts (after `]` and spaces). */
+    readonly titleFrom: number,
+    /** Length of the typed title; 0 when the type's default title shows. */
+    readonly typedLength: number,
   ) {
     super();
   }
   eq(other: CalloutTitleWidget) {
-    return other.icon === this.icon && other.title === this.title;
+    return (
+      other.icon === this.icon &&
+      other.title === this.title &&
+      other.titleFrom === this.titleFrom &&
+      other.typedLength === this.typedLength
+    );
   }
-  toDOM() {
+  toDOM(view: EditorView) {
     const wrap = document.createElement("div");
     wrap.className = "callout-title";
     const icon = document.createElement("span");
@@ -70,6 +103,23 @@ class CalloutTitleWidget extends WidgetType {
     inner.className = "callout-title-inner";
     inner.textContent = this.title;
     wrap.append(icon, inner);
+    wrap.addEventListener("mousedown", (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      let offset = 0;
+      if (this.typedLength > 0 && inner.contains(event.target as Node)) {
+        const text = inner.firstChild;
+        const at = text
+          ? textOffsetAt(text, event.clientX, event.clientY)
+          : null;
+        offset = Math.min(at ?? this.typedLength, this.typedLength);
+      }
+      view.dispatch({
+        selection: { anchor: this.titleFrom + offset },
+        userEvent: "select.pointer",
+      });
+      view.focus();
+    });
     return wrap;
   }
 }
@@ -112,7 +162,15 @@ function createCalloutProvider(
         if (isFirst) {
           out.push(
             Decoration.replace({
-              widget: new CalloutTitleWidget(icon, typed || title),
+              widget: new CalloutTitleWidget(
+                icon,
+                typed || title,
+                first.from +
+                  match.index +
+                  match[0].length -
+                  (match[3] ?? "").length,
+                typed.length,
+              ),
             }).range(line.from, line.to),
           );
         } else {
@@ -222,39 +280,6 @@ function createEmbedProvider(options: CalloutEmbedOptions): ConstructProvider {
 
 // -- Packaging --------------------------------------------------------------
 
-const theme = EditorView.baseTheme({
-  ".cm-callout": {
-    paddingLeft: "12px",
-    paddingRight: "12px",
-    borderLeft:
-      "1px solid color-mix(in srgb, var(--callout-color) 30%, transparent)",
-    borderRight:
-      "1px solid color-mix(in srgb, var(--callout-color) 30%, transparent)",
-    backgroundColor:
-      "color-mix(in srgb, var(--callout-color) 10%, transparent)",
-  },
-  ".cm-callout-first": {
-    borderTop:
-      "1px solid color-mix(in srgb, var(--callout-color) 30%, transparent)",
-    borderTopLeftRadius: "6px",
-    borderTopRightRadius: "6px",
-    paddingTop: "8px",
-  },
-  ".cm-callout-last": {
-    borderBottom:
-      "1px solid color-mix(in srgb, var(--callout-color) 30%, transparent)",
-    borderBottomLeftRadius: "6px",
-    borderBottomRightRadius: "6px",
-    paddingBottom: "8px",
-  },
-  ".cm-embed-chip": {
-    padding: "0 6px",
-    borderRadius: "4px",
-    backgroundColor: "color-mix(in srgb, currentColor 10%, transparent)",
-  },
-  ".cm-content img.internal-embed": { maxWidth: "100%" },
-});
-
 /**
  * Live Preview for Callouts and Embeds (a Callout renders with its type's
  * color and icon, an Asset Embed as its image, a Note Embed as a chip; each
@@ -269,6 +294,5 @@ export function calloutEmbed(options: CalloutEmbedOptions = {}): Extension {
     constructProviders.of(createCalloutProvider(options)),
     constructProviders.of(createEmbedProvider(options)),
     EditorView.editorAttributes.of({ class: "markdown-rendered" }),
-    theme,
   ];
 }

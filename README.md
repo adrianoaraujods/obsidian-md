@@ -42,4 +42,6 @@ pnpm install
 pnpm lint && pnpm build && pnpm test   # runs across every package
 ```
 
+The Examples consume each package's built `dist/`, not its source. After editing a package, run `pnpm build` at the repo root (or `pnpm build` in that package) before running an Example's `pnpm dev`, or the Example runs stale code.
+
 See [CONTRIBUTING.md](CONTRIBUTING.md).

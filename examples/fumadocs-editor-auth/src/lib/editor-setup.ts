@@ -2,6 +2,7 @@ import {
   blockIdParser,
   type ConstructProvider,
   calloutEmbed,
+  editingShortcuts,
   inlineProviders,
   markdownProvider,
   type NoteCandidate,
@@ -25,6 +26,7 @@ export function editorSetup(options: {
   extensions: (
     | ReturnType<typeof pickerExtension>
     | ReturnType<typeof calloutEmbed>
+    | ReturnType<typeof editingShortcuts>
   )[];
 } {
   return {
@@ -33,6 +35,7 @@ export function editorSetup(options: {
     extensions: [
       pickerExtension({ candidates: options.candidates }),
       calloutEmbed({ resolveAsset }),
+      editingShortcuts(),
     ],
   };
 }

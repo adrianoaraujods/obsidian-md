@@ -27,6 +27,7 @@ export default defineConfig({
         "development.spec.ts",
         "live-preview.spec.ts",
         "multi-cursor.spec.ts",
+        "editing-shortcuts.spec.ts",
         "links.spec.ts",
       ],
       use: { baseURL: `http://localhost:${DEV_PORT}` },

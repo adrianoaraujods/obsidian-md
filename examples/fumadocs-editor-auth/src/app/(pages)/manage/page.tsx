@@ -59,6 +59,7 @@ export default async function ManagePage(props: {
           base={base}
           editor={editor}
           files={files}
+          focus={typeof focus === "string" ? focus : undefined}
           metas={await readMetas(vaultDir)}
           notes={notes}
         />

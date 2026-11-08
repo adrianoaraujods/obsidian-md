@@ -10,6 +10,7 @@ export {
 export type {
   Change,
   Changeset,
+  CommitMessage,
   CommitStorage,
   Storage,
   StorageCommitResult,

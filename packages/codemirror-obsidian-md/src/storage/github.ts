@@ -348,6 +348,30 @@ export function createGithubStorage(
       return headSha(await branchName());
     },
 
+    async changedSince(since) {
+      const head = await headSha(await branchName());
+      if (head === since) return [];
+      const comparison = await getJson<{
+        files?: Array<{ filename: string; previous_filename?: string }>;
+      }>(
+        `${repoUrl}/compare/${encodeURIComponent(since)}...${encodeURIComponent(head)}`,
+      );
+      const inVault = (path: string) =>
+        prefix === ""
+          ? path
+          : path.startsWith(`${prefix}/`)
+            ? path.slice(prefix.length + 1)
+            : null;
+      const paths = new Set<string>();
+      for (const file of comparison.files ?? []) {
+        for (const name of [file.filename, file.previous_filename]) {
+          const path = name === undefined ? null : inVault(name);
+          if (path !== null) paths.add(path);
+        }
+      }
+      return [...paths].sort();
+    },
+
     async commit(changeset, expected, message) {
       const branch = await branchName();
       const head = await headSha(branch);

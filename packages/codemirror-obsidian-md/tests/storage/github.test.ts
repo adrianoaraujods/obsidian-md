@@ -29,6 +29,20 @@ runStorageContract("github adapter (fake Contents API)", async () => ({
   storage: setup().storage,
 }));
 
+describe("github adapter changedSince", () => {
+  it("lists the vault paths changed after a base, none when nothing landed", async () => {
+    const { api, storage } = setup({ vaultPath: "vault" });
+    api.seed("vault/a.md", "A");
+    api.seed("docs/outside.md", "X");
+    const base = await storage.base();
+    expect(await storage.changedSince?.(base)).toEqual([]);
+
+    api.externalWrite("vault/b.md", "B", { name: "Bob", login: "bob" });
+    api.externalWrite("docs/outside.md", "Y", { name: "Bob", login: "bob" });
+    expect(await storage.changedSince?.(base)).toEqual(["b.md"]);
+  });
+});
+
 describe("github adapter commit", () => {
   const editor = { name: "Ada Lovelace", login: "ada" };
   const trailer =

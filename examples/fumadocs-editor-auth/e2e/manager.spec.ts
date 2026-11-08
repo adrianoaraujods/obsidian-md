@@ -666,7 +666,30 @@ test("a refused credential keeps the staged changes and a retry works", async ({
   expect(await onRepo(P("Rename Me.md"))).toBe(false);
 });
 
-test("a commit that landed meanwhile keeps the staged changes and asks to reload", async ({
+test("a commit to a file the changes touch keeps them staged, asks to reload and overwrites nothing", async ({
+  page,
+}) => {
+  await openManager(page);
+  await rename(page, P("Rename Me.md"), "Renamed");
+  await control("external-write", {
+    path: P("Rename Me.md"),
+    content: "Changed by somebody else.",
+    author: { name: "Bob", login: "bob" },
+  });
+  const before = (await state()).commits.length;
+
+  await apply(page);
+
+  await expect(toast(page)).toContainText("The Vault changed");
+  await expect(page.getByTestId("pending")).toContainText(
+    `Rename ${P("Rename Me.md")}`,
+  );
+  expect(await read(P("Rename Me.md"))).toBe("Changed by somebody else.");
+  expect(await onRepo(P("Renamed.md"))).toBe(false);
+  expect((await state()).commits).toHaveLength(before);
+});
+
+test("a commit that landed meanwhile on other files is rebased in", async ({
   page,
 }) => {
   await openManager(page);
@@ -676,13 +699,91 @@ test("a commit that landed meanwhile keeps the staged changes and asks to reload
     content: "Changed by somebody else.",
     author: { name: "Bob", login: "bob" },
   });
+  const before = (await state()).commits.length;
 
   await apply(page);
 
-  await expect(toast(page)).toContainText("The Vault changed");
-  await expect(page.getByTestId("pending")).toContainText(
-    `Rename ${P("Rename Me.md")}`,
-  );
-  expect(await onRepo(P("Rename Me.md"))).toBe(true);
-  expect(await onRepo(P("Renamed.md"))).toBe(false);
+  await expect(toast(page)).toContainText("Committed");
+  expect(await onRepo(P("Renamed.md"))).toBe(true);
+  expect(await onRepo(P("Rename Me.md"))).toBe(false);
+  expect(await read(P("Pick Me.md"))).toBe("Changed by somebody else.");
+  // Bob's commit, then exactly one of ours on top of it.
+  expect((await state()).commits).toHaveLength(before + 1);
+});
+
+// The poll timings are set in playwright.config.ts: first poll 100 ms, then
+// every 150 ms, timeout 2.5 s.
+// A well-formed SHA the fake does not know: the build is "deployed" but is not
+// at or after the repo's HEAD.
+const UNKNOWN_BUILD = "a".repeat(40);
+const head = async () => (await state()).commits.at(-1)?.sha;
+
+test.describe("the deploy lock", () => {
+  test("locks while HEAD is ahead of the build, says why, and unlocks when it deploys", async ({
+    page,
+  }) => {
+    await control("external-write", {
+      path: P("Pick Me.md"),
+      content: "Somebody else's, not deployed yet.",
+      author: { name: "Bob", login: "bob" },
+    });
+    await control("build-sha", { sha: UNKNOWN_BUILD });
+    await page.goto("/manage");
+
+    const locked = page.getByTestId("lock-locked");
+    await expect(locked).toBeVisible();
+    await expect(locked).toContainText("someone else's");
+    await expect(locked).toContainText("unlocks as soon as the site");
+    await expect(page.locator("[data-locked]")).toHaveAttribute("inert", "");
+
+    await control("build-sha", { sha: await head() });
+    await expect(locked).toHaveCount(0);
+    await expect(page.locator("[data-locked]")).toHaveCount(0);
+    await expect(row(page, P("Rename Me.md"))).toBeVisible();
+  });
+
+  test("Apply locks the Manager until the commit it made is live", async ({
+    page,
+  }) => {
+    // The build is live at HEAD, so the Manager opens unlocked.
+    await control("external-write", {
+      path: P("Pick Me.md"),
+      content: "Somebody else's, already deployed.",
+      author: { name: "Bob", login: "bob" },
+    });
+    await control("build-sha", { sha: await head() });
+    await openManager(page);
+    await rename(page, P("Rename Me.md"), "Renamed");
+    await control("build-sha", { sha: UNKNOWN_BUILD });
+
+    await apply(page);
+
+    await expect(page.getByTestId("lock-locked")).toBeVisible();
+    await expect(page.locator("[data-locked]")).toHaveAttribute("inert", "");
+    await control("build-sha", { sha: await head() });
+    await expect(page.getByTestId("lock-locked")).toHaveCount(0);
+  });
+
+  test("times out with Keep waiting and Reload from GitHub, which unlocks", async ({
+    page,
+  }) => {
+    await control("external-write", {
+      path: P("Pick Me.md"),
+      content: "Somebody else's, never deployed.",
+      author: { name: "Bob", login: "bob" },
+    });
+    await control("build-sha", { sha: "diverged" });
+    await page.goto("/manage");
+
+    const timeout = page.getByTestId("lock-timeout");
+    await expect(timeout).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("lock-locked")).toHaveCount(0);
+    await expect(page.locator("[data-locked]")).toHaveAttribute("inert", "");
+    await expect(
+      timeout.getByRole("button", { name: "Keep waiting" }),
+    ).toBeVisible();
+
+    await timeout.getByRole("button", { name: "Reload from GitHub" }).click();
+    await expect(page.getByTestId("lock-timeout")).toHaveCount(0);
+  });
 });

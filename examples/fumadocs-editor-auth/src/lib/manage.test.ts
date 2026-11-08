@@ -89,16 +89,51 @@ describe("applying a reorganization", () => {
     expect(github.commits).toHaveLength(0);
   });
 
-  it("reports a stale base as 409 and changes nothing", async () => {
+  it("asks for a reload (409) when a commit that landed touched a file in the changeset, and changes nothing", async () => {
     const { github, post } = setup();
     const base = github.head();
-    github.externalWrite("c.md", "C", { name: "Bob", login: "bob" });
+    github.externalWrite("b.md", "B by Bob", { name: "Bob", login: "bob" });
+    const before = github.commits.length;
     const response = await post({
       base,
       changeset: [{ type: "rename", from: "b.md", to: "c2.md" }],
     });
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({ error: "stale-base" });
+    expect(github.files()["b.md"]).toBe("B by Bob");
+    expect(github.commits).toHaveLength(before);
+  });
+
+  it("rebases onto a commit that landed when it touched none of the changeset's files", async () => {
+    const { github, post } = setup();
+    const base = github.head();
+    github.externalWrite("c.md", "C", { name: "Bob", login: "bob" });
+    const landed = github.head();
+    const response = await post({
+      base,
+      changeset: [
+        { type: "rename", from: "b.md", to: "Moved/b.md" },
+        { type: "write", path: "a.md", content: "A [[Moved/b]]" },
+      ],
+      subject: "Move b.md",
+    });
+    expect(response.status).toBe(200);
+    expect((await response.json()).base).toBe(github.head());
+    expect(github.files()["c.md"]).toBe("C");
+    expect(github.files()["Moved/b.md"]).toBe("B");
+    expect(github.commits.at(-1)?.message).toContain("Move b.md");
+    expect(github.head()).not.toBe(landed);
+  });
+
+  it("treats the destination of a rename as touched", async () => {
+    const { github, post } = setup();
+    const base = github.head();
+    github.externalWrite("d.md", "D", { name: "Bob", login: "bob" });
+    const response = await post({
+      base,
+      changeset: [{ type: "rename", from: "b.md", to: "d.md" }],
+    });
+    expect(response.status).toBe(409);
     expect(github.files()["b.md"]).toBe("B");
   });
 

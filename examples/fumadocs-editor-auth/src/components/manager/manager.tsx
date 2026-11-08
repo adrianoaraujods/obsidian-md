@@ -11,12 +11,14 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import type { SaveLock } from "codemirror-obsidian-md/editor";
 import {
   checkSegments,
   movedPath,
   renamedPath,
 } from "codemirror-obsidian-md/manager";
 import { listFolders } from "codemirror-obsidian-md/new-note";
+import { createStorageClient } from "codemirror-obsidian-md/storage/client";
 import {
   folderRows,
   type Meta,
@@ -31,9 +33,13 @@ import {
   GripVerticalIcon,
   MinusIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-
+import {
+  DeployLockPanel,
+  startDeployLock,
+  useLockState,
+} from "@/components/editor/deploy-lock";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,8 +49,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import { type CommitEditor, commitPreview } from "@/lib/commit-preview";
+import type { LockTimings } from "@/lib/lock-timings";
 import {
   buildTree,
   commitMessage,
@@ -54,6 +60,7 @@ import {
   planManager,
   type TreeNode,
 } from "@/lib/manager";
+import { createManagerFlow } from "@/lib/manager-lock";
 import {
   APPLY_CREDENTIAL_MESSAGE,
   APPLY_NETWORK_MESSAGE,
@@ -125,6 +132,10 @@ export function Manager(props: {
   notes: Record<string, string>;
   /** The text of each folder's `meta.json`, keyed by folder (`""` is the root). */
   metas: Record<string, string>;
+  /** Poll timings of the deploy lock (see `lockTimings`). */
+  lockTimings?: LockTimings;
+  /** Set when the repo HEAD (`base`) is not live yet: the Manager opens locked on it. */
+  lockedCommit?: string;
 }) {
   const [files, setFiles] = useState(props.files);
   const [notes, setNotes] = useState(props.notes);
@@ -141,6 +152,35 @@ export function Manager(props: {
   // session): shown like the Save flow's keep-text banner.
   const [applyError, setApplyError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+
+  // The deploy lock is the Note editor's, driven by Apply instead of a Save.
+  const managerFlow = useRef(createManagerFlow(() => window.location.reload()));
+  const [lock, setLock] = useState<SaveLock | null>(null);
+  const lockState = useLockState(lock);
+  const locked = lockState.status !== "unlocked";
+  const startup = useRef({
+    timings: props.lockTimings,
+    lockedCommit: props.lockedCommit,
+  });
+  useEffect(() => {
+    let cancelled = false;
+    let started: SaveLock | null = null;
+    void startDeployLock(
+      managerFlow.current.flow,
+      createStorageClient({ url: "/api/notes", lock: true }),
+      startup.current.timings,
+      undefined,
+      startup.current.lockedCommit,
+    ).then((next) => {
+      if (cancelled) return next.dispose();
+      started = next;
+      setLock(next);
+    });
+    return () => {
+      cancelled = true;
+      started?.dispose();
+    };
+  }, []);
 
   const plan = useMemo(
     () => planManager({ files, metas, changes, notes }),
@@ -299,7 +339,7 @@ export function Manager(props: {
   }
 
   async function apply() {
-    if (!plan.ok || applying) return;
+    if (!plan.ok || applying || locked) return;
     setApplying(true);
     setApplyError(null);
     try {
@@ -313,12 +353,17 @@ export function Manager(props: {
           body: plan.body.split("\n").map((line) => line.replace(/^- /, "")),
         }),
       });
-      const body = (await response.json()) as { base?: string; error?: string };
+      const body = (await response.json()) as {
+        base?: string;
+        commit?: string;
+        error?: string;
+      };
       if (response.ok && body.base) {
         setFiles(plan.files);
         setNotes(committedNotes(notes, plan));
         setMetas(plan.metaTexts);
         setBase(body.base);
+        managerFlow.current.applied(body.commit);
         setChanges([]);
         // A folder nothing was moved into never reaches the Vault.
         setNewFolders([]);
@@ -375,203 +420,214 @@ export function Manager(props: {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
-      <DndContext
-        collisionDetection={pointerWithin}
-        id="manager"
-        onDragCancel={() => setDragging(false)}
-        onDragEnd={onDragEnd}
-        onDragStart={() => setDragging(true)}
-        sensors={sensors}
+    <>
+      <DeployLockPanel
+        lock={lock}
+        lockedMessage="Locked: a commit (yours or someone else's) is waiting to go live on the site, so what is shown here is out of date. The Manager checks automatically and unlocks as soon as the site is rebuilt with it."
+        timeoutMessage="The site has not caught up with the latest commit yet. You can keep waiting, or reload the Manager from GitHub."
+      />
+      <div
+        className="grid gap-6 md:grid-cols-[2fr_1fr]"
+        data-locked={locked ? "" : undefined}
+        inert={locked}
       >
-        <section aria-label="Vault">
-          <NewFolderForm onAdd={addFolder} />
-          <RootDrop {...treeProps} />
-          <TreeList {...treeProps} folder="" nodes={tree} />
-        </section>
-      </DndContext>
+        <DndContext
+          collisionDetection={pointerWithin}
+          id="manager"
+          onDragCancel={() => setDragging(false)}
+          onDragEnd={onDragEnd}
+          onDragStart={() => setDragging(true)}
+          sensors={sensors}
+        >
+          <section aria-label="Vault">
+            <NewFolderForm onAdd={addFolder} />
+            <RootDrop {...treeProps} />
+            <TreeList {...treeProps} folder="" nodes={tree} />
+          </section>
+        </DndContext>
 
-      <section
-        aria-label="Pending changes"
-        className="grid content-start gap-3"
-      >
-        <h2 className="font-semibold text-lg">Pending changes</h2>
-        {applyError && (
-          <p
-            className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive text-sm"
-            data-testid="apply-error"
-            role="alert"
-          >
-            {applyError}
-          </p>
-        )}
-        {error && (
-          <p
-            className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive text-sm"
-            data-testid="error"
-            role="alert"
-          >
-            {error}
-          </p>
-        )}
-        {emptyFolders.length > 0 && (
-          <ul className="grid gap-1 text-sm" data-testid="new-folders">
-            {emptyFolders.map((folder) => (
-              <li
-                className="flex items-center justify-between gap-2"
-                key={folder}
-              >
-                <span className="break-all">
-                  New folder {folder} (dropped unless something is moved into
-                  it)
-                </span>
-                <Button
-                  aria-label={`Remove new folder ${folder}`}
-                  onClick={() =>
-                    setNewFolders(newFolders.filter((f) => f !== folder))
-                  }
-                  size="xs"
-                  variant="outline"
-                >
-                  Remove
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {changes.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No pending changes</p>
-        ) : (
-          <ul className="grid gap-2" data-testid="pending">
-            {changes.map((change, index) => {
-              const text = describeChange(change);
-              return (
+        <section
+          aria-label="Pending changes"
+          className="grid content-start gap-3"
+        >
+          <h2 className="font-semibold text-lg">Pending changes</h2>
+          {applyError && (
+            <p
+              className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive text-sm"
+              data-testid="apply-error"
+              role="alert"
+            >
+              {applyError}
+            </p>
+          )}
+          {error && (
+            <p
+              className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive text-sm"
+              data-testid="error"
+              role="alert"
+            >
+              {error}
+            </p>
+          )}
+          {emptyFolders.length > 0 && (
+            <ul className="grid gap-1 text-sm" data-testid="new-folders">
+              {emptyFolders.map((folder) => (
                 <li
-                  className="flex items-center justify-between gap-2 text-sm"
-                  key={`${text}#${changes.slice(0, index).filter((c) => describeChange(c) === text).length}`}
+                  className="flex items-center justify-between gap-2"
+                  key={folder}
                 >
-                  <span className="break-all">{text}</span>
+                  <span className="break-all">
+                    New folder {folder} (dropped unless something is moved into
+                    it)
+                  </span>
                   <Button
-                    aria-label={`Undo ${text}`}
-                    onClick={() => undo(index)}
+                    aria-label={`Remove new folder ${folder}`}
+                    onClick={() =>
+                      setNewFolders(newFolders.filter((f) => f !== folder))
+                    }
                     size="xs"
                     variant="outline"
                   >
-                    Undo
+                    Remove
                   </Button>
                 </li>
-              );
-            })}
-          </ul>
-        )}
-        {plan.ok && plan.rewrites.length > 0 && (
-          <div>
-            <h3 className="font-medium text-sm">Links rewritten</h3>
-            <ul className="grid gap-1 text-sm" data-testid="rewrites">
-              {plan.rewrites.map((rewrite) => (
-                <li className="break-all" key={rewrite.path}>
-                  {rewrite.path}: {rewrite.links}{" "}
-                  {rewrite.links === 1 ? "link" : "links"}
-                </li>
               ))}
             </ul>
-          </div>
-        )}
-        {plan.ok && plan.urls.length > 0 && (
-          <div>
-            <h3 className="font-medium text-sm">URLs that change</h3>
-            <ul className="grid gap-1 text-sm" data-testid="urls">
-              {plan.urls.map((url) => (
-                <li className="break-all" key={url.path}>
-                  {url.from} → {url.to}
-                </li>
-              ))}
+          )}
+          {changes.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No pending changes</p>
+          ) : (
+            <ul className="grid gap-2" data-testid="pending">
+              {changes.map((change, index) => {
+                const text = describeChange(change);
+                return (
+                  <li
+                    className="flex items-center justify-between gap-2 text-sm"
+                    key={`${text}#${changes.slice(0, index).filter((c) => describeChange(c) === text).length}`}
+                  >
+                    <span className="break-all">{text}</span>
+                    <Button
+                      aria-label={`Undo ${text}`}
+                      onClick={() => undo(index)}
+                      size="xs"
+                      variant="outline"
+                    >
+                      Undo
+                    </Button>
+                  </li>
+                );
+              })}
             </ul>
-            <p className="text-muted-foreground text-xs">
-              Old URLs will not redirect.
-            </p>
-          </div>
-        )}
-        <div className="flex gap-2">
-          <Button disabled={empty} onClick={() => setConfirming(true)}>
-            Apply
-          </Button>
-          <Button
-            disabled={changes.length === 0 && newFolders.length === 0}
-            onClick={() => {
-              setChanges([]);
-              setNewFolders([]);
-              setError(null);
-              setApplyError(null);
-            }}
-            variant="outline"
-          >
-            Discard all
-          </Button>
-        </div>
-      </section>
-
-      {confirming && plan.ok && (
-        <Dialog onOpenChange={(open) => !open && setConfirming(false)} open>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Commit changes</DialogTitle>
-              <DialogDescription>
-                This makes one commit
-                {plan.rewrites.length > 0 &&
-                  `, rewriting links in ${plan.rewrites.length} ${plan.rewrites.length === 1 ? "Note" : "Notes"}`}
-                .{" "}
-                {plan.urls.length > 0
-                  ? `${plan.urls.length} URL(s) change. Old URLs will not redirect, so external links and bookmarks to them will break.`
-                  : "Note URLs stay the same."}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-2">
-              <label className="font-medium text-sm" htmlFor="subject">
-                Commit subject
-              </label>
-              <input
-                className="w-full rounded-md border bg-muted px-2 py-1.5 font-mono text-sm"
-                data-testid="commit-subject"
-                id="subject"
-                readOnly
-                value={plan.subject}
-              />
-              <label className="font-medium text-sm" htmlFor="body">
-                Commit body
-              </label>
-              <textarea
-                className="w-full rounded-md border bg-muted px-2 py-1.5 font-mono text-sm"
-                data-testid="commit-body"
-                id="body"
-                readOnly
-                rows={Math.min(8, plan.body.split("\n").length)}
-                value={commitMessage(plan).split("\n\n")[1]}
-              />
-              <label className="font-medium text-sm" htmlFor="trailer">
-                Trailer (added automatically)
-              </label>
-              <textarea
-                className="w-full rounded-md border bg-muted px-2 py-1.5 font-mono text-sm"
-                data-testid="commit-trailer"
-                id="trailer"
-                readOnly
-                rows={2}
-                value={commitPreview("", props.editor).trailer}
-              />
+          )}
+          {plan.ok && plan.rewrites.length > 0 && (
+            <div>
+              <h3 className="font-medium text-sm">Links rewritten</h3>
+              <ul className="grid gap-1 text-sm" data-testid="rewrites">
+                {plan.rewrites.map((rewrite) => (
+                  <li className="break-all" key={rewrite.path}>
+                    {rewrite.path}: {rewrite.links}{" "}
+                    {rewrite.links === 1 ? "link" : "links"}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <DialogFooter>
-              <Button onClick={() => setConfirming(false)} variant="outline">
-                Cancel
-              </Button>
-              <Button disabled={applying} onClick={() => void apply()}>
-                Commit
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
+          )}
+          {plan.ok && plan.urls.length > 0 && (
+            <div>
+              <h3 className="font-medium text-sm">URLs that change</h3>
+              <ul className="grid gap-1 text-sm" data-testid="urls">
+                {plan.urls.map((url) => (
+                  <li className="break-all" key={url.path}>
+                    {url.from} → {url.to}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-muted-foreground text-xs">
+                Old URLs will not redirect.
+              </p>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button disabled={empty} onClick={() => setConfirming(true)}>
+              Apply
+            </Button>
+            <Button
+              disabled={changes.length === 0 && newFolders.length === 0}
+              onClick={() => {
+                setChanges([]);
+                setNewFolders([]);
+                setError(null);
+                setApplyError(null);
+              }}
+              variant="outline"
+            >
+              Discard all
+            </Button>
+          </div>
+        </section>
+
+        {confirming && plan.ok && (
+          <Dialog onOpenChange={(open) => !open && setConfirming(false)} open>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Commit changes</DialogTitle>
+                <DialogDescription>
+                  This makes one commit
+                  {plan.rewrites.length > 0 &&
+                    `, rewriting links in ${plan.rewrites.length} ${plan.rewrites.length === 1 ? "Note" : "Notes"}`}
+                  .{" "}
+                  {plan.urls.length > 0
+                    ? `${plan.urls.length} URL(s) change. Old URLs will not redirect, so external links and bookmarks to them will break.`
+                    : "Note URLs stay the same."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-2">
+                <label className="font-medium text-sm" htmlFor="subject">
+                  Commit subject
+                </label>
+                <input
+                  className="w-full rounded-md border bg-muted px-2 py-1.5 font-mono text-sm"
+                  data-testid="commit-subject"
+                  id="subject"
+                  readOnly
+                  value={plan.subject}
+                />
+                <label className="font-medium text-sm" htmlFor="body">
+                  Commit body
+                </label>
+                <textarea
+                  className="w-full rounded-md border bg-muted px-2 py-1.5 font-mono text-sm"
+                  data-testid="commit-body"
+                  id="body"
+                  readOnly
+                  rows={Math.min(8, plan.body.split("\n").length)}
+                  value={commitMessage(plan).split("\n\n")[1]}
+                />
+                <label className="font-medium text-sm" htmlFor="trailer">
+                  Trailer (added automatically)
+                </label>
+                <textarea
+                  className="w-full rounded-md border bg-muted px-2 py-1.5 font-mono text-sm"
+                  data-testid="commit-trailer"
+                  id="trailer"
+                  readOnly
+                  rows={2}
+                  value={commitPreview("", props.editor).trailer}
+                />
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setConfirming(false)} variant="outline">
+                  Cancel
+                </Button>
+                <Button disabled={applying} onClick={() => void apply()}>
+                  Commit
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    </>
   );
 }
 

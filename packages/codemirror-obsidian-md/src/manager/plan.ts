@@ -58,6 +58,8 @@ export type ReorganizationPlan =
       /** One rename per file that ends up somewhere else. */
       changeset: Changeset;
       moves: PlannedMove[];
+      /** What the user staged, one per file or folder moved or renamed (a folder counts once). */
+      items: PlannedMove[];
       /** The Notes whose links are rewritten; their `write` changes follow the renames in `changeset`. */
       rewrites: PlannedRewrite[];
       /** Every Note URL that changes. */
@@ -268,6 +270,7 @@ export function planReorganization(input: PlanInput): ReorganizationPlan {
     ok: true,
     changeset,
     moves,
+    items: changed,
     rewrites,
     urls,
     subject,

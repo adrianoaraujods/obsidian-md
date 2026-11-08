@@ -70,6 +70,10 @@ describe("planReorganization", () => {
     ]);
     expect(result).toMatchObject({ ok: true, subject: "Reorganize 2 items" });
     if (!result.ok) return;
+    expect(result.items).toEqual([
+      { kind: "Move", from: "Alpha.md", to: "Geografia/Alpha.md" },
+      { kind: "Rename", from: "Index.md", to: "Home.md" },
+    ]);
     expect(result.body).toBe(
       "- Move Alpha.md → Geografia/Alpha.md\n- Rename Index.md → Home.md",
     );

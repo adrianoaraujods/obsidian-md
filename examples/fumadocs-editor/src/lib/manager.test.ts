@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { buildTree, commitMessage, parseCommitRequest } from "./manager";
+import {
+  buildTree,
+  commitMessage,
+  describeChange,
+  parseCommitRequest,
+  planManager,
+} from "./manager";
 
 describe("buildTree", () => {
   it("nests files under folders, folders first, each sorted by name", () => {
@@ -89,7 +95,7 @@ describe("parseCommitRequest", () => {
       ).toBeNull();
   });
 
-  it("accepts only renames and writes, with a base", () => {
+  it("accepts only known changes, with a base", () => {
     expect(
       parseCommitRequest({
         base: "abc",
@@ -102,9 +108,129 @@ describe("parseCommitRequest", () => {
     expect(
       parseCommitRequest({
         base: "abc",
-        changeset: [{ type: "delete", path: "a.md" }],
+        changeset: [{ type: "explode", path: "a.md" }],
       }),
     ).toBeNull();
     expect(parseCommitRequest({ changeset: [] })).toBeNull();
+  });
+});
+
+describe("planManager", () => {
+  const files = ["a.md", "b.md", "Guides/one.md", "Guides/two.md", "pic.png"];
+  const notes = { "a.md": "[[b]]\n", "b.md": "b\n" };
+
+  it("commits a reorder as a created meta.json and says what it is", () => {
+    const plan = planManager({
+      files,
+      metas: {},
+      notes,
+      changes: [{ type: "reorder", folder: "", from: 2, to: 0 }],
+    });
+    expect(plan).toMatchObject({
+      ok: true,
+      subject: "Reorganize 1 item",
+      body: "- Reorder items in the Vault root",
+    });
+    if (!plan.ok) return;
+    expect(plan.changeset).toEqual([
+      {
+        type: "write",
+        path: "meta.json",
+        content: '{\n  "pages": [\n    "b",\n    "Guides",\n    "a",\n    "..."\n  ]\n}\n',
+      },
+    ]);
+    expect(plan.files).toEqual([...files].sort());
+  });
+
+  it("puts the rename and the pages updates in one changeset", () => {
+    const plan = planManager({
+      files,
+      metas: { "": '{"pages":["a","b","Guides"]}', Guides: '{"pages":["one"]}' },
+      notes,
+      changes: [{ type: "move", from: "b.md", to: "Guides/b.md" }],
+    });
+    expect(plan.ok).toBe(true);
+    if (!plan.ok) return;
+    expect(plan.subject).toBe("Move b.md");
+    expect(plan.changeset.map((c) => c.type)).toEqual([
+      "rename",
+      "write",
+      "write",
+    ]);
+    const paths = plan.changeset.flatMap((c) => (c.type === "write" ? [c.path] : []));
+    expect(paths.sort()).toEqual(["Guides/meta.json", "meta.json"]);
+    // Sections: the Manager keeps meta.json out of the files it shows.
+    expect(plan.files).toEqual(
+      ["Guides/b.md", "Guides/one.md", "Guides/two.md", "a.md", "pic.png"],
+    );
+  });
+
+  it("moves a folder's meta.json with it and deletes that of an emptied folder", () => {
+    const moved = planManager({
+      files,
+      metas: { Guides: '{"title":"G"}' },
+      notes,
+      changes: [{ type: "move", from: "Guides", to: "Manuals" }],
+    });
+    expect(moved.ok && moved.changeset).toContainEqual({
+      type: "rename",
+      from: "Guides/meta.json",
+      to: "Manuals/meta.json",
+    });
+    expect(moved.ok && moved.metaTexts).toEqual({ Manuals: '{"title":"G"}' });
+
+    const emptied = planManager({
+      files,
+      metas: { Guides: '{"title":"G"}' },
+      notes,
+      changes: [
+        { type: "move", from: "Guides/one.md", to: "one.md" },
+        { type: "move", from: "Guides/two.md", to: "two.md" },
+      ],
+    });
+    expect(emptied.ok && emptied.changeset).toContainEqual({
+      type: "delete",
+      path: "Guides/meta.json",
+    });
+    expect(emptied.ok && emptied.files).not.toContain("Guides/meta.json");
+  });
+
+  it("names a failed change by its place in the whole list", () => {
+    const plan = planManager({
+      files,
+      metas: {},
+      notes,
+      changes: [
+        { type: "reorder", folder: "", from: 0, to: 1 },
+        { type: "move", from: "nope.md", to: "x.md" },
+      ],
+    });
+    expect(plan).toMatchObject({ ok: false, index: 1 });
+  });
+
+  it("describes each kind of change", () => {
+    expect(describeChange({ type: "set-title", folder: "G", title: "T" })).toBe(
+      'Set the title of G to "T"',
+    );
+    expect(describeChange({ type: "set-title", folder: "G", title: undefined })).toBe(
+      "Clear the title of G",
+    );
+    expect(
+      describeChange({ type: "add-separator", folder: "", title: "S", index: 0 }),
+    ).toBe('Add Separator "S" in the Vault root');
+  });
+});
+
+describe("parseCommitRequest with deletes", () => {
+  it("accepts a delete", () => {
+    expect(
+      parseCommitRequest({
+        base: "abc",
+        changeset: [{ type: "delete", path: "G/meta.json" }],
+      }),
+    ).toEqual({
+      base: "abc",
+      changeset: [{ type: "delete", path: "G/meta.json" }],
+    });
   });
 });

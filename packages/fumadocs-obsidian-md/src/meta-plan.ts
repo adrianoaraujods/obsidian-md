@@ -58,6 +58,8 @@ export type MetaPlan =
       writes: { path: string; content: string }[];
       /** `meta.json` files of folders that no longer hold anything. */
       deletes: string[];
+      /** The text of every `meta.json` the Vault ends up with, by folder. */
+      texts: Record<string, string>;
       /** The folders' `meta` once the changes are applied (those that have one). */
       metas: Record<string, Meta>;
     }
@@ -403,6 +405,7 @@ export function planMeta(input: MetaPlanInput): MetaPlan {
   const writes: { path: string; content: string }[] = [];
   const deletes: string[] = [];
   const result: Record<string, Meta> = {};
+  const texts: Record<string, string> = {};
   const folders = new Set([...metas.keys(), ...originals.keys()]);
   for (const folder of folders) {
     const meta = metaOf(folder);
@@ -414,11 +417,14 @@ export function planMeta(input: MetaPlanInput): MetaPlan {
     );
     if (empty && folder !== "") {
       if (originals.has(folder)) deletes.push(path);
+      delete result[folder];
       continue;
     }
-    if (!touched.has(folder)) continue;
-    const content = writeMeta(originals.get(folder), meta);
-    if (content !== originals.get(folder)) writes.push({ path, content });
+    const original = originals.get(folder);
+    const content = touched.has(folder) ? writeMeta(original, meta) : original;
+    if (content === undefined) continue;
+    texts[folder] = content;
+    if (content !== original) writes.push({ path, content });
   }
-  return { ok: true, writes, deletes, metas: result };
+  return { ok: true, writes, deletes, texts, metas: result };
 }

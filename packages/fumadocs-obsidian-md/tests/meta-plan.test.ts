@@ -311,6 +311,24 @@ describe("moves and renames keep pages in sync", () => {
     });
   });
 
+  it("returns the text of every meta.json the Vault ends up with", () => {
+    const plan = ok(
+      planMeta({
+        files,
+        metas,
+        changes: [
+          { type: "move", from: "Guides", to: "Manuals" },
+          { type: "move", from: "b.md", to: "bee.md" },
+        ],
+      }),
+    );
+    expect(Object.keys(plan.texts).sort()).toEqual(["", "Manuals"]);
+    expect(JSON.parse(plan.texts[""] as string)).toEqual({
+      pages: ["a", "Manuals", "bee", "c"],
+    });
+    expect(plan.texts.Manuals).toBe(metas.Guides);
+  });
+
   it("ignores Assets and folders that hold no Note", () => {
     const plan = planMeta({
       files,

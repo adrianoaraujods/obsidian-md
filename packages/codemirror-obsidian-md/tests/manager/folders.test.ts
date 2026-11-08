@@ -163,9 +163,7 @@ describe("moving an Asset", () => {
         c.type === "write" ? [[c.path, c.content]] : [],
       ),
     );
-    expect(writes.get("Index.md")).toBe(
-      "![[map.png|200]] ![[Other/map.png]]",
-    );
+    expect(writes.get("Index.md")).toBe("![[map.png|200]] ![[Other/map.png]]");
     expect(writes.has("Other/Note.md")).toBe(false);
   });
 });

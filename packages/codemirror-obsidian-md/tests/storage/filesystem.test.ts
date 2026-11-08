@@ -1,4 +1,11 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -17,6 +24,48 @@ runStorageContract("filesystem adapter", async () => {
 });
 
 describe("filesystem adapter specifics", () => {
+  it("renames a binary Asset byte for byte", async () => {
+    const { root, cleanup } = await tempVault();
+    try {
+      const bytes = Buffer.from([
+        0x89, 0x50, 0x4e, 0x47, 0xff, 0xfe, 0x00, 0xc3,
+      ]);
+      await writeFile(join(root, "pic.png"), bytes);
+      await writeFile(join(root, "n.md"), "olá");
+      const storage = createFilesystemStorage({ root });
+      await storage.commit(
+        [
+          { type: "rename", from: "pic.png", to: "Pics/pic.png" },
+          { type: "write", path: "n.md", content: "olá ![[pic.png]]" },
+        ],
+        await storage.base(),
+      );
+      expect(await readFile(join(root, "Pics/pic.png"))).toEqual(bytes);
+      expect(await readFile(join(root, "n.md"), "utf8")).toBe(
+        "olá ![[pic.png]]",
+      );
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it("removes the folders a commit leaves empty, like git", async () => {
+    const { root, cleanup } = await tempVault();
+    try {
+      await mkdir(join(root, "A/B"), { recursive: true });
+      await writeFile(join(root, "A/B/x.md"), "x");
+      await writeFile(join(root, "keep.md"), "k");
+      const storage = createFilesystemStorage({ root });
+      await storage.commit(
+        [{ type: "rename", from: "A/B/x.md", to: "C/x.md" }],
+        await storage.base(),
+      );
+      expect((await readdir(root)).sort()).toEqual(["C", "keep.md"]);
+    } finally {
+      await cleanup();
+    }
+  });
+
   it("has no lock capability", async () => {
     const { root, cleanup } = await tempVault();
     try {

@@ -1,6 +1,13 @@
 import { createHash } from "node:crypto";
 import type { Dirent } from "node:fs";
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  rmdir,
+  writeFile,
+} from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 
 import { AlreadyExistsError, StaleBaseError, StaleShaError } from "./errors.js";
@@ -55,7 +62,11 @@ export function createFilesystemStorage({
     }
   }
 
-  /** Every file under the root, by relative path with `/` separators. */
+  /**
+   * Every file under the root, by relative path with `/` separators. Contents
+   * are read as `latin1`, one character per byte, so Assets survive a commit
+   * unchanged; the text of a write is converted to match.
+   */
   async function snapshot(): Promise<Map<string, string>> {
     const files = new Map<string, string>();
     async function walk(dir: string): Promise<void> {
@@ -73,7 +84,7 @@ export function createFilesystemStorage({
         else if (entry.isFile()) {
           files.set(
             relative(base, full).split(sep).join("/"),
-            await readFile(full, "utf8"),
+            await readFile(full, "latin1"),
           );
         }
       }
@@ -105,7 +116,10 @@ export function createFilesystemStorage({
       for (const change of changeset) {
         if (change.type === "write") {
           locate(change.path);
-          after.set(change.path, change.content);
+          after.set(
+            change.path,
+            Buffer.from(change.content, "utf8").toString("latin1"),
+          );
         } else if (change.type === "delete") {
           locate(change.path);
           if (!after.delete(change.path)) throw new StaleShaError(change.path);
@@ -129,7 +143,22 @@ export function createFilesystemStorage({
           if (content === undefined) await rm(full, { force: true });
           else {
             await mkdir(dirname(full), { recursive: true });
-            await writeFile(full, content, "utf8");
+            await writeFile(full, content, "latin1");
+          }
+        }
+        // Git holds no empty folder, so neither does the Vault.
+        for (const path of touched) {
+          if (after.has(path)) continue;
+          for (
+            let dir = dirname(locate(path));
+            dir !== base && dir.startsWith(base);
+            dir = dirname(dir)
+          ) {
+            try {
+              await rmdir(dir);
+            } catch {
+              break; // not empty, or already gone
+            }
           }
         }
       } catch (error) {
@@ -138,7 +167,10 @@ export function createFilesystemStorage({
           const original = before.get(path);
           const full = locate(path);
           if (original === undefined) await rm(full, { force: true });
-          else await writeFile(full, original, "utf8");
+          else {
+            await mkdir(dirname(full), { recursive: true });
+            await writeFile(full, original, "latin1");
+          }
         }
         throw error;
       }

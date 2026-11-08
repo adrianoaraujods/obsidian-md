@@ -31,6 +31,22 @@ export class AlreadyExistsError extends Error {
   }
 }
 
+/** The base given to `commit` is no longer the Vault's current one. */
+export class StaleBaseError extends Error {
+  readonly code = "stale-base";
+  readonly base: string;
+
+  constructor(base: string) {
+    super("The Vault changed since the base was read");
+    this.name = "StaleBaseError";
+    this.base = base;
+  }
+}
+
+export function isStaleBaseError(error: unknown): error is StaleBaseError {
+  return error instanceof StaleBaseError;
+}
+
 export function isStaleShaError(error: unknown): error is StaleShaError {
   return error instanceof StaleShaError;
 }

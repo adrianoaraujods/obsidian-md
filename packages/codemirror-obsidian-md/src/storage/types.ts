@@ -45,3 +45,39 @@ export interface Storage {
   /** Present only on adapters that need the editor to wait for a deploy. */
   lock?: StorageLock;
 }
+
+/** One change in a changeset, applied in order against the Vault as it stands after the previous one. */
+export type Change =
+  /** Write a whole file, creating it or replacing it. */
+  | { type: "write"; path: string; content: string }
+  | { type: "delete"; path: string }
+  /** Move a file to a path that is free at that point in the set. */
+  | { type: "rename"; from: string; to: string };
+
+/** A list of changes applied as one atomic commit. */
+export type Changeset = Change[];
+
+/** Result of a successful `commit`. */
+export interface StorageCommitResult {
+  /** The Vault's new base; pass it to the next `commit`. */
+  base: string;
+  /** Identifier of the commit, for adapters backed by version control. */
+  commit?: string;
+}
+
+/**
+ * Storage that can apply a Changeset atomically (the GitHub and filesystem
+ * adapters). `base` identifies the whole Vault at a moment: a commit SHA on
+ * GitHub, a tree hash on disk.
+ */
+export interface CommitStorage extends Storage {
+  /** The Vault's current base. */
+  base(): Promise<string>;
+  /**
+   * Apply every change or none. Throws `StaleBaseError` if the Vault moved on
+   * since `base`, `AlreadyExistsError` if a rename lands on a taken path, and
+   * `StaleShaError` if a rename or delete names a file that is not there.
+   * Never forces the ref.
+   */
+  commit(changeset: Changeset, base: string): Promise<StorageCommitResult>;
+}

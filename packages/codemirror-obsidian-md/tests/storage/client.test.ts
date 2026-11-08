@@ -34,6 +34,7 @@ function setup(withLock = false) {
 runStorageContract(
   "browser fetch adapter -> route handler -> github",
   async () => ({ storage: setup().client }),
+  { commit: false },
 );
 
 describe("browser fetch adapter", () => {

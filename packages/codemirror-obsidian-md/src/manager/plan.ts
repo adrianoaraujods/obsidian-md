@@ -1,5 +1,8 @@
+import { createSlugifyPath } from "remark-obsidian-md/syntax";
+
 import { checkSegments } from "../paths.js";
 import type { Changeset } from "../storage/types.js";
+import { aliasesOf, buildWorld, rewriteNote } from "./links.js";
 
 /** A staged change: the file at `from` ends up at `to` (Vault-relative paths). */
 export interface StagedChange {
@@ -13,6 +16,30 @@ export interface PlanInput {
   files: readonly string[];
   /** Staged changes, applied in order, each against the Vault as the previous left it. */
   changes: readonly StagedChange[];
+  /**
+   * The text of the Vault's Notes, by path, as the Vault is now. Given it, the
+   * plan also rewrites the links the changes would break; a Note missing from
+   * it is left alone.
+   */
+  notes?: Readonly<Record<string, string>>;
+  /** Prefix of the Wiki's URLs (e.g. `/docs`); defaults to none. */
+  urlPrefix?: string;
+}
+
+/** A Note whose links the commit rewrites. */
+export interface PlannedRewrite {
+  /** The Note's path once the changes are applied. */
+  path: string;
+  /** How many links in it change. */
+  links: number;
+}
+
+/** A Note URL the changes alter. Old URLs do not redirect. */
+export interface PlannedUrl {
+  /** The Note's path once the changes are applied. */
+  path: string;
+  from: string;
+  to: string;
 }
 
 /** One net move, with the wording the commit uses for it. */
@@ -28,6 +55,10 @@ export type ReorganizationPlan =
       /** One rename per file that ends up somewhere else. */
       changeset: Changeset;
       moves: PlannedMove[];
+      /** The Notes whose links are rewritten; their `write` changes follow the renames in `changeset`. */
+      rewrites: PlannedRewrite[];
+      /** Every Note URL that changes. */
+      urls: PlannedUrl[];
       /** Commit subject (ADR 0017); empty when nothing changes. */
       subject: string;
       /** Commit body: one line per change. */
@@ -148,6 +179,46 @@ export function planReorganization(input: PlanInput): ReorganizationPlan {
     to,
   }));
 
+  const movedTo = new Map(moves.map((m) => [m.from, m.to]));
+  const after = [...current].sort();
+  const rewrites: PlannedRewrite[] = [];
+  if (input.notes) {
+    const notes = input.notes;
+    const before = buildWorld(input.files, (path) => aliasesOf(notes[path]));
+    const afterWorld = buildWorld(after, (path) => {
+      const old = [...movedTo].find(([, to]) => to === path)?.[0] ?? path;
+      return aliasesOf(notes[old]);
+    });
+    for (const from of [...input.files].sort()) {
+      const source = notes[from];
+      if (source === undefined || !/\.md$/i.test(from)) continue;
+      const to = movedTo.get(from) ?? from;
+      const result = rewriteNote(source, {
+        before,
+        after: afterWorld,
+        moved: movedTo,
+        from,
+        to,
+      });
+      if (result.links === 0) continue;
+      changeset.push({ type: "write", path: to, content: result.content });
+      rewrites.push({ path: to, links: result.links });
+    }
+  }
+
+  const prefix = (input.urlPrefix ?? "").replace(/^\/+|\/+$/g, "");
+  const notePaths = (paths: readonly string[]) =>
+    paths.filter((p) => /\.md$/i.test(p));
+  const slugBefore = createSlugifyPath(notePaths(input.files));
+  const slugAfter = createSlugifyPath(notePaths(after));
+  const url = (slug: string) => `/${prefix ? `${prefix}/` : ""}${slug}`;
+  const urls: PlannedUrl[] = [];
+  for (const from of notePaths(input.files).sort()) {
+    const to = movedTo.get(from) ?? from;
+    const [old, next] = [url(slugBefore(from)), url(slugAfter(to))];
+    if (old !== next) urls.push({ path: to, from: old, to: next });
+  }
+
   let subject = "";
   const [only] = moves;
   if (only && moves.length === 1) subject = `${only.kind} ${only.from}`;
@@ -157,8 +228,13 @@ export function planReorganization(input: PlanInput): ReorganizationPlan {
     ok: true,
     changeset,
     moves,
+    rewrites,
+    urls,
     subject,
-    body: moves.map((m) => `- ${m.kind} ${m.from} → ${m.to}`).join("\n"),
-    files: [...current].sort(),
+    body: [
+      ...moves.map((m) => `- ${m.kind} ${m.from} → ${m.to}`),
+      ...rewrites.map((r) => `- Update ${r.links} link(s) in ${r.path}`),
+    ].join("\n"),
+    files: after,
   };
 }

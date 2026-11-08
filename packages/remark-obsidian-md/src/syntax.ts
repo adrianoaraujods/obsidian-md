@@ -41,6 +41,7 @@ export {
   remarkObsidianHighlights,
 } from "./highlights.js";
 export { type MapResolverEntry, mapResolver } from "./map-resolver.js";
+export { type FrontmatterSplit, splitFrontmatter } from "./note-frontmatter.js";
 export { remarkObsidianMd } from "./plugin.js";
 export { createSlugifyPath } from "./slugs.js";
 export type {

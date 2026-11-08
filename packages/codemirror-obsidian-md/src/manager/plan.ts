@@ -4,7 +4,10 @@ import { checkSegments } from "../paths.js";
 import type { Changeset } from "../storage/types.js";
 import { aliasesOf, buildWorld, rewriteNote } from "./links.js";
 
-/** A staged change: the file at `from` ends up at `to` (Vault-relative paths). */
+/**
+ * A staged change: the file at `from` ends up at `to` (Vault-relative paths).
+ * When `from` is a folder, everything in it follows.
+ */
 export interface StagedChange {
   type: "move";
   from: string;
@@ -122,6 +125,9 @@ export function planReorganization(input: PlanInput): ReorganizationPlan {
   // Where each file that moved started, keyed by where it is now.
   const origin = new Map<string, string>();
 
+  // What the user sees as one change each: a file, or a folder with all it holds.
+  const items: { from: string; to: string }[] = [];
+
   for (const [index, change] of input.changes.entries()) {
     const fail = (error: string): ReorganizationPlan => ({
       ok: false,
@@ -129,27 +135,58 @@ export function planReorganization(input: PlanInput): ReorganizationPlan {
       index,
     });
     const { from, to } = change;
-    if (!current.has(from)) return fail(`"${from}" is not in the Vault.`);
-    const invalid = checkTarget(to);
-    if (invalid) return fail(invalid);
-    if (extension(from) !== extension(to))
-      return fail(
-        `"${split(to).name}" has a different extension from "${split(from).name}".`,
-      );
-    if (to !== from) {
-      if (current.has(to)) return fail(`"${to}" already exists.`);
-      const lower = to.toLowerCase();
+    const inside = [...current].filter((p) => p.startsWith(`${from}/`));
+    const isFolder = !current.has(from) && inside.length > 0;
+    if (!current.has(from) && !isFolder)
+      return fail(`"${from}" is not in the Vault.`);
+
+    let pairs: [string, string][];
+    if (isFolder) {
+      const error = checkSegments(to, "path");
+      if (error) return fail(error);
+      if (to === from || to.startsWith(`${from}/`))
+        return fail(`"${from}" cannot be moved into itself.`);
+      pairs = inside.map((p) => [p, `${to}${p.slice(from.length)}`]);
+      // Lift the folder out first, so a case-only rename does not clash with itself.
+      for (const [p] of pairs) current.delete(p);
+      const lower = `${to.toLowerCase()}/`;
       for (const path of current) {
-        if (path !== from && path.toLowerCase() === lower)
+        if (path.toLowerCase() === to.toLowerCase() || path === to)
+          return fail(`"${to}" already exists.`);
+        if (path.startsWith(`${to}/`)) return fail(`"${to}" already exists.`);
+        if (path.toLowerCase().startsWith(lower))
           return fail(
-            `"${to}" differs only in case from the existing "${path}".`,
+            `"${to}" differs only in case from the existing "${path.slice(0, to.length)}".`,
           );
       }
+    } else {
+      const invalid = checkTarget(to);
+      if (invalid) return fail(invalid);
+      if (extension(from) !== extension(to))
+        return fail(
+          `"${split(to).name}" has a different extension from "${split(from).name}".`,
+        );
+      if (to !== from) {
+        if (current.has(to)) return fail(`"${to}" already exists.`);
+        const lower = to.toLowerCase();
+        for (const path of current) {
+          if (path !== from && path.toLowerCase() === lower)
+            return fail(
+              `"${to}" differs only in case from the existing "${path}".`,
+            );
+        }
+      }
+      current.delete(from);
+      pairs = [[from, to]];
     }
-    current.delete(from);
-    current.add(to);
-    origin.set(to, origin.get(from) ?? from);
-    if (to !== from) origin.delete(from);
+    for (const [oldPath, newPath] of pairs) {
+      current.add(newPath);
+      origin.set(newPath, origin.get(oldPath) ?? oldPath);
+      if (newPath !== oldPath) origin.delete(oldPath);
+    }
+    const item = items.find((i) => i.to === from);
+    if (item) item.to = to;
+    else items.push({ from, to });
   }
 
   const moves: PlannedMove[] = [];
@@ -219,10 +256,13 @@ export function planReorganization(input: PlanInput): ReorganizationPlan {
     if (old !== next) urls.push({ path: to, from: old, to: next });
   }
 
+  const changed: PlannedMove[] = items
+    .filter((i) => i.from !== i.to)
+    .map((i) => ({ kind: kindOf(i.from, i.to), from: i.from, to: i.to }));
   let subject = "";
-  const [only] = moves;
-  if (only && moves.length === 1) subject = `${only.kind} ${only.from}`;
-  else if (moves.length > 1) subject = `Reorganize ${moves.length} items`;
+  const [only] = changed;
+  if (only && changed.length === 1) subject = `${only.kind} ${only.from}`;
+  else if (changed.length > 1) subject = `Reorganize ${changed.length} items`;
 
   return {
     ok: true,
@@ -232,7 +272,7 @@ export function planReorganization(input: PlanInput): ReorganizationPlan {
     urls,
     subject,
     body: [
-      ...moves.map((m) => `- ${m.kind} ${m.from} → ${m.to}`),
+      ...changed.map((m) => `- ${m.kind} ${m.from} → ${m.to}`),
       ...rewrites.map((r) => `- Update ${r.links} link(s) in ${r.path}`),
     ].join("\n"),
     files: after,

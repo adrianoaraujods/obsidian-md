@@ -436,11 +436,16 @@ export function createFakeContentsApi(
         }
         return json(200, { status: "diverged" });
       }
-      const from = commits.findIndex((c) => c.sha === a);
-      const to = commits.findIndex((c) => c.sha === b);
-      if (from < 0 || to < 0) return json(404, { message: "Not Found" });
+      const from = a === rootSha ? -1 : commits.findIndex((c) => c.sha === a);
+      const to = b === rootSha ? -1 : commits.findIndex((c) => c.sha === b);
+      if ((from < 0 && a !== rootSha) || (to < 0 && b !== rootSha))
+        return json(404, { message: "Not Found" });
       const status = to === from ? "identical" : to > from ? "ahead" : "behind";
-      return json(200, { status });
+      const files = commits
+        .slice(from + 1, to + 1)
+        .flatMap((c) => c.paths)
+        .map((filename) => ({ filename }));
+      return json(200, { status, files });
     }
 
     return json(404, { message: "Not Found" });

@@ -7,6 +7,7 @@ import { Manager } from "@/components/manager/manager";
 import { requireManager } from "@/lib/auth/session";
 import { resolveDeployedCommit } from "@/lib/build";
 import { getEnv } from "@/lib/env";
+import { lockTimings } from "@/lib/lock-timings";
 import { source } from "@/lib/source";
 import { createCommitStorage } from "@/lib/storage";
 import { listAssets, readMetas } from "@/lib/vault-assets";
@@ -42,14 +43,22 @@ export default async function ManagePage(props: {
       () => "",
     );
   }
-  const base = await createCommitStorage(
+  const storage = createCommitStorage(
     {
       env: getEnv,
       deployedCommit: () => resolveDeployedCommit(),
       getEditor: async () => editor,
     },
     editor,
-  ).base();
+  );
+  const base = await storage.base();
+  // HEAD ahead of the deployed build, whoever caused it: open locked on it.
+  // With no build commit (or no GitHub) the host cannot say, so nothing locks.
+  const deployed = await resolveDeployedCommit();
+  const lockedCommit =
+    deployed && storage.lock && !(await storage.lock.isDeployed(base))
+      ? base
+      : undefined;
 
   return (
     <DocsPage full>
@@ -60,6 +69,8 @@ export default async function ManagePage(props: {
           editor={editor}
           files={files}
           focus={typeof focus === "string" ? focus : undefined}
+          lockedCommit={lockedCommit}
+          lockTimings={lockTimings(process.env)}
           metas={await readMetas(vaultDir)}
           notes={notes}
         />

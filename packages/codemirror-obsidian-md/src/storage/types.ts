@@ -74,6 +74,13 @@ export interface CommitStorage extends Storage {
   /** The Vault's current base. */
   base(): Promise<string>;
   /**
+   * The Vault paths changed (added, changed, removed or renamed, both ends)
+   * between `base` and the current base. Lets a host decide whether a
+   * `StaleBaseError` can be retried on the new base. Absent when the adapter
+   * cannot tell.
+   */
+  changedSince?(base: string): Promise<string[]>;
+  /**
    * Apply every change or none. Throws `StaleBaseError` if the Vault moved on
    * since `base`, `AlreadyExistsError` if a rename lands on a taken path, and
    * `StaleShaError` if a rename or delete names a file that is not there.

@@ -16,8 +16,9 @@ import {
  * The route handler behind `/api/manage`: apply a Manager changeset as one
  * commit. Needs a verified session; the commit is made by the shared
  * server-side credential and its `Edited-with` / `Edited-by` trailer is built
- * here from the session, never from the request body. A stale base is never
- * forced.
+ * here from the session, never from the request body. A stale base is rebased
+ * onto the commit that landed when none of the files touched changed, and is
+ * otherwise refused (409); the ref is never forced.
  */
 export function createManageHandler(deps: NotesHandlerDeps) {
   return async (request: Request): Promise<Response> => {
@@ -32,12 +33,28 @@ export function createManageHandler(deps: NotesHandlerDeps) {
       );
       if (!paths.every(isVaultPath)) return json(400, { error: "bad-request" });
 
-      const result = await createCommitStorage(deps, editor).commit(
-        parsed.changeset,
-        parsed.base,
-        parsed.message,
-      );
-      return json(200, result);
+      const storage = createCommitStorage(deps, editor);
+      try {
+        return json(
+          200,
+          await storage.commit(parsed.changeset, parsed.base, parsed.message),
+        );
+      } catch (error) {
+        if (!isStaleBaseError(error)) throw error;
+        // A commit landed since the Manager opened. If none of the files this
+        // changeset touches changed, the same changes still apply on top of it.
+        const changed = await storage.changedSince?.(parsed.base);
+        if (!changed || changed.some((path) => paths.includes(path)))
+          throw error;
+        return json(
+          200,
+          await storage.commit(
+            parsed.changeset,
+            await storage.base(),
+            parsed.message,
+          ),
+        );
+      }
     } catch (error) {
       if (error instanceof Response) return error;
       if (isStaleBaseError(error)) return json(409, { error: "stale-base" });

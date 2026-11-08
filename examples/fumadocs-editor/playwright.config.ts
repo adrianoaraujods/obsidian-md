@@ -32,6 +32,15 @@ export default defineConfig({
       ],
       use: { baseURL: `http://localhost:${DEV_PORT}` },
     },
+    {
+      // The Manager moves Notes in the shared fixture Vault, which rebuilds the
+      // pages the other specs read, so it runs after them. Two dev servers
+      // cannot share the checkout either (they overwrite each other's `.source`).
+      name: "manager",
+      testMatch: "manager.spec.ts",
+      dependencies: ["development"],
+      use: { baseURL: `http://localhost:${DEV_PORT}` },
+    },
   ],
   webServer: [
     {

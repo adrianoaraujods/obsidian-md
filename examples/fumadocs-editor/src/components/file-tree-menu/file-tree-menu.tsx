@@ -9,7 +9,7 @@ import { targetAt } from "./target-at";
 type Open = { x: number; y: number; target: MenuTarget };
 
 /**
- * Right-click menu on the sidebar's file tree: entries for a Note, a folder
+ * Right-click menu on the File Tree: entries for a Note, a folder
  * and the root of the tree (see `MENU_ITEMS`). There is no sign-in in this
  * Example, so the menu is always there; its layout only mounts it where
  * editing is available.

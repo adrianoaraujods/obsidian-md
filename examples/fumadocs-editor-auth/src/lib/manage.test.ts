@@ -57,7 +57,9 @@ describe("applying a reorganization", () => {
     });
 
     expect(response.status).toBe(200);
-    expect((await response.json()).base).toBe(github.head());
+    const result = await response.json();
+    expect(result.base).toBe(github.head());
+    expect(result.rebased).toBeUndefined();
     expect(github.commits).toHaveLength(before + 1);
     expect(github.files()["Moved/b.md"]).toBe("B");
     expect(github.files()["a.md"]).toBe("A [[Moved/b]]");
@@ -104,10 +106,10 @@ describe("applying a reorganization", () => {
     expect(github.commits).toHaveLength(before);
   });
 
-  it("rebases onto a commit that landed when it touched none of the changeset's files", async () => {
+  it("rebases onto a commit that landed when it touched an unrelated non-Note file", async () => {
     const { github, post } = setup();
     const base = github.head();
-    github.externalWrite("c.md", "C", { name: "Bob", login: "bob" });
+    github.externalWrite("logo.png", "PNG", { name: "Bob", login: "bob" });
     const landed = github.head();
     const response = await post({
       base,
@@ -118,11 +120,68 @@ describe("applying a reorganization", () => {
       subject: "Move b.md",
     });
     expect(response.status).toBe(200);
-    expect((await response.json()).base).toBe(github.head());
-    expect(github.files()["c.md"]).toBe("C");
+    const result = await response.json();
+    expect(result.base).toBe(github.head());
+    // The client never loaded what landed, so it must reload before applying again.
+    expect(result.rebased).toBe(true);
+    expect(github.files()["logo.png"]).toBe("PNG");
     expect(github.files()["Moved/b.md"]).toBe("B");
     expect(github.commits.at(-1)?.message).toContain("Move b.md");
     expect(github.head()).not.toBe(landed);
+  });
+
+  it("refuses to rebase over any Note, since the link rewrites were computed from the Notes we read", async () => {
+    const { github, post } = setup();
+    const base = github.head();
+    // Bob links to the Note we are about to move, in a Note we did not write.
+    github.externalWrite("c.md", "C [[b]]", { name: "Bob", login: "bob" });
+    const before = github.commits.length;
+    const response = await post({
+      base,
+      changeset: [
+        { type: "rename", from: "b.md", to: "Moved/b.md" },
+        { type: "write", path: "a.md", content: "A [[Moved/b]]" },
+      ],
+    });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "stale-base" });
+    expect(github.files()["b.md"]).toBe("B");
+    expect(github.commits).toHaveLength(before);
+  });
+
+  it("refuses to rebase over a file added inside a folder the changeset moves", async () => {
+    const { github, post } = setup();
+    github.seed("Dir/n.md", "N");
+    const base = github.head();
+    github.externalWrite("Dir/img.png", "PNG", { name: "Bob", login: "bob" });
+    const before = github.commits.length;
+    const response = await post({
+      base,
+      changeset: [{ type: "rename", from: "Dir/n.md", to: "Other/n.md" }],
+    });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "stale-base" });
+    expect(github.files()["Dir/n.md"]).toBe("N");
+    expect(github.commits).toHaveLength(before);
+  });
+
+  it("refuses to rebase over a meta.json change inside a moved folder", async () => {
+    const { github, post } = setup();
+    github.seed("Dir/n.md", "N");
+    github.seed("Dir/meta.json", "{}");
+    const base = github.head();
+    github.externalWrite("Dir/meta.json", '{"title":"Bob"}', {
+      name: "Bob",
+      login: "bob",
+    });
+    const response = await post({
+      base,
+      changeset: [
+        { type: "rename", from: "Dir/n.md", to: "Other/n.md" },
+        { type: "rename", from: "Dir/meta.json", to: "Other/meta.json" },
+      ],
+    });
+    expect(response.status).toBe(409);
   });
 
   it("treats the destination of a rename as touched", async () => {
@@ -150,16 +209,44 @@ describe("applying a reorganization", () => {
     });
   });
 
-  it("answers a refused credential with a generic storage-failed", async () => {
-    const { github, post } = setup();
+  it.each([401, 403])(
+    "answers a refused credential (%i) with a generic storage-failed",
+    async (status) => {
+      const { github } = setup();
+      const base = github.head();
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const handler = createManageHandler({
+        env: () => parseEnv(baseEnv),
+        getEditor: async () => ada,
+        fetch: async () =>
+          new Response(JSON.stringify({ message: "Bad credentials" }), {
+            status,
+          }),
+      });
+      const response = await handler(
+        new Request("http://localhost/api/manage", {
+          method: "POST",
+          body: JSON.stringify({ base, changeset: [] }),
+        }),
+      );
+      const text = await response.text();
+      expect(response.status).toBe(500);
+      expect(JSON.parse(text)).toEqual({ error: "storage-failed" });
+      expect(text).not.toMatch(/Bad credentials|ghp_server_secret/);
+      expect(error).toHaveBeenCalled();
+    },
+  );
+
+  it("answers any other storage failure with commit-failed, not the credential error", async () => {
+    const { github } = setup();
     const base = github.head();
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const handler = createManageHandler({
       env: () => parseEnv(baseEnv),
       getEditor: async () => ada,
       fetch: async () =>
-        new Response(JSON.stringify({ message: "Bad credentials" }), {
-          status: 401,
+        new Response(JSON.stringify({ message: "Server Error" }), {
+          status: 500,
         }),
     });
     const response = await handler(
@@ -168,11 +255,8 @@ describe("applying a reorganization", () => {
         body: JSON.stringify({ base, changeset: [] }),
       }),
     );
-    const text = await response.text();
     expect(response.status).toBe(500);
-    expect(JSON.parse(text)).toEqual({ error: "storage-failed" });
-    expect(text).not.toMatch(/Bad credentials|ghp_server_secret/);
+    expect(await response.json()).toEqual({ error: "commit-failed" });
     expect(error).toHaveBeenCalled();
-    void post;
   });
 });

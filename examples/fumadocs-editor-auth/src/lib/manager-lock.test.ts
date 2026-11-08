@@ -2,7 +2,7 @@ import type { Storage } from "codemirror-obsidian-md/storage";
 import { describe, expect, it, vi } from "vitest";
 
 import { startDeployLock } from "../components/editor/deploy-lock";
-import { createManagerFlow } from "./manager-lock";
+import { createManagerFlow, lockedMessage } from "./manager-lock";
 
 const COMMIT = "c".repeat(40);
 const BUILD = "b".repeat(40);
@@ -68,5 +68,36 @@ describe("the Manager's deploy lock", () => {
     expect(lock.state.status).toBe("unlocked");
     lock.dispose();
     vi.useRealTimers();
+  });
+});
+
+describe("lockedMessage", () => {
+  it("says the commit is yours when the Manager applied it in this session", () => {
+    const message = lockedMessage({ ownCommit: true, timings: {} });
+    expect(message).toContain("your commit is waiting");
+    expect(message).toContain("the Wiki");
+    expect(message).not.toMatch(/\bsite\b/i);
+  });
+
+  it("names a commit made outside this session without claiming it", () => {
+    const message = lockedMessage({ ownCommit: false, timings: {} });
+    expect(message).toContain("a commit made outside this page");
+    expect(message).not.toContain("Your commit");
+  });
+
+  it("says when it unlocks from the Note editor's default timings", () => {
+    const message = lockedMessage({ ownCommit: true, timings: {} });
+    expect(message).toContain("about every 5 seconds");
+    expect(message).toContain("up to 5 minutes");
+    expect(message).toContain("reload");
+  });
+
+  it("follows overridden timings", () => {
+    const message = lockedMessage({
+      ownCommit: false,
+      timings: { intervalMs: 10_000, timeoutMs: 60_000 },
+    });
+    expect(message).toContain("about every 10 seconds");
+    expect(message).toContain("up to 1 minute");
   });
 });

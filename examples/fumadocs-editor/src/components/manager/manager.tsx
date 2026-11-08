@@ -54,6 +54,7 @@ import {
   planManager,
   TRAILER,
   type TreeNode,
+  vaultChangedMeanwhile,
 } from "@/lib/manager";
 
 /** The Notes' text once `plan` is committed: rewritten Notes and moved paths. */
@@ -322,7 +323,7 @@ export function Manager(props: {
         setNewFolders([]);
         setConfirming(false);
         toast.success(`Committed: ${plan.subject}`);
-      } else if (body.error === "stale-base") {
+      } else if (vaultChangedMeanwhile(body.error)) {
         setConfirming(false);
         toast.error(
           "The Vault changed since you opened this page. Your staged changes are kept; reload to see the current Vault.",
@@ -336,9 +337,7 @@ export function Manager(props: {
       } else {
         setConfirming(false);
         toast.error(
-          body.error === "already-exists"
-            ? "A file already exists at one of the new paths. Your staged changes are kept."
-            : "Could not apply the changes. Your staged changes are kept.",
+          "Could not apply the changes. Your staged changes are kept.",
         );
       }
     } catch {

@@ -109,6 +109,19 @@ export function parseCommitRequest(body: unknown): CommitRequest | null {
   return { base, changeset: parsed };
 }
 
+/**
+ * Whether the server refused Apply because a commit landed after the Manager
+ * opened: a stale base, a source that is gone, or a path someone else took.
+ * The staged changes were planned from out-of-date data, so the person reloads.
+ */
+export function vaultChangedMeanwhile(error: string | undefined): boolean {
+  return (
+    error === "stale-base" ||
+    error === "stale-sha" ||
+    error === "already-exists"
+  );
+}
+
 /** A change the user stages: a move or rename, or an edit of a folder's `meta.json`. */
 export type ManagerChange = OrderChange;
 

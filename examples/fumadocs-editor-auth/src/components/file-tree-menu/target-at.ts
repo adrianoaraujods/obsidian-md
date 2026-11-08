@@ -4,7 +4,7 @@ import type { MenuTarget } from "./items";
 const label = (element: Element) => element.textContent?.trim() ?? "";
 
 /**
- * A folder row of the Fumadocs sidebar is the first child of a collapsible
+ * A folder row of the File Tree (Fumadocs' sidebar) is the first child of a collapsible
  * root; the folder's contents follow it in a sibling that has an `id`. The
  * contents (a wrapper sits inside them) hold the next level's roots the same
  * way, so the chain of rows up to the top gives the folder's names, outermost
@@ -30,8 +30,8 @@ function folderNames(row: Element): string[] | undefined {
 }
 
 /**
- * What a right-click in the sidebar landed on: a Note, a folder, or the empty
- * part of the File Tree (its root). Anything else, such as the sidebar's header
+ * What a right-click in the File Tree landed on: a Note, a folder, or the empty
+ * part of the File Tree (its root). Anything else, such as the File Tree's header
  * or footer, is not a target.
  *
  * @param notes Note path by page URL.

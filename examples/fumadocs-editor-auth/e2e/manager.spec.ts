@@ -650,7 +650,7 @@ test("a refused credential keeps the staged changes and a retry works", async ({
   await apply(page);
 
   await expect(page.getByTestId("apply-error")).toHaveText(
-    "Applying isn't configured correctly. Your staged changes are kept. Tell the site owner.",
+    "Applying isn't configured correctly. Your staged changes are kept. Tell the Wiki owner.",
   );
   await expect(page.getByTestId("pending")).toContainText(
     `Rename ${P("Rename Me.md")} → ${P("Renamed.md")}`,
@@ -689,9 +689,34 @@ test("a commit to a file the changes touch keeps them staged, asks to reload and
   expect((await state()).commits).toHaveLength(before);
 });
 
-test("a commit that landed meanwhile on other files is rebased in", async ({
+test("a commit that landed meanwhile on an unrelated non-Note file is rebased in, and the Manager asks to reload", async ({
   page,
 }) => {
+  await openManager(page);
+  await rename(page, P("Rename Me.md"), "Renamed");
+  await control("external-write", {
+    path: "Unrelated.txt",
+    content: "Changed by somebody else.",
+    author: { name: "Bob", login: "bob" },
+  });
+  const before = (await state()).commits.length;
+
+  await apply(page);
+
+  await expect(toast(page)).toContainText("Committed");
+  expect(await onRepo(P("Renamed.md"))).toBe(true);
+  expect(await onRepo(P("Rename Me.md"))).toBe(false);
+  expect(await read("Unrelated.txt")).toBe("Changed by somebody else.");
+  // Bob's commit, then exactly one of ours on top of it.
+  expect((await state()).commits).toHaveLength(before + 1);
+  // This page never loaded Bob's change, so it must not plan on top of it.
+  await expect(page.getByTestId("reload-needed")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Apply", exact: true }),
+  ).toBeDisabled();
+});
+
+test("a Note that landed meanwhile is never rebased over", async ({ page }) => {
   await openManager(page);
   await rename(page, P("Rename Me.md"), "Renamed");
   await control("external-write", {
@@ -703,12 +728,12 @@ test("a commit that landed meanwhile on other files is rebased in", async ({
 
   await apply(page);
 
-  await expect(toast(page)).toContainText("Committed");
-  expect(await onRepo(P("Renamed.md"))).toBe(true);
-  expect(await onRepo(P("Rename Me.md"))).toBe(false);
-  expect(await read(P("Pick Me.md"))).toBe("Changed by somebody else.");
-  // Bob's commit, then exactly one of ours on top of it.
-  expect((await state()).commits).toHaveLength(before + 1);
+  await expect(toast(page)).toContainText("The Vault changed");
+  await expect(
+    toast(page).getByRole("button", { name: "Reload" }),
+  ).toBeVisible();
+  expect(await onRepo(P("Renamed.md"))).toBe(false);
+  expect((await state()).commits).toHaveLength(before);
 });
 
 // The poll timings are set in playwright.config.ts: first poll 100 ms, then
@@ -732,8 +757,9 @@ test.describe("the deploy lock", () => {
 
     const locked = page.getByTestId("lock-locked");
     await expect(locked).toBeVisible();
-    await expect(locked).toContainText("someone else's");
-    await expect(locked).toContainText("unlocks as soon as the site");
+    await expect(locked).toContainText("made outside this page");
+    await expect(locked).toContainText("about every");
+    await expect(locked).toContainText("unlocks once the Wiki is rebuilt");
     await expect(page.locator("[data-locked]")).toHaveAttribute("inert", "");
 
     await control("build-sha", { sha: await head() });
@@ -759,6 +785,9 @@ test.describe("the deploy lock", () => {
     await apply(page);
 
     await expect(page.getByTestId("lock-locked")).toBeVisible();
+    await expect(page.getByTestId("lock-locked")).toContainText(
+      "your commit is waiting",
+    );
     await expect(page.locator("[data-locked]")).toHaveAttribute("inert", "");
     await control("build-sha", { sha: await head() });
     await expect(page.getByTestId("lock-locked")).toHaveCount(0);

@@ -13,7 +13,7 @@ import { targetAt } from "./target-at";
 type Open = { x: number; y: number; target: MenuTarget };
 
 /**
- * Right-click menu on the sidebar's file tree: entries for a Note, a folder
+ * Right-click menu on the File Tree: entries for a Note, a folder
  * and the root of the tree (see `MENU_ITEMS`). It renders nothing for a
  * signed-out visitor, reading the session in the browser so the Wiki's pages
  * stay static.

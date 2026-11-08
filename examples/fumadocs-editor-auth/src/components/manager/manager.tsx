@@ -60,8 +60,9 @@ import {
   type ManagerPlan,
   planManager,
   type TreeNode,
+  vaultChangedMeanwhile,
 } from "@/lib/manager";
-import { createManagerFlow } from "@/lib/manager-lock";
+import { createManagerFlow, lockedMessage } from "@/lib/manager-lock";
 import {
   APPLY_CREDENTIAL_MESSAGE,
   APPLY_NETWORK_MESSAGE,
@@ -158,6 +159,11 @@ export function Manager(props: {
   // session): shown like the Save flow's keep-text banner.
   const [applyError, setApplyError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  // Set once Apply committed on top of changes this page never loaded: what is
+  // shown (and `base`) is out of date, so nothing more is planned until reload.
+  const [reloadNeeded, setReloadNeeded] = useState(false);
+  // Whether the commit the lock waits on is the one Apply made in this session.
+  const [appliedHere, setAppliedHere] = useState(false);
 
   // The deploy lock is the Note editor's, driven by Apply instead of a Save.
   const managerFlow = useRef(createManagerFlow(() => window.location.reload()));
@@ -353,7 +359,7 @@ export function Manager(props: {
   }
 
   async function apply() {
-    if (!plan.ok || applying || locked) return;
+    if (!plan.ok || applying || locked || reloadNeeded) return;
     setApplying(true);
     setApplyError(null);
     try {
@@ -370,20 +376,25 @@ export function Manager(props: {
       const body = (await response.json()) as {
         base?: string;
         commit?: string;
+        rebased?: boolean;
         error?: string;
       };
       if (response.ok && body.base) {
         setFiles(plan.files);
         setNotes(committedNotes(notes, plan));
         setMetas(plan.metaTexts);
-        setBase(body.base);
+        // After a rebase the new HEAD holds changes this page never loaded, so
+        // the base stays and the person reloads instead of planning on stale data.
+        if (body.rebased) setReloadNeeded(true);
+        else setBase(body.base);
+        setAppliedHere(true);
         managerFlow.current.applied(body.commit);
         setChanges([]);
         // A folder nothing was moved into never reaches the Vault.
         setNewFolders([]);
         setConfirming(false);
         toast.success(`Committed: ${plan.subject}`);
-      } else if (body.error === "stale-base") {
+      } else if (vaultChangedMeanwhile(body.error)) {
         setConfirming(false);
         toast.error(
           "The Vault changed since you opened this page. Your staged changes are kept; reload to see the current Vault.",
@@ -398,14 +409,13 @@ export function Manager(props: {
         setConfirming(false);
         setApplyError(APPLY_SESSION_MESSAGE);
       } else if (body.error === "storage-failed") {
+        // Only a refused or missing credential (see `createManageHandler`).
         setConfirming(false);
         setApplyError(APPLY_CREDENTIAL_MESSAGE);
       } else {
         setConfirming(false);
         toast.error(
-          body.error === "already-exists"
-            ? "A file already exists at one of the new paths. Your staged changes are kept."
-            : "Could not apply the changes. Your staged changes are kept.",
+          "Could not apply the changes. Your staged changes are kept.",
         );
       }
     } catch {
@@ -438,8 +448,11 @@ export function Manager(props: {
     <>
       <DeployLockPanel
         lock={lock}
-        lockedMessage="Locked: a commit (yours or someone else's) is waiting to go live on the site, so what is shown here is out of date. The Manager checks automatically and unlocks as soon as the site is rebuilt with it."
-        timeoutMessage="The site has not caught up with the latest commit yet. You can keep waiting, or reload the Manager from GitHub."
+        lockedMessage={lockedMessage({
+          ownCommit: appliedHere,
+          timings: startup.current.timings ?? {},
+        })}
+        timeoutMessage="The Wiki has not caught up with the latest commit yet. You can keep waiting, or reload the Manager from GitHub."
       />
       <div
         className="grid gap-6 md:grid-cols-[2fr_1fr]"
@@ -466,6 +479,24 @@ export function Manager(props: {
           className="grid content-start gap-3"
         >
           <h2 className="font-semibold text-lg">Pending changes</h2>
+          {reloadNeeded && (
+            <p
+              className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm"
+              data-testid="reload-needed"
+              role="alert"
+            >
+              Your changes were committed, but the Vault changed meanwhile and
+              this page has not loaded those changes. Reload before applying
+              anything else.{" "}
+              <button
+                className="underline"
+                onClick={() => window.location.reload()}
+                type="button"
+              >
+                Reload
+              </button>
+            </p>
+          )}
           {applyError && (
             <p
               className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive text-sm"
@@ -563,7 +594,10 @@ export function Manager(props: {
             </div>
           )}
           <div className="flex gap-2">
-            <Button disabled={empty} onClick={() => setConfirming(true)}>
+            <Button
+              disabled={empty || reloadNeeded}
+              onClick={() => setConfirming(true)}
+            >
               Apply
             </Button>
             <Button

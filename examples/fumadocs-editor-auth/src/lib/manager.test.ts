@@ -6,6 +6,7 @@ import {
   describeChange,
   parseCommitRequest,
   planManager,
+  vaultChangedMeanwhile,
 } from "./manager";
 
 describe("buildTree", () => {
@@ -247,5 +248,17 @@ describe("parseCommitRequest with deletes", () => {
       base: "abc",
       changeset: [{ type: "delete", path: "G/meta.json" }],
     });
+  });
+});
+
+describe("vaultChangedMeanwhile", () => {
+  it("is true for the errors a commit that landed meanwhile causes", () => {
+    for (const error of ["stale-base", "stale-sha", "already-exists"])
+      expect(vaultChangedMeanwhile(error)).toBe(true);
+  });
+
+  it("is false for anything else", () => {
+    for (const error of [undefined, "bad-request", "storage-failed"])
+      expect(vaultChangedMeanwhile(error)).toBe(false);
   });
 });

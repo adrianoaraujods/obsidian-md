@@ -21,3 +21,18 @@ export function checkSegments(path: string, label: string): string | null {
   }
   return null;
 }
+
+/** The folder a Vault path is in (`""` for the Vault root). */
+export function folderOf(path: string): string {
+  return path.slice(0, Math.max(0, path.lastIndexOf("/")));
+}
+
+/** The file or folder name at the end of a Vault path. */
+export function nameOf(path: string): string {
+  return path.slice(path.lastIndexOf("/") + 1);
+}
+
+/** Whether a Vault path is a Note (a `.md` file, case-insensitive). */
+export function isNotePath(path: string): boolean {
+  return /\.md$/i.test(path);
+}

@@ -10,6 +10,8 @@ import {
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 
+import { folderOf, isNotePath, nameOf } from "../paths.js";
+
 /**
  * Link rewriting for a reorganization (ADR 0017). Every link of a Note is
  * resolved against the Vault before and after the moves with the remark
@@ -74,9 +76,6 @@ interface Context {
   to: string;
 }
 
-const folderOf = (path: string) =>
-  path.slice(0, Math.max(0, path.lastIndexOf("/")));
-const nameOf = (path: string) => path.slice(path.lastIndexOf("/") + 1);
 const RELATIVE = /^\.{1,2}\//;
 
 function normalize(path: string): string {
@@ -129,8 +128,8 @@ function retarget(
   const expected = ctx.moved.get(old) ?? old;
   if (resolvePath(ctx.after, text, ctx.to, relative) === expected) return null;
 
-  const isNote = /\.md$/i.test(expected);
-  const keepExtension = !isNote || /\.md$/i.test(text);
+  const isNote = isNotePath(expected);
+  const keepExtension = !isNote || isNotePath(text);
   const spell = (path: string) =>
     keepExtension ? path : path.replace(/\.md$/i, "");
 

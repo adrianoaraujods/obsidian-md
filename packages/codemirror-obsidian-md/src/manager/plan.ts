@@ -1,6 +1,6 @@
 import { createSlugifyPath } from "remark-obsidian-md/syntax";
 
-import { checkSegments } from "../paths.js";
+import { checkSegments, folderOf, isNotePath, nameOf } from "../paths.js";
 import type { Changeset } from "../storage/types.js";
 import { aliasesOf, buildWorld, rewriteNote } from "./links.js";
 
@@ -73,16 +73,9 @@ export type ReorganizationPlan =
     }
   | { ok: false; error: string; index: number };
 
-function split(path: string): { folder: string; name: string } {
-  const slash = path.lastIndexOf("/");
-  return slash < 0
-    ? { folder: "", name: path }
-    : { folder: path.slice(0, slash), name: path.slice(slash + 1) };
-}
-
 /** Where `path` lands when moved into `folder` (empty means the Vault root), keeping its file name. */
 export function movedPath(path: string, folder: string): string {
-  const { name } = split(path);
+  const name = nameOf(path);
   const clean = folder.trim().replace(/\/+$/, "");
   return clean === "" ? name : `${clean}/${name}`;
 }
@@ -92,7 +85,8 @@ export function movedPath(path: string, folder: string): string {
  * keeps its `.md`: it is added when the typed name lacks it.
  */
 export function renamedPath(path: string, name: string): string {
-  const { folder, name: old } = split(path);
+  const folder = folderOf(path);
+  const old = nameOf(path);
   let next = name.trim();
   if (old.toLowerCase().endsWith(".md") && !next.toLowerCase().endsWith(".md"))
     next = `${next}.md`;
@@ -100,7 +94,7 @@ export function renamedPath(path: string, name: string): string {
 }
 
 function extension(path: string): string {
-  const name = split(path).name;
+  const name = nameOf(path);
   const dot = name.lastIndexOf(".");
   return dot < 0 ? "" : name.slice(dot).toLowerCase();
 }
@@ -108,14 +102,14 @@ function extension(path: string): string {
 function checkTarget(to: string): string | null {
   const error = checkSegments(to, "path");
   if (error) return error;
-  const { name } = split(to);
+  const name = nameOf(to);
   const stem = name.slice(0, name.length - extension(name).length);
   if (stem.trim() === "") return "Enter a name.";
   return null;
 }
 
 function kindOf(from: string, to: string): "Move" | "Rename" {
-  return split(from).folder === split(to).folder ? "Rename" : "Move";
+  return folderOf(from) === folderOf(to) ? "Rename" : "Move";
 }
 
 /**
@@ -166,7 +160,7 @@ export function planReorganization(input: PlanInput): ReorganizationPlan {
       if (invalid) return fail(invalid);
       if (extension(from) !== extension(to))
         return fail(
-          `"${split(to).name}" has a different extension from "${split(from).name}".`,
+          `"${nameOf(to)}" has a different extension from "${nameOf(from)}".`,
         );
       if (to !== from) {
         if (current.has(to)) return fail(`"${to}" already exists.`);
@@ -230,7 +224,7 @@ export function planReorganization(input: PlanInput): ReorganizationPlan {
     });
     for (const from of [...input.files].sort()) {
       const source = notes[from];
-      if (source === undefined || !/\.md$/i.test(from)) continue;
+      if (source === undefined || !isNotePath(from)) continue;
       const to = movedTo.get(from) ?? from;
       const result = rewriteNote(source, {
         before,
@@ -246,8 +240,7 @@ export function planReorganization(input: PlanInput): ReorganizationPlan {
   }
 
   const prefix = (input.urlPrefix ?? "").replace(/^\/+|\/+$/g, "");
-  const notePaths = (paths: readonly string[]) =>
-    paths.filter((p) => /\.md$/i.test(p));
+  const notePaths = (paths: readonly string[]) => paths.filter(isNotePath);
   const slugBefore = createSlugifyPath(notePaths(input.files));
   const slugAfter = createSlugifyPath(notePaths(after));
   const url = (slug: string) => `/${prefix ? `${prefix}/` : ""}${slug}`;

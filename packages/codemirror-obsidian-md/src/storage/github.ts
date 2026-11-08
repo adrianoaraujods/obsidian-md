@@ -1,5 +1,7 @@
 import { createSign } from "node:crypto";
 
+import { folderOf } from "../paths.js";
+
 import {
   AlreadyExistsError,
   type NewerChange,
@@ -111,14 +113,10 @@ function commitMessage(
   return withTrailer(`${verb} ${path}`, [], editor);
 }
 
-function parentOf(path: string): string {
-  return path.slice(0, Math.max(0, path.lastIndexOf("/")));
-}
-
 function describeChange(change: Change): string {
   if (change.type === "write") return `Update ${change.path}`;
   if (change.type === "delete") return `Delete ${change.path}`;
-  return `${parentOf(change.from) === parentOf(change.to) ? "Rename" : "Move"} ${change.from} -> ${change.to}`;
+  return `${folderOf(change.from) === folderOf(change.to) ? "Rename" : "Move"} ${change.from} -> ${change.to}`;
 }
 
 /** ADR 0017: one change reads like a single-file commit, a set is "Reorganize <n> items". */
@@ -138,7 +136,7 @@ function changesetMessage(
   const subject =
     changeset.length === 1 && only
       ? only.type === "rename"
-        ? `${parentOf(only.from) === parentOf(only.to) ? "Rename" : "Move"} ${only.from}`
+        ? `${folderOf(only.from) === folderOf(only.to) ? "Rename" : "Move"} ${only.from}`
         : describeChange(only)
       : `Reorganize ${changeset.length} items`;
   return withTrailer(subject, changeset.map(describeChange), editor);

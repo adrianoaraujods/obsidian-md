@@ -133,7 +133,7 @@ _Avoid_: auto-close, bracket matching
 ## Organizing
 
 **File Tree**:
-The Wiki's sidebar listing of a Vault's Notes and folders, in the order the Vault's `meta.json` files give. It always shows the deployed Vault, so a change is visible there only after the Wiki is redeployed.
+The Wiki's sidebar listing of a Vault's Notes and folders, in the order the Vault's `meta.json` files give. It always shows the deployed Vault, so a change is visible there only after the Wiki is redeployed. Right-clicking an item opens its menu (Edit, Rename/Move, Reorder, and where the Example can write, New note and Delete).
 _Avoid_: sidebar, navigation, page tree
 
 **Separator**:
@@ -145,7 +145,7 @@ To move or rename Notes, Assets and folders, reorder them, and add or remove Sep
 _Avoid_: restructure, rearrange, refactor
 
 **Manager**:
-The page where a signed-in user reorganizes a Vault by dragging items in a tree. It works on the deployed Vault and is locked while a redeploy is pending.
+The page where a user reorganizes a Vault by dragging items in a tree, opened from the File Tree's menu. In the authenticated Example it needs sign-in, works on the deployed Vault and is locked while a redeploy is pending; in the open Example it writes to the local Vault and exists only in development.
 _Avoid_: file manager, explorer, organizer
 
 ## Styling

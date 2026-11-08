@@ -22,6 +22,15 @@ Run it before the build so that a bad Note produces a readable message instead o
 
 The same scan is available programmatically as `findUnparseableFrontmatter(dir)`.
 
+## Editing `meta.json`
+
+`fumadocs-obsidian-md/meta` is a browser-safe module (no Node imports) that
+reads and writes a folder's `meta.json`: `readMeta(text)` gives `{ title,
+entries }`, helpers (`moveEntry`, `addSeparator`, `renameSeparator`,
+`removeSeparator`, `setTitle`, `createMeta`) edit it, and
+`writeMeta(existingText | undefined, meta)` returns two-space JSON. Other keys
+and `pages` entries it does not model are kept in place.
+
 ## The Fumadocs patch
 
 Fumadocs parses a Note's Frontmatter at four entry points, none of which is guarded: the bundler loader, index generation, dynamic compile and includes. They run before any supported hook, so this package cannot intercept them, and one corrupt Note fails the whole build with a stack trace.

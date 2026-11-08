@@ -1,0 +1,11 @@
+{
+  "icon": "list",
+  "defaultOpen": true,
+  "pages": [
+    "Third",
+    "---Old label---",
+    "First",
+    "[Docs](https://example.com)",
+    "Second"
+  ]
+}

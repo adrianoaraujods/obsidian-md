@@ -5,7 +5,11 @@ import {
   type StagedChange,
 } from "codemirror-obsidian-md/manager";
 import type { Changeset } from "codemirror-obsidian-md/storage";
-import { type Meta, type OrderChange, planMeta } from "fumadocs-obsidian-md/meta";
+import {
+  type Meta,
+  type OrderChange,
+  planMeta,
+} from "fumadocs-obsidian-md/meta";
 
 export type TreeNode =
   | { kind: "file"; name: string; path: string }
@@ -196,9 +200,7 @@ export function planManager(input: ManagerPlanInput): ManagerPlan {
   const orderChanges = input.changes.filter(
     (c): c is Exclude<ManagerChange, { type: "move" }> => c.type !== "move",
   );
-  const ordered = new Set(
-    orderChanges.map((c) => c.folder),
-  );
+  const ordered = new Set(orderChanges.map((c) => c.folder));
   const count = base.items.length + orderChanges.length;
   const subject =
     orderChanges.length === 0

@@ -136,7 +136,8 @@ describe("planManager", () => {
       {
         type: "write",
         path: "meta.json",
-        content: '{\n  "pages": [\n    "b",\n    "Guides",\n    "a",\n    "..."\n  ]\n}\n',
+        content:
+          '{\n  "pages": [\n    "b",\n    "Guides",\n    "a",\n    "..."\n  ]\n}\n',
       },
     ]);
     expect(plan.files).toEqual([...files].sort());
@@ -145,7 +146,10 @@ describe("planManager", () => {
   it("puts the rename and the pages updates in one changeset", () => {
     const plan = planManager({
       files,
-      metas: { "": '{"pages":["a","b","Guides"]}', Guides: '{"pages":["one"]}' },
+      metas: {
+        "": '{"pages":["a","b","Guides"]}',
+        Guides: '{"pages":["one"]}',
+      },
       notes,
       changes: [{ type: "move", from: "b.md", to: "Guides/b.md" }],
     });
@@ -157,12 +161,18 @@ describe("planManager", () => {
       "write",
       "write",
     ]);
-    const paths = plan.changeset.flatMap((c) => (c.type === "write" ? [c.path] : []));
+    const paths = plan.changeset.flatMap((c) =>
+      c.type === "write" ? [c.path] : [],
+    );
     expect(paths.sort()).toEqual(["Guides/meta.json", "meta.json"]);
     // Sections: the Manager keeps meta.json out of the files it shows.
-    expect(plan.files).toEqual(
-      ["Guides/b.md", "Guides/one.md", "Guides/two.md", "a.md", "pic.png"],
-    );
+    expect(plan.files).toEqual([
+      "Guides/b.md",
+      "Guides/one.md",
+      "Guides/two.md",
+      "a.md",
+      "pic.png",
+    ]);
   });
 
   it("moves a folder's meta.json with it and deletes that of an emptied folder", () => {
@@ -212,11 +222,16 @@ describe("planManager", () => {
     expect(describeChange({ type: "set-title", folder: "G", title: "T" })).toBe(
       'Set the title of G to "T"',
     );
-    expect(describeChange({ type: "set-title", folder: "G", title: undefined })).toBe(
-      "Clear the title of G",
-    );
     expect(
-      describeChange({ type: "add-separator", folder: "", title: "S", index: 0 }),
+      describeChange({ type: "set-title", folder: "G", title: undefined }),
+    ).toBe("Clear the title of G");
+    expect(
+      describeChange({
+        type: "add-separator",
+        folder: "",
+        title: "S",
+        index: 0,
+      }),
     ).toBe('Add Separator "S" in the Vault root');
   });
 });

@@ -16,7 +16,8 @@ Then follow the [Fumadocs Example](../fumadocs/README.md#start-a-wiki) steps: in
 
 A row under each Note's title offers:
 
-- **Manager** at `/manage` (development only, like Edit). It shows the Vault as a tree; drag a Note onto a folder, or use "Move to…" and "Rename". Changes are staged in memory and Apply makes one commit through the filesystem adapter (`POST /api/manage`). Moving a Note changes its URL and old URLs do not redirect. Links to a moved Note are not rewritten yet.
+- **Manager** at `/manage` (development only, like Edit). It shows the Vault as a tree; drag a Note onto a folder, or use "Move to…" and "Rename". Changes are staged in memory and Apply makes one commit through the filesystem adapter (`POST /api/manage`). Moving a Note changes its URL and old URLs do not redirect. Links to a moved Note are rewritten in the same commit.
+  Siblings are reordered by dragging between rows or with the up and down buttons; Separators are added, renamed, removed and dragged like rows; a folder's title is edited with "Title". These are written to the folder's `meta.json` in the same commit (created on first reorder, ending with `"..."`; keys and `pages` entries the Manager does not model are kept), and moves and renames keep the affected `pages` entries in sync.
 - **Edit**, which opens `/edit/<slug>`. It is hidden in a production build, and so is the route (404), because a deployed Wiki cannot save to disk.
 - **View on GitHub**, which opens the Note's file on the right repo and branch. It appears only when `GITHUB_REPO`, `GITHUB_BRANCH` and `VAULT_PATH` are all set.
 - **Copy Markdown**, which copies the Note's source.

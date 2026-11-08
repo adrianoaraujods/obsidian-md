@@ -406,3 +406,164 @@ test("refuses a new folder that exists, and a folder moved into itself", async (
   await expect(page.getByTestId("error")).toContainText("itself");
   await expect(page.getByText("No pending changes")).toBeVisible();
 });
+
+/** Drag an item or Separator onto a gap between rows with real mouse events. */
+async function dragToSlot(page: Page, label: string, slot: string) {
+  const handle = page.getByRole("button", {
+    name: `Drag ${label}`,
+    exact: true,
+  });
+  const target = page.locator(`[data-slot="${slot}"]`);
+  await target.scrollIntoViewIfNeeded();
+  await handle.scrollIntoViewIfNeeded();
+  const [from, to] = await Promise.all([
+    handle.boundingBox(),
+    target.boundingBox(),
+  ]);
+  if (!from || !to) throw new Error("not visible");
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 40, from.y + 20, { steps: 4 });
+  await page.mouse.move(to.x + 60, to.y + to.height / 2, { steps: 10 });
+  await page.mouse.up();
+}
+
+const button = (page: Page, name: string) =>
+  page.getByRole("button", { name, exact: true });
+
+const ORDERED = P("Ordered");
+const pages = (folder: string) =>
+  (JSON.parse(read(`${folder}/meta.json`)) as { pages: string[] }).pages;
+
+test("moving a Note up creates a meta.json with the current order, ending with '...'", async ({
+  page,
+}) => {
+  await openManager(page);
+  await button(page, `Move up ${P("Rename Me.md")}`).click();
+  await expect(page.getByTestId("pending")).toContainText(
+    `Reorder items in ${F}`,
+  );
+  expect(onDisk(P("meta.json"))).toBe(false);
+  await apply(page);
+
+  await expect(toast(page)).toContainText("Committed");
+  const order = pages(F);
+  expect(order.at(-1)).toBe("...");
+  expect(order.indexOf("Rename Me")).toBeLessThan(order.indexOf("Pick Me"));
+  // Folders stay listed, ahead of the Notes.
+  expect(order.indexOf("Docs")).toBeLessThan(order.indexOf("Asset Embedder"));
+  // The row moved in the tree at once, before any redeploy.
+  const rows = await page
+    .locator(`[data-path^="${F}/"]`)
+    .evaluateAll((els) => els.map((el) => el.getAttribute("data-path")));
+  expect(rows.indexOf(P("Rename Me.md"))).toBeLessThan(
+    rows.indexOf(P("Pick Me.md")),
+  );
+});
+
+test("reorders the top level too", async ({ page }) => {
+  await openManager(page);
+  await button(page, "Move up index.md").click();
+  await apply(page);
+
+  await expect(toast(page)).toContainText("Committed");
+  const order = (JSON.parse(read("meta.json")) as { pages: string[] }).pages;
+  expect(order.at(-1)).toBe("...");
+  expect(order.indexOf("index")).toBeLessThan(order.indexOf("Beta Note"));
+});
+
+test("dragging a Note between two others reorders them and keeps what meta.json holds", async ({
+  page,
+}) => {
+  await openManager(page);
+  await dragToSlot(page, P("Ordered/First.md"), `${ORDERED}#0`);
+
+  await expect(page.getByTestId("pending")).toContainText(
+    `Reorder items in ${ORDERED}`,
+  );
+  await apply(page);
+  await expect(toast(page)).toContainText("Committed");
+  expect(JSON.parse(read(P("Ordered/meta.json")))).toEqual({
+    icon: "list",
+    defaultOpen: true,
+    pages: [
+      "First",
+      "Third",
+      "---Old label---",
+      "[Docs](https://example.com)",
+      "Second",
+    ],
+  });
+});
+
+test("adds, renames and drags under a Separator, and edits a folder's title", async ({
+  page,
+}) => {
+  await openManager(page);
+  await button(page, `Add Separator in ${ORDERED}`).click();
+  const title = page.getByRole("textbox", {
+    name: `Separator title in ${ORDERED}`,
+  });
+  await title.fill("Extras");
+  await title.press("Enter");
+  await expect(page.getByTestId("pending")).toContainText(
+    'Add Separator "Extras"',
+  );
+
+  await button(page, "Rename Separator Old label").click();
+  const renamed = page.getByRole("textbox", {
+    name: "New title for Separator Old label",
+  });
+  await renamed.fill("Basics");
+  await renamed.press("Enter");
+
+  // Third goes to the end, under the new Separator.
+  await dragToSlot(page, P("Ordered/Third.md"), `${ORDERED}#5`);
+
+  await button(page, `Edit title ${ORDERED}`).click();
+  const folderTitle = page.getByRole("textbox", {
+    name: `Title of ${ORDERED}`,
+  });
+  await folderTitle.fill("Ordered Notes");
+  await folderTitle.press("Enter");
+  await expect(page.locator(`[data-folder="${ORDERED}"]`)).toContainText(
+    "Ordered Notes",
+  );
+
+  await apply(page);
+  await expect(toast(page)).toContainText("Committed");
+  expect(JSON.parse(read(P("Ordered/meta.json")))).toEqual({
+    title: "Ordered Notes",
+    icon: "list",
+    defaultOpen: true,
+    pages: [
+      "---Basics---",
+      "First",
+      "[Docs](https://example.com)",
+      "Second",
+      "---Extras---",
+      "Third",
+    ],
+  });
+});
+
+test("a move keeps the pages of both folders in sync, and removing a Separator keeps its items", async ({
+  page,
+}) => {
+  await openManager(page);
+  await moveTo(page, P("Ordered/First.md"), P("Docs"));
+  await moveTo(page, P("Pick Me.md"), ORDERED);
+  await button(page, "Remove Separator Old label").click();
+  await apply(page);
+
+  await expect(toast(page)).toContainText("Committed");
+  expect(JSON.parse(read(P("Ordered/meta.json")))).toEqual({
+    icon: "list",
+    defaultOpen: true,
+    pages: ["Third", "[Docs](https://example.com)", "Second", "Pick Me"],
+  });
+  expect(onDisk(P("Docs/First.md"))).toBe(true);
+  expect(onDisk(P("Ordered/Pick Me.md"))).toBe(true);
+  // Docs had no meta.json, so none is made just for the move.
+  expect(onDisk(P("Docs/meta.json"))).toBe(false);
+});

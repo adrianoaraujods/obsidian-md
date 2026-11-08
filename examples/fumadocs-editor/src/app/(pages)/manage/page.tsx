@@ -8,7 +8,7 @@ import { notFound } from "next/navigation";
 import { Manager } from "@/components/manager/manager";
 import { isEditEnabled } from "@/lib/page-actions";
 import { source } from "@/lib/source";
-import { listAssets } from "@/lib/vault-assets";
+import { listAssets, readMetas } from "@/lib/vault-assets";
 import { vaultDir } from "@/lib/vault-dir";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,12 @@ export default async function ManagePage() {
     <DocsPage full>
       <DocsTitle>Manage the Vault</DocsTitle>
       <DocsBody>
-        <Manager base={base} files={files} notes={notes} />
+        <Manager
+          base={base}
+          files={files}
+          metas={await readMetas(vaultDir)}
+          notes={notes}
+        />
       </DocsBody>
     </DocsPage>
   );

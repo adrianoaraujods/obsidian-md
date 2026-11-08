@@ -5,12 +5,14 @@ import {
   type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
+  pointerWithin,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import {
+  checkSegments,
   movedPath,
   planReorganization,
   renamedPath,
@@ -73,8 +75,9 @@ function fileName(path: string): string {
 }
 
 /**
- * Reorganize the Vault: drag Notes onto folders, or use "Move to…" and
- * "Rename". Nothing is written until Apply, which makes one commit.
+ * Reorganize the Vault: drag Notes, Assets and folders onto folders, or use
+ * "Move to…" and "Rename". A new folder exists only once something is moved
+ * into it; an empty one is dropped on Apply. Nothing is written until Apply, which makes one commit.
  */
 export function Manager(props: {
   files: string[];
@@ -85,6 +88,8 @@ export function Manager(props: {
   const [notes, setNotes] = useState(props.notes);
   const [base, setBase] = useState(props.base);
   const [changes, setChanges] = useState<StagedChange[]>([]);
+  // Folders the user made up. They exist only once something is moved into them.
+  const [newFolders, setNewFolders] = useState<string[]>([]);
   const [editing, setEditing] = useState<Editing>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -95,8 +100,14 @@ export function Manager(props: {
     [files, changes, notes],
   );
   const shown = plan.ok ? plan.files : files;
-  const tree = useMemo(() => buildTree(shown), [shown]);
-  const folders = useMemo(() => listFolders(shown), [shown]);
+  const tree = useMemo(() => buildTree(shown, newFolders), [shown, newFolders]);
+  const folders = useMemo(
+    () => [...new Set([...listFolders(shown), ...newFolders])].sort(),
+    [shown, newFolders],
+  );
+  const emptyFolders = newFolders.filter(
+    (folder) => !shown.some((path) => path.startsWith(`${folder}/`)),
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -116,6 +127,27 @@ export function Manager(props: {
     return true;
   }
 
+  /** Stage a new folder, or say why not. */
+  function addFolder(value: string): boolean {
+    const name = value.trim().replace(/\/+$/, "");
+    const invalid = checkSegments(name, "path");
+    if (invalid) {
+      setError(invalid);
+      return false;
+    }
+    const lower = name.toLowerCase();
+    const taken = [...folders, ...shown].find(
+      (path) => path.toLowerCase() === lower || path.startsWith(`${name}/`),
+    );
+    if (taken) {
+      setError(`"${name}" already exists.`);
+      return false;
+    }
+    setNewFolders([...newFolders, name]);
+    setError(null);
+    return true;
+  }
+
   function undo(index: number) {
     const next = changes.filter((_, i) => i !== index);
     if (!planReorganization({ files, changes: next, notes }).ok) {
@@ -127,9 +159,9 @@ export function Manager(props: {
   }
 
   function onDragEnd({ active, over }: DragEndEvent) {
-    const from = String(active.id).replace(/^file:/, "");
+    const from = String(active.id).replace(/^(file|dir):/, "");
     const folder = String(over?.id ?? "").replace(/^folder:/, "");
-    if (!over || String(over.id).startsWith("file:")) return;
+    if (!over || !String(over.id).startsWith("folder:")) return;
     const to = movedPath(from, folder);
     if (to !== from) stage(from, to);
   }
@@ -149,6 +181,8 @@ export function Manager(props: {
         setNotes(committedNotes(notes, plan));
         setBase(body.base);
         setChanges([]);
+        // A folder nothing was moved into never reaches the Vault.
+        setNewFolders([]);
         setConfirming(false);
         toast.success(`Committed: ${plan.subject}`);
       } else if (body.error === "stale-base") {
@@ -181,8 +215,14 @@ export function Manager(props: {
 
   return (
     <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
-      <DndContext id="manager" onDragEnd={onDragEnd} sensors={sensors}>
+      <DndContext
+        collisionDetection={pointerWithin}
+        id="manager"
+        onDragEnd={onDragEnd}
+        sensors={sensors}
+      >
         <section aria-label="Vault">
+          <NewFolderForm onAdd={addFolder} />
           <RootDrop />
           <TreeList
             editing={editing}
@@ -210,6 +250,31 @@ export function Manager(props: {
           >
             {error}
           </p>
+        )}
+        {emptyFolders.length > 0 && (
+          <ul className="grid gap-1 text-sm" data-testid="new-folders">
+            {emptyFolders.map((folder) => (
+              <li
+                className="flex items-center justify-between gap-2"
+                key={folder}
+              >
+                <span className="break-all">
+                  New folder {folder} (dropped unless something is moved into
+                  it)
+                </span>
+                <Button
+                  aria-label={`Remove new folder ${folder}`}
+                  onClick={() =>
+                    setNewFolders(newFolders.filter((f) => f !== folder))
+                  }
+                  size="xs"
+                  variant="outline"
+                >
+                  Remove
+                </Button>
+              </li>
+            ))}
+          </ul>
         )}
         {changes.length === 0 ? (
           <p className="text-muted-foreground text-sm">No pending changes</p>
@@ -271,9 +336,10 @@ export function Manager(props: {
             Apply
           </Button>
           <Button
-            disabled={changes.length === 0}
+            disabled={changes.length === 0 && newFolders.length === 0}
             onClick={() => {
               setChanges([]);
+              setNewFolders([]);
               setError(null);
             }}
             variant="outline"
@@ -381,75 +447,134 @@ function TreeList(props: {
   );
 }
 
+function NewFolderForm(props: { onAdd: (name: string) => boolean }) {
+  return (
+    <form
+      className="mb-2 flex gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const value = new FormData(form).get("folder");
+        if (typeof value === "string" && props.onAdd(value)) form.reset();
+      }}
+    >
+      <input
+        aria-label="New folder"
+        className="w-full rounded-md border bg-background px-2 py-1 text-sm"
+        name="folder"
+        placeholder="New folder (a path, e.g. Docs/Guides)"
+      />
+      <Button size="xs" type="submit" variant="outline">
+        Add folder
+      </Button>
+    </form>
+  );
+}
+
+type RowProps = Parameters<typeof TreeList>[0];
+
 function FolderItem(
-  props: Parameters<typeof TreeList>[0] & {
-    node: Extract<TreeNode, { kind: "folder" }>;
-  },
+  props: RowProps & { node: Extract<TreeNode, { kind: "folder" }> },
 ) {
   const { node } = props;
-  const { setNodeRef, isOver } = useDroppable({ id: `folder:${node.path}` });
+  const { setNodeRef: dropRef, isOver } = useDroppable({
+    id: `folder:${node.path}`,
+  });
+  const drag = useDraggable({ id: `dir:${node.path}` });
   return (
-    <li>
+    <li className={drag.isDragging ? "opacity-50" : ""}>
       <div
         className={`flex items-center gap-2 rounded-md px-2 py-1 font-medium text-sm ${isOver ? "bg-primary/15" : ""}`}
         data-folder={node.path}
-        ref={setNodeRef}
+        ref={(element) => {
+          dropRef(element);
+          drag.setNodeRef(element);
+        }}
       >
+        <DragHandle drag={drag} path={node.path} />
         <FolderIcon className="size-4" />
-        {node.name}
+        <span className="flex-1 break-all">{node.name}</span>
+        <EditButtons {...props} path={node.path} />
       </div>
+      <EditForms {...props} path={node.path} />
       <TreeList {...props} nodes={node.children} />
     </li>
   );
 }
 
 function FileItem(
-  props: Parameters<typeof TreeList>[0] & {
-    node: Extract<TreeNode, { kind: "file" }>;
-  },
+  props: RowProps & { node: Extract<TreeNode, { kind: "file" }> },
 ) {
-  const { node, editing, folders, onEdit, stage } = props;
+  const { node } = props;
   const path = node.path;
-  const { setNodeRef, attributes, listeners, isDragging } = useDraggable({
-    id: `file:${path}`,
-  });
-  const mode = editing?.path === path ? editing.mode : null;
+  const drag = useDraggable({ id: `file:${path}` });
 
   return (
     <li
-      className={`rounded-md px-2 py-1 ${isDragging ? "opacity-50" : ""}`}
+      className={`rounded-md px-2 py-1 ${drag.isDragging ? "opacity-50" : ""}`}
       data-path={path}
-      ref={setNodeRef}
+      ref={drag.setNodeRef}
     >
       <div className="flex items-center gap-2 text-sm">
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label={`Drag ${path}`}
-          className="cursor-grab touch-none rounded p-0.5 text-muted-foreground"
-        >
-          <GripVerticalIcon className="size-4" />
-        </button>
+        <DragHandle drag={drag} path={path} />
         <FileTextIcon className="size-4" />
         <span className="flex-1 break-all">{node.name}</span>
-        <Button
-          aria-label={`Move to… ${path}`}
-          onClick={() => onEdit({ path, mode: "move" })}
-          size="xs"
-          variant="outline"
-        >
-          Move to…
-        </Button>
-        <Button
-          aria-label={`Rename ${path}`}
-          onClick={() => onEdit({ path, mode: "rename" })}
-          size="xs"
-          variant="outline"
-        >
-          Rename
-        </Button>
+        <EditButtons {...props} path={path} />
       </div>
+      <EditForms {...props} path={path} />
+    </li>
+  );
+}
+
+function DragHandle(props: {
+  drag: ReturnType<typeof useDraggable>;
+  path: string;
+}) {
+  const { attributes, listeners } = props.drag;
+  return (
+    <button
+      type="button"
+      {...attributes}
+      {...listeners}
+      aria-label={`Drag ${props.path}`}
+      className="cursor-grab touch-none rounded p-0.5 text-muted-foreground"
+    >
+      <GripVerticalIcon className="size-4" />
+    </button>
+  );
+}
+
+function EditButtons(props: RowProps & { path: string }) {
+  const { path, onEdit } = props;
+  return (
+    <>
+      <Button
+        aria-label={`Move to… ${path}`}
+        onClick={() => onEdit({ path, mode: "move" })}
+        size="xs"
+        variant="outline"
+      >
+        Move to…
+      </Button>
+      <Button
+        aria-label={`Rename ${path}`}
+        onClick={() => onEdit({ path, mode: "rename" })}
+        size="xs"
+        variant="outline"
+      >
+        Rename
+      </Button>
+    </>
+  );
+}
+
+/** The "Move to…" and "Rename" forms of a file or folder, shown below its row. */
+function EditForms(props: RowProps & { path: string }) {
+  const { path, editing, folders, onEdit, stage } = props;
+  const mode = editing?.path === path ? editing.mode : null;
+
+  return (
+    <>
       {mode === "move" && (
         <form
           className="mt-1 flex gap-2 pl-6"
@@ -508,6 +633,6 @@ function FileItem(
           </Button>
         </form>
       )}
-    </li>
+    </>
   );
 }

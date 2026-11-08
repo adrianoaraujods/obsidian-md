@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import { Manager } from "@/components/manager/manager";
 import { isEditEnabled } from "@/lib/page-actions";
 import { source } from "@/lib/source";
+import { listAssets } from "@/lib/vault-assets";
 import { vaultDir } from "@/lib/vault-dir";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +21,12 @@ export const dynamic = "force-dynamic";
 export default async function ManagePage() {
   if (!isEditEnabled()) notFound();
 
-  const files = source.getPages().map((page) => page.path);
+  // Notes and Assets: a folder moves with everything in it.
+  const noteFiles = source.getPages().map((page) => page.path);
+  const files = [...noteFiles, ...(await listAssets(vaultDir))].sort();
   // The Notes' text, so the Manager can work out which links a change breaks.
   const notes: Record<string, string> = {};
-  for (const file of files) {
+  for (const file of noteFiles) {
     if (!file.toLowerCase().endsWith(".md")) continue;
     notes[file] = await readFile(path.join(vaultDir, file), "utf8").catch(
       () => "",

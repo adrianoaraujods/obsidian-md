@@ -5,13 +5,24 @@ export type TreeNode =
   | { kind: "file"; name: string; path: string }
   | { kind: "folder"; name: string; path: string; children: TreeNode[] };
 
-/** The Vault's files as nested folders: folders first, then files, each by name. */
-export function buildTree(files: readonly string[]): TreeNode[] {
+/**
+ * The Vault's files as nested folders: folders first, then files, each by name.
+ * `extraFolders` are staged folders that hold nothing yet; they are shown
+ * but exist in the Vault only once something is moved into them.
+ */
+export function buildTree(
+  files: readonly string[],
+  extraFolders: readonly string[] = [],
+): TreeNode[] {
   const root: TreeNode[] = [];
-  for (const file of files) {
+  const entries = [
+    ...files.map((path) => ({ path, folder: false })),
+    ...extraFolders.map((path) => ({ path, folder: true })),
+  ];
+  for (const { path: file, folder: isFolder } of entries) {
     const parts = file.split("/");
     let level = root;
-    for (let i = 0; i < parts.length - 1; i++) {
+    for (let i = 0; i < parts.length - (isFolder ? 0 : 1); i++) {
       const path = parts.slice(0, i + 1).join("/");
       let folder = level.find(
         (n): n is Extract<TreeNode, { kind: "folder" }> =>
@@ -23,7 +34,8 @@ export function buildTree(files: readonly string[]): TreeNode[] {
       }
       level = folder.children;
     }
-    level.push({ kind: "file", name: parts.at(-1) ?? "", path: file });
+    if (!isFolder)
+      level.push({ kind: "file", name: parts.at(-1) ?? "", path: file });
   }
   const order = (nodes: TreeNode[]) => {
     nodes.sort(

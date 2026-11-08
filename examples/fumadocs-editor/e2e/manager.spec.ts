@@ -15,14 +15,18 @@ function snapshot(dir = vault, prefix = ""): Map<string, string> {
     if (entry.isDirectory()) {
       for (const [p, c] of snapshot(path.join(dir, entry.name), rel))
         files.set(p, c);
-    } else files.set(rel, fs.readFileSync(path.join(dir, entry.name), "utf8"));
+    }
+    // latin1 keeps every byte, so Assets (binary) restore exactly.
+    else files.set(rel, fs.readFileSync(path.join(dir, entry.name), "latin1"));
   }
   return files;
 }
 
 let original = new Map<string, string>();
 test.describe.configure({ mode: "serial" });
-test.beforeEach(() => {
+test.beforeEach(async ({ page }) => {
+  // Tall enough that a drag never starts dnd-kit's autoscroll at the viewport edge.
+  await page.setViewportSize({ width: 1280, height: 1600 });
   original = snapshot();
 });
 test.afterEach(() => {
@@ -39,9 +43,9 @@ test.afterEach(() => {
   }
   for (const [rel, content] of original) {
     const full = path.join(vault, rel);
-    if (!fs.existsSync(full) || fs.readFileSync(full, "utf8") !== content) {
+    if (!fs.existsSync(full) || fs.readFileSync(full, "latin1") !== content) {
       fs.mkdirSync(path.dirname(full), { recursive: true });
-      fs.writeFileSync(full, content);
+      fs.writeFileSync(full, content, "latin1");
     }
   }
 });
@@ -70,6 +74,42 @@ async function rename(page: Page, notePath: string, to: string) {
   await input.press("Enter");
 }
 
+/** Drag the item at `itemPath` onto a folder with real mouse events. */
+async function dragOnto(page: Page, itemPath: string, folder: string) {
+  const handle = page.getByRole("button", {
+    name: `Drag ${itemPath}`,
+    exact: true,
+  });
+  const target = page.locator(`[data-folder="${folder}"]`);
+  await target.scrollIntoViewIfNeeded();
+  await handle.scrollIntoViewIfNeeded();
+  const box = async (l: typeof handle) => {
+    const b = await l.boundingBox();
+    if (!b) throw new Error("not visible");
+    return b;
+  };
+  const from = await box(handle);
+  const to = await box(target);
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + 20, to.y + to.height / 2, { steps: 10 });
+  await page.mouse.up();
+}
+
+async function moveTo(page: Page, itemPath: string, folder: string) {
+  await page
+    .getByRole("button", { name: `Move to… ${itemPath}`, exact: true })
+    .click();
+  const input = page.getByRole("textbox", {
+    name: `Folder for ${itemPath}`,
+    exact: true,
+  });
+  await input.fill(folder);
+  await input.press("Enter");
+}
+
+const read = (rel: string) => fs.readFileSync(path.join(vault, rel), "utf8");
+
 async function apply(page: Page) {
   const dialog = page.getByRole("dialog");
   // dnd-kit swallows the first click right after a drop, so retry it.
@@ -92,21 +132,7 @@ test("dragging a Note onto a folder stages a move and Apply commits it", async (
   page,
 }) => {
   await openManager(page);
-  const handle = page.getByRole("button", { name: `Drag ${P("Pick Me.md")}` });
-  const target = page.locator(`[data-folder="${P("Docs")}"]`);
-  await target.scrollIntoViewIfNeeded();
-  await handle.scrollIntoViewIfNeeded();
-  const box = async (l: typeof handle) => {
-    const b = await l.boundingBox();
-    if (!b) throw new Error("not visible");
-    return b;
-  };
-  const from = await box(handle);
-  const to = await box(target);
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(to.x + 20, to.y + to.height / 2, { steps: 10 });
-  await page.mouse.up();
+  await dragOnto(page, P("Pick Me.md"), P("Docs"));
 
   await expect(page.getByTestId("pending")).toContainText(
     `Move ${P("Pick Me.md")} → ${P("Docs/Pick Me.md")}`,
@@ -267,4 +293,116 @@ test("renaming a Note rewrites the links to it in another Note", async ({
   );
   expect(onDisk(P("Link Renamed.md"))).toBe(true);
   expect(onDisk(P("Link Target.md"))).toBe(false);
+});
+
+test("dragging a folder moves everything in it and rewrites the links to it", async ({
+  page,
+}) => {
+  await openManager(page);
+  await dragOnto(page, P("Movable Folder"), P("Docs"));
+
+  await expect(page.getByTestId("pending")).toContainText(
+    `Move ${P("Movable Folder")} → ${P("Docs/Movable Folder")}`,
+  );
+  await expect(page.getByTestId("rewrites")).toContainText(
+    `${P("Folder Linker.md")}: 1 link`,
+  );
+  await page.getByRole("button", { name: "Apply" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByTestId("commit-subject")).toHaveValue(
+    `Move ${P("Movable Folder")}`,
+  );
+  await expect(dialog.getByTestId("commit-body")).toHaveValue(
+    [
+      `- Move ${P("Movable Folder")} → ${P("Docs/Movable Folder")}`,
+      `- Update 1 link(s) in ${P("Folder Linker.md")}`,
+    ].join("\n"),
+  );
+  await dialog.getByRole("button", { name: "Commit" }).click();
+
+  await expect(toast(page)).toContainText("Committed");
+  await expect(row(page, P("Docs/Movable Folder/Inside.md"))).toBeVisible();
+  await expect(
+    row(page, P("Docs/Movable Folder/Deep/Deeper.md")),
+  ).toBeVisible();
+  expect(onDisk(P("Docs/Movable Folder/Inside.md"))).toBe(true);
+  expect(onDisk(P("Docs/Movable Folder/Deep/Deeper.md"))).toBe(true);
+  expect(onDisk(P("Movable Folder/Inside.md"))).toBe(false);
+  expect(onDisk(P("Movable Folder"))).toBe(false);
+  // A path-style link follows the folder; a bare name still resolves.
+  expect(read(P("Folder Linker.md"))).toContain(
+    `[[${P("Docs/Movable Folder/Inside")}|inside]] and [[Deeper]]`,
+  );
+});
+
+test("moving and renaming an Asset rewrites the Embeds of it", async ({
+  page,
+}) => {
+  await openManager(page);
+  await moveTo(page, P("Pics/diagram.png"), P("Archive"));
+  await rename(page, P("Archive/diagram.png"), "schema.png");
+
+  await expect(page.getByTestId("rewrites")).toContainText(
+    `${P("Asset Embedder.md")}: 1 link`,
+  );
+  await page.getByRole("button", { name: "Apply" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByTestId("commit-subject")).toHaveValue(
+    `Move ${P("Pics/diagram.png")}`,
+  );
+  await dialog.getByRole("button", { name: "Commit" }).click();
+
+  await expect(toast(page)).toContainText("Committed");
+  await expect(row(page, P("Archive/schema.png"))).toBeVisible();
+  expect(onDisk(P("Archive/schema.png"))).toBe(true);
+  expect(onDisk(P("Pics/diagram.png"))).toBe(false);
+  expect(read(P("Asset Embedder.md"))).toContain("![[schema.png|100]]");
+});
+
+test("a new folder exists once something is moved into it", async ({
+  page,
+}) => {
+  await openManager(page);
+  await page.getByRole("textbox", { name: "New folder" }).fill(P("Fresh"));
+  await page.getByRole("button", { name: "Add folder" }).click();
+  await expect(page.getByTestId("new-folders")).toContainText(P("Fresh"));
+  await expect(page.locator(`[data-folder="${P("Fresh")}"]`)).toBeVisible();
+
+  await dragOnto(page, P("Pick Me.md"), P("Fresh"));
+  await expect(page.getByTestId("pending")).toContainText(
+    `Move ${P("Pick Me.md")} → ${P("Fresh/Pick Me.md")}`,
+  );
+  await expect(page.getByTestId("new-folders")).toHaveCount(0);
+  expect(onDisk(P("Fresh"))).toBe(false);
+  await apply(page);
+
+  await expect(toast(page)).toContainText("Committed");
+  expect(onDisk(P("Fresh/Pick Me.md"))).toBe(true);
+});
+
+test("a new folder left empty is dropped on Apply", async ({ page }) => {
+  await openManager(page);
+  await page.getByRole("textbox", { name: "New folder" }).fill(P("Empty"));
+  await page.getByRole("button", { name: "Add folder" }).click();
+  await rename(page, P("Rename Me.md"), "Renamed");
+  await apply(page);
+
+  await expect(toast(page)).toContainText("Committed");
+  expect(onDisk(P("Renamed.md"))).toBe(true);
+  expect(onDisk(P("Empty"))).toBe(false);
+  await expect(page.locator(`[data-folder="${P("Empty")}"]`)).toHaveCount(0);
+});
+
+test("refuses a new folder that exists, and a folder moved into itself", async ({
+  page,
+}) => {
+  await openManager(page);
+  const input = page.getByRole("textbox", { name: "New folder" });
+  await input.fill(P("Docs"));
+  await input.press("Enter");
+  await expect(page.getByTestId("error")).toContainText("already exists");
+
+  await moveTo(page, P("Movable Folder"), P("Movable Folder/Deep"));
+  await expect(page.getByTestId("error")).toContainText("itself");
+  await expect(page.getByText("No pending changes")).toBeVisible();
 });

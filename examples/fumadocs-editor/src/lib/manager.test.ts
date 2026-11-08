@@ -26,6 +26,28 @@ describe("buildTree", () => {
   });
 });
 
+describe("buildTree with staged folders", () => {
+  it("shows a staged folder that holds nothing yet, nested as typed", () => {
+    const tree = buildTree(["a.md"], ["New/Inner"]);
+    expect(tree).toEqual([
+      {
+        kind: "folder",
+        name: "New",
+        path: "New",
+        children: [
+          { kind: "folder", name: "Inner", path: "New/Inner", children: [] },
+        ],
+      },
+      { kind: "file", name: "a.md", path: "a.md" },
+    ]);
+  });
+
+  it("does not repeat a staged folder that something was moved into", () => {
+    const tree = buildTree(["New/a.md"], ["New"]);
+    expect(tree).toHaveLength(1);
+  });
+});
+
 describe("commitMessage", () => {
   it("joins subject, body and the read-only trailer", () => {
     expect(

@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { createFilesystemStorage } from "codemirror-obsidian-md/storage/filesystem";
 import { DocsBody, DocsPage, DocsTitle } from "fumadocs-ui/layouts/docs/page";
 import { notFound } from "next/navigation";
@@ -18,13 +21,21 @@ export default async function ManagePage() {
   if (!isEditEnabled()) notFound();
 
   const files = source.getPages().map((page) => page.path);
+  // The Notes' text, so the Manager can work out which links a change breaks.
+  const notes: Record<string, string> = {};
+  for (const file of files) {
+    if (!file.toLowerCase().endsWith(".md")) continue;
+    notes[file] = await readFile(path.join(vaultDir, file), "utf8").catch(
+      () => "",
+    );
+  }
   const base = await createFilesystemStorage({ root: vaultDir }).base();
 
   return (
     <DocsPage full>
       <DocsTitle>Manage the Vault</DocsTitle>
       <DocsBody>
-        <Manager base={base} files={files} />
+        <Manager base={base} files={files} notes={notes} />
       </DocsBody>
     </DocsPage>
   );

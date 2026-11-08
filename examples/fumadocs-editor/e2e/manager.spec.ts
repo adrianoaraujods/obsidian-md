@@ -222,3 +222,49 @@ test("refuses a name that is taken, or that clashes in case, and stages nothing"
   await expect(page.getByTestId("error")).toContainText('".."');
   await expect(page.getByText("No pending changes")).toBeVisible();
 });
+
+test("renaming a Note rewrites the links to it in another Note", async ({
+  page,
+}) => {
+  await openManager(page);
+  await rename(page, P("Link Target.md"), "Link Renamed");
+
+  await expect(page.getByTestId("rewrites")).toContainText(
+    `${P("Linker.md")}: 5 links`,
+  );
+  await expect(page.getByTestId("urls")).toContainText(
+    "/manager-fixture/link-target → /manager-fixture/link-renamed",
+  );
+  await page.getByRole("button", { name: "Apply" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("will not redirect");
+  await expect(dialog.getByTestId("commit-body")).toHaveValue(
+    [
+      `- Rename ${P("Link Target.md")} → ${P("Link Renamed.md")}`,
+      `- Update 5 link(s) in ${P("Linker.md")}`,
+    ].join("\n"),
+  );
+  expect(fs.readFileSync(path.join(vault, P("Linker.md")), "utf8")).toContain(
+    "[[Link Target]]",
+  );
+  await dialog.getByRole("button", { name: "Commit" }).click();
+
+  await expect(toast(page)).toContainText("Committed");
+  expect(fs.readFileSync(path.join(vault, P("Linker.md")), "utf8")).toBe(
+    [
+      "---",
+      "title: Linker",
+      'up: "[[Link Renamed]]"',
+      "---",
+      "",
+      "# Linker",
+      "",
+      "See [[Link Renamed]], [[Link Renamed#Heading|the heading]] and a [Markdown link](Link%20Renamed.md#Heading).",
+      "",
+      "![[Link Renamed]]",
+      "",
+    ].join("\n"),
+  );
+  expect(onDisk(P("Link Renamed.md"))).toBe(true);
+  expect(onDisk(P("Link Target.md"))).toBe(false);
+});

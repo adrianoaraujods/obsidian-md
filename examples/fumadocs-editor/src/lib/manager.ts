@@ -1,3 +1,4 @@
+import { checkSegments } from "codemirror-obsidian-md/manager";
 import type { Changeset } from "codemirror-obsidian-md/storage";
 
 export type TreeNode =
@@ -48,22 +49,32 @@ export interface CommitRequest {
   changeset: Changeset;
 }
 
-/** Validate a request body for the commit route: renames only, with a base. */
+/** Validate a request body for the commit route: renames and whole-file writes, with a base. */
 export function parseCommitRequest(body: unknown): CommitRequest | null {
   if (typeof body !== "object" || body === null) return null;
   const { base, changeset } = body as Record<string, unknown>;
   if (typeof base !== "string" || !Array.isArray(changeset)) return null;
   const parsed: Changeset = [];
   for (const change of changeset) {
+    if (typeof change !== "object" || change === null) return null;
     if (
-      typeof change !== "object" ||
-      change === null ||
-      change.type !== "rename" ||
-      typeof change.from !== "string" ||
-      typeof change.to !== "string"
-    )
-      return null;
-    parsed.push({ type: "rename", from: change.from, to: change.to });
+      change.type === "rename" &&
+      typeof change.from === "string" &&
+      typeof change.to === "string"
+    ) {
+      parsed.push({ type: "rename", from: change.from, to: change.to });
+    } else if (
+      change.type === "write" &&
+      typeof change.path === "string" &&
+      typeof change.content === "string" &&
+      checkSegments(change.path, "path") === null
+    ) {
+      parsed.push({
+        type: "write",
+        path: change.path,
+        content: change.content,
+      });
+    } else return null;
   }
   return { base, changeset: parsed };
 }

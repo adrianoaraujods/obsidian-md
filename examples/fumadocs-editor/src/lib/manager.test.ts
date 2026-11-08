@@ -37,7 +37,37 @@ describe("commitMessage", () => {
 });
 
 describe("parseCommitRequest", () => {
-  it("accepts only renames with a base", () => {
+  it("accepts a write of a whole file next to renames", () => {
+    expect(
+      parseCommitRequest({
+        base: "abc",
+        changeset: [
+          { type: "rename", from: "a.md", to: "b.md" },
+          { type: "write", path: "c.md", content: "[[b]]\n" },
+        ],
+      }),
+    ).toEqual({
+      base: "abc",
+      changeset: [
+        { type: "rename", from: "a.md", to: "b.md" },
+        { type: "write", path: "c.md", content: "[[b]]\n" },
+      ],
+    });
+  });
+
+  it("refuses a write with no content or an unsafe path", () => {
+    for (const change of [
+      { type: "write", path: "c.md" },
+      { type: "write", path: "../c.md", content: "x" },
+      { type: "write", path: "/c.md", content: "x" },
+      { type: "write", path: "c.md", content: 1 },
+    ])
+      expect(
+        parseCommitRequest({ base: "abc", changeset: [change] }),
+      ).toBeNull();
+  });
+
+  it("accepts only renames and writes, with a base", () => {
     expect(
       parseCommitRequest({
         base: "abc",

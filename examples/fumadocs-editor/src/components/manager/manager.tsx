@@ -38,6 +38,24 @@ import {
   type TreeNode,
 } from "@/lib/manager";
 
+/** The Notes' text once `plan` is committed: rewritten Notes and moved paths. */
+function committedNotes(
+  notes: Record<string, string>,
+  plan: Extract<ReturnType<typeof planReorganization>, { ok: true }>,
+): Record<string, string> {
+  const next = { ...notes };
+  for (const change of plan.changeset) {
+    if (change.type === "rename") {
+      const text = next[change.from];
+      if (text !== undefined) {
+        delete next[change.from];
+        next[change.to] = text;
+      }
+    } else if (change.type === "write") next[change.path] = change.content;
+  }
+  return next;
+}
+
 type Editing = { path: string; mode: "move" | "rename" } | null;
 
 function kindOf(change: StagedChange): "Move" | "Rename" {
@@ -58,8 +76,13 @@ function fileName(path: string): string {
  * Reorganize the Vault: drag Notes onto folders, or use "Move to…" and
  * "Rename". Nothing is written until Apply, which makes one commit.
  */
-export function Manager(props: { files: string[]; base: string }) {
+export function Manager(props: {
+  files: string[];
+  base: string;
+  notes: Record<string, string>;
+}) {
   const [files, setFiles] = useState(props.files);
+  const [notes, setNotes] = useState(props.notes);
   const [base, setBase] = useState(props.base);
   const [changes, setChanges] = useState<StagedChange[]>([]);
   const [editing, setEditing] = useState<Editing>(null);
@@ -68,8 +91,8 @@ export function Manager(props: { files: string[]; base: string }) {
   const [applying, setApplying] = useState(false);
 
   const plan = useMemo(
-    () => planReorganization({ files, changes }),
-    [files, changes],
+    () => planReorganization({ files, changes, notes }),
+    [files, changes, notes],
   );
   const shown = plan.ok ? plan.files : files;
   const tree = useMemo(() => buildTree(shown), [shown]);
@@ -83,7 +106,7 @@ export function Manager(props: { files: string[]; base: string }) {
   /** Stage a move, or say why not. Returns whether it was staged. */
   function stage(from: string, to: string): boolean {
     const next = [...changes, { type: "move" as const, from, to }];
-    const result = planReorganization({ files, changes: next });
+    const result = planReorganization({ files, changes: next, notes });
     if (!result.ok) {
       setError(result.error);
       return false;
@@ -95,7 +118,7 @@ export function Manager(props: { files: string[]; base: string }) {
 
   function undo(index: number) {
     const next = changes.filter((_, i) => i !== index);
-    if (!planReorganization({ files, changes: next }).ok) {
+    if (!planReorganization({ files, changes: next, notes }).ok) {
       setError("A later change depends on this one. Undo that first.");
       return;
     }
@@ -123,6 +146,7 @@ export function Manager(props: { files: string[]; base: string }) {
       const body = (await response.json()) as { base?: string; error?: string };
       if (response.ok && body.base) {
         setFiles(plan.files);
+        setNotes(committedNotes(notes, plan));
         setBase(body.base);
         setChanges([]);
         setConfirming(false);
@@ -214,6 +238,34 @@ export function Manager(props: { files: string[]; base: string }) {
             })}
           </ul>
         )}
+        {plan.ok && plan.rewrites.length > 0 && (
+          <div>
+            <h3 className="font-medium text-sm">Links rewritten</h3>
+            <ul className="grid gap-1 text-sm" data-testid="rewrites">
+              {plan.rewrites.map((rewrite) => (
+                <li className="break-all" key={rewrite.path}>
+                  {rewrite.path}: {rewrite.links}{" "}
+                  {rewrite.links === 1 ? "link" : "links"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {plan.ok && plan.urls.length > 0 && (
+          <div>
+            <h3 className="font-medium text-sm">URLs that change</h3>
+            <ul className="grid gap-1 text-sm" data-testid="urls">
+              {plan.urls.map((url) => (
+                <li className="break-all" key={url.path}>
+                  {url.from} → {url.to}
+                </li>
+              ))}
+            </ul>
+            <p className="text-muted-foreground text-xs">
+              Old URLs will not redirect.
+            </p>
+          </div>
+        )}
         <div className="flex gap-2">
           <Button disabled={empty} onClick={() => setConfirming(true)}>
             Apply
@@ -237,8 +289,13 @@ export function Manager(props: { files: string[]; base: string }) {
             <DialogHeader>
               <DialogTitle>Commit changes</DialogTitle>
               <DialogDescription>
-                This makes one commit. Old URLs of moved Notes will not
-                redirect, so external links and bookmarks to them will break.
+                This makes one commit
+                {plan.rewrites.length > 0 &&
+                  `, rewriting links in ${plan.rewrites.length} ${plan.rewrites.length === 1 ? "Note" : "Notes"}`}
+                .{" "}
+                {plan.urls.length > 0
+                  ? `${plan.urls.length} URL(s) change. Old URLs will not redirect, so external links and bookmarks to them will break.`
+                  : "Note URLs stay the same."}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-2">
@@ -260,7 +317,7 @@ export function Manager(props: { files: string[]; base: string }) {
                 data-testid="commit-body"
                 id="body"
                 readOnly
-                rows={Math.min(8, plan.moves.length + 1)}
+                rows={Math.min(8, plan.body.split("\n").length)}
                 value={commitMessage(plan).split("\n\n")[1]}
               />
               <label className="font-medium text-sm" htmlFor="trailer">

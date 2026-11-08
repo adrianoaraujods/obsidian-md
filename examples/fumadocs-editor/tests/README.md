@@ -11,3 +11,4 @@
   project runs `next dev` on port 3102 with `DIST_DIR=.next-dev` (Edit available,
   View on GitHub hidden).
 - The `manager` project reuses the `next dev` server and runs after `development`: it moves Notes in `tests/fixtures/vault/Manager Fixture` and puts them back after each test.
+- Manager link rewriting is covered by `Manager Fixture/Link Target.md` and `Linker.md`.

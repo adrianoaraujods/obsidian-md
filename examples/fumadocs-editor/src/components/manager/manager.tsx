@@ -31,7 +31,7 @@ import {
   GripVerticalIcon,
   MinusIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { ROOT_FOCUS } from "@/lib/file-tree-targets";
 import {
   buildTree,
   commitMessage,
@@ -118,6 +119,11 @@ export function Manager(props: {
   notes: Record<string, string>;
   /** The text of each folder's `meta.json`, keyed by folder (`""` is the root). */
   metas: Record<string, string>;
+  /**
+   * The item to select and scroll into view when the page opens: a Vault path,
+   * or `ROOT_FOCUS` for the root of the File Tree. The File Tree menu sets it.
+   */
+  focus?: string;
 }) {
   const [files, setFiles] = useState(props.files);
   const [notes, setNotes] = useState(props.notes);
@@ -151,6 +157,14 @@ export function Manager(props: {
   const emptyFolders = newFolders.filter(
     (folder) => !shown.some((path) => path.startsWith(`${folder}/`)),
   );
+
+  // The File Tree menu deep-links to an item (`/manage?focus=<path>`).
+  useEffect(() => {
+    if (props.focus === undefined) return;
+    document
+      .querySelector('[data-focused="true"]')
+      ?.scrollIntoView({ block: "center" });
+  }, [props.focus]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -348,6 +362,7 @@ export function Manager(props: {
     stage,
     stageAll,
     dragging,
+    focus: props.focus,
     setError,
   };
 
@@ -553,14 +568,19 @@ interface TreeProps {
   stageAll: (list: ManagerChange[]) => boolean;
   setError: (error: string | null) => void;
   dragging: boolean;
+  focus?: string;
 }
+
+/** Ring on the item the page was opened on (see `Manager`'s `focus`). */
+const FOCUS_RING = "ring-2 ring-primary";
 
 function RootDrop(props: TreeProps) {
   const { setNodeRef, isOver } = useDroppable({ id: "folder:" });
   return (
     <div className="mb-1">
       <div
-        className={`flex items-center gap-2 rounded-md px-2 py-1 font-medium text-sm ${isOver ? "bg-primary/15" : ""}`}
+        className={`flex items-center gap-2 rounded-md px-2 py-1 font-medium text-sm ${isOver ? "bg-primary/15" : ""} ${props.focus === ROOT_FOCUS ? FOCUS_RING : ""}`}
+        data-focused={props.focus === ROOT_FOCUS}
         data-folder=""
         ref={setNodeRef}
       >
@@ -713,7 +733,8 @@ function FolderItem(
   return (
     <li className={drag.isDragging ? "opacity-50" : ""}>
       <div
-        className={`flex items-center gap-2 rounded-md px-2 py-1 font-medium text-sm ${isOver ? "bg-primary/15" : ""}`}
+        className={`flex items-center gap-2 rounded-md px-2 py-1 font-medium text-sm ${isOver ? "bg-primary/15" : ""} ${props.focus === node.path ? FOCUS_RING : ""}`}
+        data-focused={props.focus === node.path}
         data-folder={node.path}
         ref={(element) => {
           dropRef(element);
@@ -767,7 +788,8 @@ function FileItem(
 
   return (
     <li
-      className={`rounded-md px-2 py-1 ${drag.isDragging ? "opacity-50" : ""}`}
+      className={`rounded-md px-2 py-1 ${drag.isDragging ? "opacity-50" : ""} ${props.focus === path ? FOCUS_RING : ""}`}
+      data-focused={props.focus === path}
       data-path={path}
       ref={drag.setNodeRef}
     >

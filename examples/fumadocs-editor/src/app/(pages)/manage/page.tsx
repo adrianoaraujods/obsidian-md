@@ -18,7 +18,10 @@ export const dynamic = "force-dynamic";
  * read); the base is the Vault on disk at this moment, which Apply checks so a
  * change made meanwhile is never overwritten.
  */
-export default async function ManagePage() {
+export default async function ManagePage(props: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { focus } = await props.searchParams;
   if (!isEditEnabled()) notFound();
 
   // Notes and Assets: a folder moves with everything in it.
@@ -41,6 +44,7 @@ export default async function ManagePage() {
         <Manager
           base={base}
           files={files}
+          focus={typeof focus === "string" ? focus : undefined}
           metas={await readMetas(vaultDir)}
           notes={notes}
         />

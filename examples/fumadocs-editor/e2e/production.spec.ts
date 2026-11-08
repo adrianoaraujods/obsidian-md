@@ -59,3 +59,13 @@ test("/edit/<slug> is not served in a production build", async ({ page }) => {
   const response = await page.goto("/edit/alpha-note");
   expect(response?.status()).toBe(404);
 });
+
+test("the File Tree has no right-click menu", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page
+    .locator("#nd-sidebar")
+    .getByRole("link", { name: "Beta Note", exact: true })
+    .click({ button: "right" });
+  await expect(page.getByRole("menu")).toHaveCount(0);
+});

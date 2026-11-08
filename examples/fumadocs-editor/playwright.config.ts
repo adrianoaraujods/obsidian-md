@@ -29,6 +29,7 @@ export default defineConfig({
         "multi-cursor.spec.ts",
         "editing-shortcuts.spec.ts",
         "links.spec.ts",
+        "file-tree-menu.spec.ts",
       ],
       use: { baseURL: `http://localhost:${DEV_PORT}` },
     },

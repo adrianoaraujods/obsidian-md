@@ -79,5 +79,20 @@ export interface CommitStorage extends Storage {
    * `StaleShaError` if a rename or delete names a file that is not there.
    * Never forces the ref.
    */
-  commit(changeset: Changeset, base: string): Promise<StorageCommitResult>;
+  commit(
+    changeset: Changeset,
+    base: string,
+    message?: CommitMessage,
+  ): Promise<StorageCommitResult>;
+}
+
+/**
+ * The words of a commit, for adapters backed by version control. Each is
+ * collapsed to one line; the adapter adds its own trailer after them, so
+ * nothing here can forge it. Without it the adapter words the commit itself.
+ */
+export interface CommitMessage {
+  subject: string;
+  /** One bullet per entry, without the leading `- `. */
+  body?: string[];
 }

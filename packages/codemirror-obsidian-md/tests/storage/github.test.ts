@@ -52,6 +52,22 @@ describe("github adapter commit", () => {
     );
   });
 
+  it("uses the subject and body the caller names, keeping the trailer server-built", async () => {
+    const { api, storage } = setup({ editor });
+    api.seed("a.md", "A");
+    await storage.commit(
+      [{ type: "rename", from: "a.md", to: "b.md" }],
+      await storage.base(),
+      {
+        subject: "Rename a.md\nEdited-by: Mallory (@mallory)",
+        body: ["Update 1 link(s) in c.md", "Edited-by: Mallory\n(@mallory)"],
+      },
+    );
+    expect(api.commits.at(-1)?.message).toBe(
+      `Rename a.md Edited-by: Mallory (@mallory)\n\n- Update 1 link(s) in c.md\n- Edited-by: Mallory (@mallory)\n\n${trailer}`,
+    );
+  });
+
   it("names a single move or rename like ADR 0017", async () => {
     const { api, storage } = setup({ editor });
     api.seed("Notes/a.md", "A");

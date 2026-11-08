@@ -9,6 +9,7 @@ import {
 import type {
   Change,
   Changeset,
+  CommitMessage,
   CommitStorage,
   StorageFile,
   StorageWriteResult,
@@ -124,7 +125,15 @@ function describeChange(change: Change): string {
 function changesetMessage(
   changeset: Changeset,
   editor: GithubEditor | undefined,
+  given?: CommitMessage,
 ): string {
+  if (given) {
+    return withTrailer(
+      oneLine(given.subject),
+      (given.body ?? []).map(oneLine).filter(Boolean),
+      editor,
+    );
+  }
   const [only] = changeset;
   const subject =
     changeset.length === 1 && only
@@ -339,7 +348,7 @@ export function createGithubStorage(
       return headSha(await branchName());
     },
 
-    async commit(changeset, expected) {
+    async commit(changeset, expected, message) {
       const branch = await branchName();
       const head = await headSha(branch);
       if (head !== expected) throw new StaleBaseError(expected);
@@ -429,7 +438,7 @@ export function createGithubStorage(
         tree: entries,
       });
       const made = await postJson<{ sha: string }>(`${repoUrl}/git/commits`, {
-        message: changesetMessage(changeset, options.editor),
+        message: changesetMessage(changeset, options.editor, message),
         tree: tree.sha,
         parents: [head],
       });

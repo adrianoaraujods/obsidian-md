@@ -50,9 +50,13 @@ By default any GitHub account that signs in may edit, so any signed-in account c
 
 Sessions are stateless cookies, so one user cannot be signed out individually. To cut everyone off, rotate `BETTER_AUTH_SECRET`. To stop all commits, revoke or rotate the write credential (the token, or the GitHub App's key or installation). To keep one person out from now on, block their login in `policy.ts` and redeploy; their existing session stays valid until the secret is rotated.
 
+### The Manager
+
+Signed-in users can reorganize the Vault at `/manage`; a signed-out visitor is sent to GitHub sign-in and returns there. The page shows the deployed Vault as a tree: drag a Note, Asset or folder onto a folder, or use "Move to…" and "Rename"; reorder siblings by dragging or with the up and down buttons; add, rename and remove Separators; edit a folder's title. Changes are staged in the browser, and Apply makes one commit through the Git Data API (`POST /api/manage`, using the same server-side credential as Save). The moves, the rewritten links and the `meta.json` changes land together; moving a Note changes its URL and old URLs do not redirect. If a commit landed since the page opened, nothing is applied and you are asked to reload; if the credential is refused, a banner says so and the staged changes are kept so you can retry. The page reads the Notes' text and Assets from the Vault directory at request time (`VAULT_DIR`, default `public/vault`), so that directory must be present where the server runs.
+
 ### Reverting abusive commits
 
-Every edit is an ordinary commit with the subject `Update|Create|Delete <path>` and a body of `Edited-with: obsidian-md editor` and `Edited-by: Name (@login)`, built on the server from the verified session. Find one account's commits by searching the history for its `Edited-by` trailer (`git log --grep "Edited-by:.*@login"`) and undo them with `git revert <sha>`; the push redeploys the Wiki.
+Every edit is an ordinary commit with the subject `Update|Create|Delete <path>` (`Move|Rename <path>` or `Reorganize <n> items` for the Manager) and a body of `Edited-with: obsidian-md editor` and `Edited-by: Name (@login)`, built on the server from the verified session. Find one account's commits by searching the history for its `Edited-by` trailer (`git log --grep "Edited-by:.*@login"`) and undo them with `git revert <sha>`; the push redeploys the Wiki.
 
 ## Environment
 
@@ -62,6 +66,7 @@ Every variable is listed, with a comment, in [`.env.example`](./.env.example). T
 
 - `src/lib/env.ts`: validation (`parseEnv`, `getEnv`, `requireRepoInProduction`).
 - `src/lib/auth/config.ts`: the Better Auth instance (`createAuth`). `index.ts` creates it lazily (`getAuth`); `session.ts` has `getSession` and `requireEditor`; `policy.ts` is the access hook; `client.ts` is the browser client.
+- `src/lib/manage.ts` and `src/app/api/manage`: the commit route behind the Manager; `src/lib/manager.ts` plans a changeset from the staged changes; `src/components/manager` is the drag-and-drop screen (copy and restyle it).
 - `src/app/api/auth/[...all]`: Better Auth's handler. `src/app/api/sign-in`: a GET redirect into GitHub OAuth, used by Edit.
 
 ## Tests

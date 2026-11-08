@@ -8,7 +8,7 @@
 //
 // It is also the repo the editor saves to: `/api/repos/...` is the adapter's
 // in-memory Contents API (`createFakeContentsApi`), seeded with the fixture
-// Vault's Notes under the repo's Vault subdirectory.
+// Vault's files under the repo's Vault subdirectory.
 //
 // - /api/repos/*, /api/app/*      the Contents API (any token is accepted,
 //                                  unless "reject token" is on: then 401)
@@ -47,12 +47,25 @@ function reset() {
   });
   rejectToken = false;
   buildSha = null;
-  for (const name of fs.readdirSync(vaultDir)) {
-    if (!name.endsWith(".md")) continue;
-    github.seed(
-      `${vaultPath}/${name}`,
-      fs.readFileSync(path.join(vaultDir, name), "utf8"),
-    );
+  seedFolder("");
+}
+
+// Notes, `meta.json` files and Assets, folders included, so the Manager can
+// move whatever the fixture Vault holds. (An Asset's text is only a stand-in:
+// a rename keeps the stored file as it is.)
+function seedFolder(folder) {
+  for (const entry of fs.readdirSync(path.join(vaultDir, folder), {
+    withFileTypes: true,
+  })) {
+    if (entry.name.startsWith(".")) continue;
+    const rel = folder ? `${folder}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) seedFolder(rel);
+    else {
+      github.seed(
+        `${vaultPath}/${rel}`,
+        fs.readFileSync(path.join(vaultDir, rel), "utf8"),
+      );
+    }
   }
 }
 reset();

@@ -149,3 +149,5 @@ export function removeSeparator(meta: Meta, index: number): Meta {
   requireSeparator(meta, index);
   return { ...meta, entries: meta.entries.filter((_, i) => i !== index) };
 }
+
+export * from "./meta-plan.js";

@@ -1,5 +1,22 @@
 # codemirror-obsidian-md
 
+## 0.3.0
+
+### Minor Changes
+
+- 3263a7d: `planReorganization` moves and renames folders: a staged change whose `from` is a folder carries everything in it, links and Embeds follow, and the commit counts the folder as one item.
+- b402c84: `planReorganization` also rewrites the links a move or rename would break: Wiki Links, Embeds, Block References, Markdown links and Frontmatter links, keeping Alias, Subpath and path style. It takes the Notes' text and returns the `write` changes, a link count per Note and the URLs that change. `remark-obsidian-md/syntax` now exports `splitFrontmatter`.
+- de6fcd4: Add `codemirror-obsidian-md/manager`: `planReorganization` turns staged moves and renames into one changeset with its commit subject and body, refusing invalid, colliding and case-clashing paths.
+- c0fa816: The GitHub storage gains `changedSince(base)`, the Vault paths changed after a base commit, so a host can retry a changeset on the new base when a stale commit touched none of its files.
+- 6a3bb07: Storage gains an atomic `commit(changeset, base, message?)` and `base()`: a `Changeset` of `Change`s (rename, write, delete) lands as one commit on the Vault's current base, so a reorganization is all or nothing. The GitHub storage uses the Git Data API and never forces the ref; the filesystem storage reports a tree hash as its base. A base that moved throws `StaleBaseError` (test with `isStaleBaseError`), and a rename onto a taken path throws `AlreadyExistsError`.
+
+### Patch Changes
+
+- 2ded56d: The GitHub storage's `commit` takes an optional subject and body, so a host can word the commit the way its confirm dialog showed it. The `Edited-with` and `Edited-by` trailer is still added by the adapter after them.
+- 73a3446: The filesystem storage's `commit` keeps binary Assets byte for byte and removes the folders a commit leaves empty, as a Git commit would.
+- Updated dependencies [b402c84]
+  - remark-obsidian-md@3.2.0
+
 ## 0.2.0
 
 ### Minor Changes

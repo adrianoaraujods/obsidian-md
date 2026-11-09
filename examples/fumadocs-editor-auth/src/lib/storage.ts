@@ -1,4 +1,4 @@
-import type { Storage } from "codemirror-obsidian-md/storage";
+import type { CommitStorage, Storage } from "codemirror-obsidian-md/storage";
 import { createFilesystemStorage } from "codemirror-obsidian-md/storage/filesystem";
 import { createGithubStorage } from "codemirror-obsidian-md/storage/github";
 import { createStorageHandler } from "codemirror-obsidian-md/storage/http";
@@ -19,7 +19,7 @@ export type NotesHandlerDeps = {
   deployedCommit?: () => Promise<string | null>;
 };
 
-const json = (status: number, body: unknown) =>
+export const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -29,7 +29,7 @@ const json = (status: number, body: unknown) =>
   });
 
 /** Vault-relative, never absolute and never climbing out of the Vault. */
-function isVaultPath(path: string): boolean {
+export function isVaultPath(path: string): boolean {
   if (!path || path.startsWith("/") || path.includes("\\")) return false;
   return !path.split("/").some((part) => part === ".." || part === "");
 }
@@ -62,6 +62,41 @@ function guardPaths(storage: Storage): Storage {
 }
 
 /**
+ * The storage for one verified editor: GitHub with the shared server-side
+ * credential, or the local disk in development (no `GITHUB_REPO`). The
+ * `Edited-by` trailer comes from the editor, never from a request body.
+ */
+export function createCommitStorage(
+  deps: NotesHandlerDeps,
+  editor: NotesEditor,
+): CommitStorage {
+  const env = deps.env();
+  if (!env.githubRepo) return createFilesystemStorage({ root: vaultDir });
+
+  const { credential } = env;
+  return createGithubStorage({
+    repo: env.githubRepo,
+    ...(env.githubBranch ? { branch: env.githubBranch } : {}),
+    vaultPath: env.vaultPath,
+    baseUrl: env.githubApiUrl,
+    credential:
+      credential?.kind === "app"
+        ? {
+            app: {
+              appId: credential.appId,
+              privateKey: credential.privateKey,
+              installationId: credential.installationId,
+            },
+          }
+        : { token: credential?.token ?? "" },
+    // Only the verified identity: nothing from the request body.
+    editor: { name: editor.name, login: editor.login },
+    ...(deps.fetch ? { fetch: deps.fetch } : {}),
+    ...(deps.deployedCommit ? { deployedCommit: deps.deployedCommit } : {}),
+  });
+}
+
+/**
  * The route handler behind `/api/notes`. Every request needs a verified
  * session. Commits are made by the one server-side credential; the
  * `Edited-by` trailer comes from the session, never from the request body.
@@ -71,34 +106,6 @@ export function createNotesHandler(deps: NotesHandlerDeps) {
   return createStorageHandler(async (request) => {
     const editor = await deps.getEditor(request);
     if (!editor) throw json(401, { error: "unauthorized" });
-
-    const env = deps.env();
-    if (!env.githubRepo) {
-      return guardPaths(createFilesystemStorage({ root: vaultDir }));
-    }
-
-    const { credential } = env;
-    return guardPaths(
-      createGithubStorage({
-        repo: env.githubRepo,
-        ...(env.githubBranch ? { branch: env.githubBranch } : {}),
-        vaultPath: env.vaultPath,
-        baseUrl: env.githubApiUrl,
-        credential:
-          credential?.kind === "app"
-            ? {
-                app: {
-                  appId: credential.appId,
-                  privateKey: credential.privateKey,
-                  installationId: credential.installationId,
-                },
-              }
-            : { token: credential?.token ?? "" },
-        // Only the verified identity: nothing from the request body.
-        editor: { name: editor.name, login: editor.login },
-        ...(deps.fetch ? { fetch: deps.fetch } : {}),
-        ...(deps.deployedCommit ? { deployedCommit: deps.deployedCommit } : {}),
-      }),
-    );
+    return guardPaths(createCommitStorage(deps, editor));
   });
 }

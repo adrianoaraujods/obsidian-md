@@ -8,7 +8,7 @@ import {
   type SaveLockState,
 } from "codemirror-obsidian-md/editor";
 import type { Storage } from "codemirror-obsidian-md/storage";
-import { useSyncExternalStore } from "react";
+import { type ReactNode, useSyncExternalStore } from "react";
 
 import type { LockTimings } from "@/lib/lock-timings";
 
@@ -87,7 +87,16 @@ const button =
   "rounded-md border border-fd-border px-3 py-1.5 font-medium text-sm";
 
 /** The locked state, the timeout choices, and the one-time notice. */
-export function DeployLockPanel({ lock }: { lock: SaveLock | null }) {
+export function DeployLockPanel({
+  lock,
+  lockedMessage = "Saved. This Note is locked until your change is live on the site.",
+  timeoutMessage = "Your change is not live yet. You can wait longer, or reload the Note from GitHub.",
+}: {
+  lock: SaveLock | null;
+  /** Why it is locked and when it unlocks; the Note editor's wording by default. */
+  lockedMessage?: ReactNode;
+  timeoutMessage?: ReactNode;
+}) {
   const { status, notice } = useLockState(lock);
   if (!lock) return null;
 
@@ -99,7 +108,7 @@ export function DeployLockPanel({ lock }: { lock: SaveLock | null }) {
           data-testid="lock-locked"
           role="status"
         >
-          Saved. This Note is locked until your change is live on the site.
+          {lockedMessage}
         </p>
       )}
       {status === "timeout" && (
@@ -108,10 +117,7 @@ export function DeployLockPanel({ lock }: { lock: SaveLock | null }) {
           data-testid="lock-timeout"
           role="alert"
         >
-          <p className="mb-2">
-            Your change is not live yet. You can wait longer, or reload the Note
-            from GitHub.
-          </p>
+          <p className="mb-2">{timeoutMessage}</p>
           <div className="flex gap-2">
             <button
               className={button}

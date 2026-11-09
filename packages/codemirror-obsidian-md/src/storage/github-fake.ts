@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 export interface FakeContentsApiOptions {
   /** `owner/name`. Requests for any other repo get a 404. */
   repo: string;
-  /** The only branch that exists. Default `main`. */
+  /** The only branch that exists (and the default branch). Default `main`. */
   branch?: string;
   /** Default `https://api.github.test`. */
   baseUrl?: string;
@@ -19,7 +19,10 @@ export interface FakeAuthor {
 export interface FakeCommit {
   sha: string;
   message: string;
+  /** The first path the commit changed, or `""`. */
   path: string;
+  /** Every path the commit changed. */
+  paths: string[];
   author: FakeAuthor & { date: string };
 }
 
@@ -27,6 +30,8 @@ export interface FakeRequest {
   method: string;
   url: string;
   authorization: string | null;
+  /** Parsed JSON body, when the request had one. */
+  body?: unknown;
 }
 
 export interface FakeContentsApi {
@@ -48,6 +53,8 @@ export interface FakeContentsApi {
    * with any branch commit reports `diverged`. Returns its SHA.
    */
   divergentCommit(): string;
+  /** SHA of the branch head, the base a Git Data commit must start from. */
+  head(): string;
   /** Blob SHA of a file, as GitHub computes it. */
   shaOf(path: string): string;
   /** Current text of every file, by repo path. */
@@ -73,7 +80,8 @@ function json(status: number, body: unknown): Response {
  * In-memory stand-in for the parts of the GitHub REST API the storage uses,
  * with the same SHA semantics: reading returns the blob SHA, a PUT or DELETE
  * with a stale SHA is a 409, a PUT without a SHA on an existing path is a 422,
- * and each write is one commit. Intended for tests, including end-to-end ones
+ * and each write is one commit. It also serves the Git Data API (blobs, trees,
+ * commits, and a ref update that refuses anything but a fast-forward). Intended for tests, including end-to-end ones
  * that wrap `fetch` in an HTTP server.
  */
 export function createFakeContentsApi(
@@ -92,16 +100,61 @@ export function createFakeContentsApi(
   const installationToken = "ghs_fake_installation_token";
   let counter = 0;
 
-  function commit(path: string, message: string, author: FakeAuthor) {
+  const rootSha = createHash("sha1").update("root commit").digest("hex");
+  const blobs = new Map<string, string>();
+  const trees = new Map<string, Map<string, string>>();
+  /** Commits made with the Git Data API that no ref points at yet. */
+  const pendingTrees = new Map<string, string>();
+  const pending = new Map<
+    string,
+    { message: string; tree: string; parent: string }
+  >();
+
+  function head(): string {
+    return commits[commits.length - 1]?.sha ?? rootSha;
+  }
+
+  function commit(
+    path: string,
+    message: string,
+    author: FakeAuthor,
+    paths: string[] = path ? [path] : [],
+    sha?: string,
+  ) {
     counter += 1;
     const entry: FakeCommit = {
-      sha: createHash("sha1").update(`commit ${counter}`).digest("hex"),
+      sha: sha ?? createHash("sha1").update(`commit ${counter}`).digest("hex"),
       message,
       path,
+      paths,
       author: { ...author, date: author.date ?? new Date().toISOString() },
     };
     commits.push(entry);
     return entry;
+  }
+
+  /** Register the files as a tree (path to blob SHA) and return its SHA. */
+  function treeOf(files: Map<string, string>): string {
+    const entries = new Map<string, string>();
+    for (const [path, content] of files) {
+      const sha = blobSha(content);
+      blobs.set(sha, content);
+      entries.set(path, sha);
+    }
+    return registerTree(entries);
+  }
+
+  function registerTree(entries: Map<string, string>): string {
+    const sha = createHash("sha1")
+      .update(
+        [...entries]
+          .sort(([a], [b]) => (a < b ? -1 : 1))
+          .map(([path, blob]) => `${path}\0${blob}`)
+          .join("\n"),
+      )
+      .digest("hex");
+    trees.set(sha, entries);
+    return sha;
   }
 
   const bot: FakeAuthor = { name: "Fake Bot", login: "fake-bot" };
@@ -116,14 +169,145 @@ export function createFakeContentsApi(
       .join("/");
   }
 
+  async function handleGitData(
+    rest: string,
+    request: Request,
+    url: URL,
+  ): Promise<Response | null> {
+    const base = `/repos/${repo}`;
+    if (rest === base && request.method === "GET") {
+      return json(200, { default_branch: branch });
+    }
+    const ref = `${base}/git/ref/heads/${branch}`;
+    if (rest === ref && request.method === "GET") {
+      return json(200, {
+        ref: `refs/heads/${branch}`,
+        object: { sha: head() },
+      });
+    }
+    const commitMatch = rest.match(new RegExp(`^${base}/git/commits/([^/]+)$`));
+    if (commitMatch && request.method === "GET") {
+      const sha = commitMatch[1] ?? "";
+      if (sha === head()) {
+        return json(200, { sha, tree: { sha: treeOf(new Map(store)) } });
+      }
+      const known = pendingTrees.get(sha);
+      if (known) return json(200, { sha, tree: { sha: known } });
+      return json(404, { message: "Not Found" });
+    }
+    const treeMatch = rest.match(new RegExp(`^${base}/git/trees/([^/]+)$`));
+    if (treeMatch && request.method === "GET") {
+      const entries = trees.get(treeMatch[1] ?? "");
+      if (!entries || url.searchParams.get("recursive") !== "1") {
+        return json(404, { message: "Not Found" });
+      }
+      return json(200, {
+        sha: treeMatch[1],
+        truncated: false,
+        tree: [...entries].map(([path, sha]) => ({
+          path,
+          mode: "100644",
+          type: "blob",
+          sha,
+        })),
+      });
+    }
+    if (rest === `${base}/git/blobs` && request.method === "POST") {
+      const body = (await request.json()) as {
+        content: string;
+        encoding: string;
+      };
+      if (body.encoding !== "base64") {
+        return json(422, { message: "Only base64 is supported here" });
+      }
+      const text = Buffer.from(body.content, "base64").toString("utf8");
+      const sha = blobSha(text);
+      blobs.set(sha, text);
+      return json(201, { sha });
+    }
+    if (rest === `${base}/git/trees` && request.method === "POST") {
+      const body = (await request.json()) as {
+        base_tree?: string;
+        tree: Array<{ path: string; mode: string; sha: string | null }>;
+      };
+      const entries = new Map(
+        body.base_tree ? (trees.get(body.base_tree) ?? []) : [],
+      );
+      for (const entry of body.tree) {
+        if (entry.sha === null) entries.delete(entry.path);
+        else if (blobs.has(entry.sha)) entries.set(entry.path, entry.sha);
+        else return json(422, { message: "Tree references a missing blob" });
+      }
+      return json(201, { sha: registerTree(entries) });
+    }
+    if (rest === `${base}/git/commits` && request.method === "POST") {
+      const body = (await request.json()) as {
+        message: string;
+        tree: string;
+        parents: string[];
+      };
+      if (!trees.has(body.tree)) {
+        return json(422, { message: "Tree does not exist" });
+      }
+      counter += 1;
+      const sha = createHash("sha1").update(`commit ${counter}`).digest("hex");
+      pending.set(sha, {
+        message: body.message,
+        tree: body.tree,
+        parent: body.parents[0] ?? "",
+      });
+      pendingTrees.set(sha, body.tree);
+      return json(201, { sha });
+    }
+    if (
+      rest === ref.replace("/git/ref/", "/git/refs/") &&
+      request.method === "PATCH"
+    ) {
+      const body = (await request.json()) as { sha: string; force?: boolean };
+      const target = pending.get(body.sha);
+      if (!target) return json(422, { message: "Object does not exist" });
+      if (body.force) {
+        return json(422, {
+          message: "This fake never accepts a forced update",
+        });
+      }
+      if (target.parent !== head()) {
+        return json(422, { message: "Update is not a fast forward" });
+      }
+      const before = new Map(store);
+      const after = new Map<string, string>();
+      for (const [path, blob] of trees.get(target.tree) ?? []) {
+        after.set(path, blobs.get(blob) ?? "");
+      }
+      store.clear();
+      for (const [path, content] of after) store.set(path, content);
+      const changed = [...new Set([...before.keys(), ...after.keys()])]
+        .filter((path) => before.get(path) !== after.get(path))
+        .sort();
+      commit(changed[0] ?? "", target.message, bot, changed, body.sha);
+      pending.delete(body.sha);
+      return json(200, {
+        ref: `refs/heads/${branch}`,
+        object: { sha: body.sha },
+      });
+    }
+    return null;
+  }
+
   async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const prefix = new URL(baseUrl).pathname.replace(/\/$/, "");
     const rest = url.pathname.slice(prefix.length);
+    const raw = request.method === "GET" ? "" : await request.clone().text();
+    let body: unknown;
+    try {
+      body = raw ? JSON.parse(raw) : undefined;
+    } catch {}
     requests.push({
       method: request.method,
       url: request.url,
       authorization: request.headers.get("authorization"),
+      ...(body === undefined ? {} : { body }),
     });
 
     const mint = rest.match(/^\/app\/installations\/[^/]+\/access_tokens$/);
@@ -141,6 +325,9 @@ export function createFakeContentsApi(
     if (!request.headers.get("authorization")) {
       return json(401, { message: "Requires authentication" });
     }
+
+    const git = await handleGitData(rest, request, url);
+    if (git) return git;
 
     const path = contentsPath(rest);
     if (path !== null) {
@@ -212,7 +399,9 @@ export function createFakeContentsApi(
       const wanted = url.searchParams.get("path");
       const sha = url.searchParams.get("sha");
       if (sha && sha !== branch) return json(404, { message: "Not Found" });
-      const latest = [...commits].reverse().find((c) => c.path === wanted);
+      const latest = [...commits]
+        .reverse()
+        .find((c) => c.paths.includes(wanted ?? ""));
       return json(
         200,
         latest
@@ -247,11 +436,16 @@ export function createFakeContentsApi(
         }
         return json(200, { status: "diverged" });
       }
-      const from = commits.findIndex((c) => c.sha === a);
-      const to = commits.findIndex((c) => c.sha === b);
-      if (from < 0 || to < 0) return json(404, { message: "Not Found" });
+      const from = a === rootSha ? -1 : commits.findIndex((c) => c.sha === a);
+      const to = b === rootSha ? -1 : commits.findIndex((c) => c.sha === b);
+      if ((from < 0 && a !== rootSha) || (to < 0 && b !== rootSha))
+        return json(404, { message: "Not Found" });
       const status = to === from ? "identical" : to > from ? "ahead" : "behind";
-      return json(200, { status });
+      const files = commits
+        .slice(from + 1, to + 1)
+        .flatMap((c) => c.paths)
+        .map((filename) => ({ filename }));
+      return json(200, { status, files });
     }
 
     return json(404, { message: "Not Found" });
@@ -278,6 +472,7 @@ export function createFakeContentsApi(
       divergent.add(sha);
       return sha;
     },
+    head,
     shaOf: (path) => {
       const content = store.get(path);
       if (content === undefined) throw new Error(`no such file: ${path}`);

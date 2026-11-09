@@ -2,8 +2,6 @@
 
 The [open editor Example](../fumadocs-editor) plus sign-in. Anyone can read the Wiki; signing in with GitHub allows editing. It uses [Better Auth](https://www.better-auth.com) in stateless mode (no database) and a plain GitHub OAuth App that proves identity only. Terms such as Vault, Note and Wiki are defined in [`GLOSSARY.md`](../../GLOSSARY.md); the design is in [ADR 0011](../../docs/adr/0011-codemirror-text-editor.md) onward, notably [0013](../../docs/adr/0013-github-app-user-tokens-stateless-auth.md) and [0015](../../docs/adr/0015-commit-with-a-shared-credential-name-the-editor-in-a-trailer.md).
 
-At the moment `/edit/<slug>` is a placeholder behind the sign-in; the editor and Save land in later tickets.
-
 ## Start a Wiki
 
 ```sh
@@ -20,6 +18,8 @@ Allow a few minutes. Do these in order.
 2. **Create the write credential.** Every Save, create or delete is committed by this one server-side credential, which names the signed-in person in the commit body (ADR 0015). Pick one:
    - a fine-grained personal access token with Contents read and write on the Vault's repo only (`GITHUB_TOKEN`); or
    - a GitHub App installed on that repo only, with Contents read and write (`GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_APP_INSTALLATION_ID`). It wins if both are set.
+
+   Contents read and write is all the Manager needs too: it creates blobs, a tree and a commit, moves the branch with a non-forced ref update, and compares commits (`/git/blobs`, `/git/trees`, `/git/commits`, `/git/refs`, `/compare`), all covered by that one permission (Metadata read is implied). The credential must be allowed to push to the deploy branch without a pull request; a branch rule that blocks direct pushes makes Apply fail, and the ref is never forced.
 3. **Set the environment variables.** Copy [`.env.example`](./.env.example) to `.env.local` for local use, and set the same names on your host. You need `BETTER_AUTH_SECRET` (at least 32 random characters), `BETTER_AUTH_URL` (the site's origin), `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_REPO` (`owner/name`), the credential, and `VAULT_PATH` (the Vault's folder inside the repo, e.g. `public/vault`). `GITHUB_BRANCH` defaults to the repo's default branch; set it to the branch the Wiki deploys from if that differs.
 4. **Deploy.** The Vault must live in the same repo as the app, so each commit is a redeploy. See the Vercel walkthrough below.
 5. **Check the first sign-in.** Open a Note and click **Edit**. You go to GitHub, authorise, and come back to `/edit/<slug>`. If a variable is missing or malformed, the first request shows one error listing all of them.
@@ -50,9 +50,18 @@ By default any GitHub account that signs in may edit, so any signed-in account c
 
 Sessions are stateless cookies, so one user cannot be signed out individually. To cut everyone off, rotate `BETTER_AUTH_SECRET`. To stop all commits, revoke or rotate the write credential (the token, or the GitHub App's key or installation). To keep one person out from now on, block their login in `policy.ts` and redeploy; their existing session stays valid until the secret is rotated.
 
+### The Manager
+
+Signed-in users can reorganize the Vault at `/manage`; a signed-out visitor is sent to GitHub sign-in and returns there. Right-click the File Tree for **Rename/Move…** on a Note and **Reorder…** on a folder or the root to open it on that item (`?focus=<path>`). The page shows the deployed Vault as a tree: drag a Note, Asset or folder onto a folder, or use "Move to…" and "Rename"; reorder siblings by dragging or with the up and down buttons; add, rename and remove Separators; edit a folder's title. Changes are staged in the browser, and Apply makes one commit through the Git Data API (`POST /api/manage`, using the same server-side credential as Save). The moves, the rewritten links and the `meta.json` changes land together or not at all; moving a Note changes its URL and old URLs do not redirect. The commit is `Reorganize <n> items`, or `Move|Rename <path>` for a single change, with the same `Edited-with` / `Edited-by` trailer as a Save.
+
+- **Deploy lock.** The Manager reuses the Note editor's lock. After Apply it locks until the deployed build is at or after the new commit (polling `GET /api/build`), and it opens already locked if the repo's HEAD is ahead of the deployed build, whoever caused that. With no build commit to compare (see `/api/build` above) it cannot tell, so nothing locks.
+- **A commit landed meanwhile.** If HEAD moved since the page opened and none of the files the changeset touches changed, the same changes are applied on top of it. Otherwise nothing is applied (409) and you are asked to reload. The branch is never force-updated.
+- **A refused credential.** A banner says so and the staged changes are kept so you can retry.
+- **`VAULT_DIR`.** The page reads the Notes' text and Assets from the Vault directory at request time (`VAULT_DIR`, default `public/vault`), not at build time, so that directory must be present where the server runs. The tree itself is the Notes the build read.
+
 ### Reverting abusive commits
 
-Every edit is an ordinary commit with the subject `Update|Create|Delete <path>` and a body of `Edited-with: obsidian-md editor` and `Edited-by: Name (@login)`, built on the server from the verified session. Find one account's commits by searching the history for its `Edited-by` trailer (`git log --grep "Edited-by:.*@login"`) and undo them with `git revert <sha>`; the push redeploys the Wiki.
+Every edit is an ordinary commit with the subject `Update|Create|Delete <path>` (`Move|Rename <path>` or `Reorganize <n> items` for the Manager) and a body of `Edited-with: obsidian-md editor` and `Edited-by: Name (@login)`, built on the server from the verified session. Find one account's commits by searching the history for its `Edited-by` trailer (`git log --grep "Edited-by:.*@login"`) and undo them with `git revert <sha>`; the push redeploys the Wiki.
 
 ## Environment
 
@@ -62,6 +71,7 @@ Every variable is listed, with a comment, in [`.env.example`](./.env.example). T
 
 - `src/lib/env.ts`: validation (`parseEnv`, `getEnv`, `requireRepoInProduction`).
 - `src/lib/auth/config.ts`: the Better Auth instance (`createAuth`). `index.ts` creates it lazily (`getAuth`); `session.ts` has `getSession` and `requireEditor`; `policy.ts` is the access hook; `client.ts` is the browser client.
+- `src/lib/manage.ts` and `src/app/api/manage`: the commit route behind the Manager; `src/lib/manager.ts` plans a changeset from the staged changes; `src/components/manager` is the drag-and-drop screen (copy and restyle it).
 - `src/app/api/auth/[...all]`: Better Auth's handler. `src/app/api/sign-in`: a GET redirect into GitHub OAuth, used by Edit.
 
 ## Tests

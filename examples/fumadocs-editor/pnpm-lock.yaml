@@ -11,9 +11,30 @@ importers:
 
   .:
     dependencies:
+      '@base-ui/react':
+        specifier: ^1.9.0
+        version: 1.9.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@codemirror/state':
+        specifier: ^6.7.6
+        version: 6.7.6
+      '@codemirror/view':
+        specifier: ^6.43.15
+        version: 6.43.15
+      '@dnd-kit/core':
+        specifier: ^6.3.1
+        version: 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@dnd-kit/utilities':
+        specifier: ^3.2.2
+        version: 3.2.2(react@19.2.3)
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      codemirror-obsidian-md:
+        specifier: ^0.1.0
+        version: 0.1.0(@codemirror/state@6.7.6)(@codemirror/view@6.43.15)(remark-obsidian-md@3.1.1(remark-gfm@4.0.1))(vitest@5.0.5(@types/node@20.19.43)(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.3.5(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
       fumadocs-core:
         specifier: 16.17.7
         version: 16.17.7(patch_hash=7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de)(@mdx-js/mdx@3.1.1)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@0.564.0(react@19.2.3))(next@16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod@4.6.7)
@@ -21,8 +42,8 @@ importers:
         specifier: 14.3.2
         version: 14.3.2(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.3.0)(fumadocs-core@16.17.7(patch_hash=7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de)(@mdx-js/mdx@3.1.1)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@0.564.0(react@19.2.3))(next@16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod@4.6.7))(next@16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(vite@8.3.5(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       fumadocs-obsidian-md:
-        specifier: ^0.1.0
-        version: 0.1.0(7b8739bd50a4ca33b2b4f83fa62d11b6)
+        specifier: ^0.1.1
+        version: 0.1.2(e025c007186e905802523ae33d2b149f)
       fumadocs-ui:
         specifier: 16.17.7
         version: 16.17.7(@types/mdx@2.0.14)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(fumadocs-core@16.17.7(patch_hash=7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de)(@mdx-js/mdx@3.1.1)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@0.564.0(react@19.2.3))(next@16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod@4.6.7))(next@16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.3.3)
@@ -49,7 +70,7 @@ importers:
         version: 19.2.3(react@19.2.3)
       react-obsidian-md:
         specifier: ^0.1.0
-        version: 0.1.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(remark-obsidian-md@3.0.0(remark-gfm@4.0.1))
+        version: 0.1.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(remark-obsidian-md@3.1.1(remark-gfm@4.0.1))
       rehype-katex:
         specifier: ^7.0.1
         version: 7.0.1
@@ -60,11 +81,14 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0
       remark-obsidian-md:
-        specifier: ^3.0.0
-        version: 3.0.0(remark-gfm@4.0.1)
+        specifier: ^3.1.0
+        version: 3.1.1(remark-gfm@4.0.1)
       shadcn:
         specifier: ^3.8.4
         version: 3.8.5(@types/node@20.19.43)(typescript@5.9.3)
+      sonner:
+        specifier: ^2.0.8
+        version: 2.0.8(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       tailwind-merge:
         specifier: ^3.4.1
         version: 3.7.0
@@ -277,6 +301,40 @@ packages:
 
   '@braintree/sanitize-url@6.0.4':
     resolution: {integrity: sha512-s3jaWicZd0pkP0jf5ysyHUI/RE7MHos6qlToFcGWXVp+ykHOy77OUMrfbgJ9it2C5bow7OIQwYYaHjk9XlBQ2A==}
+
+  '@codemirror/autocomplete@6.20.4':
+    resolution: {integrity: sha512-yF8RhOf2SXlg00+qtupzLhrglcas61boqaONiNcbPIebHCpJocpqTBA6dyrtUrQO47hqyTdeob/3XnYilT7TaQ==}
+
+  '@codemirror/commands@6.11.1':
+    resolution: {integrity: sha512-O/4hG3SC1YwcmQ0d2UVNDs+AsaNWd1iHVxbTeEBuqH+6bExAiPK3iS/BvpY6rZGURALv4ZD3sIgcCmRvw3ehBg==}
+
+  '@codemirror/language@6.13.1':
+    resolution: {integrity: sha512-zfvU2r3TyylQLMj/te+5CnQ0rSqZi8B1oTCBbQkagcLW4Xc6imab6qN+pEJhsuNOLaJqiRyBXp9UhWA1DhVvDw==}
+
+  '@codemirror/state@6.7.6':
+    resolution: {integrity: sha512-kAz+AncRtKuIknedxT1bq4XwXv4UowhbkHU1myPrtVb/jZtImWuV5BXzv5vK6i3kYACsdiZiQKFQQ5Mq7elW8w==}
+
+  '@codemirror/streamparser@6.0.0':
+    resolution: {integrity: sha512-JTFPF6xrfjt0mnfGPgzcLiMwYmvIyNaoizp8BYzv8FE8KrT6GBGDZ190rtt+O7Wke3gG/MFHyiY9YGNeimof4w==}
+
+  '@codemirror/view@6.43.15':
+    resolution: {integrity: sha512-HHsfpqFeHyXLs983pSRe38Xajs0vFWZQ2BuX0m7Ki8w3jZ5iD8cuR3lBz2/5/X53Dhf32SBHKh6rtSTB6tKeGw==}
+
+  '@dnd-kit/accessibility@3.1.1':
+    resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
+    peerDependencies:
+      react: '>=16.8.0'
+
+  '@dnd-kit/core@6.3.1':
+    resolution: {integrity: sha512-xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  '@dnd-kit/utilities@3.2.2':
+    resolution: {integrity: sha512-+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg==}
+    peerDependencies:
+      react: '>=16.8.0'
 
   '@dotenvx/dotenvx@1.75.1':
     resolution: {integrity: sha512-/BITOC9dmS/edY2zQwZNicQ059O6RKabtQfyEafV0nGtfYRNHYy1DIPiYVcov40+tob9hfmBnbR963dS+EQ1DQ==}
@@ -702,6 +760,18 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@lezer/common@1.5.5':
+    resolution: {integrity: sha512-Pw7PVCndruF1pb3ebCxpSVpkMHSDjwRCLcTRw+RizUKco5QbWylwq2g4lnG/RYN7yTTQDXE9F77MwtkAyphrjg==}
+
+  '@lezer/highlight@1.2.5':
+    resolution: {integrity: sha512-O1GMVKgtf5YspFaRzpmqkVgMtIk2HG9uMAbH6wdAIdNh3TVzCsch/+cRi+6l2//UGDKe6NB9BW3cvuR5ezMQ0w==}
+
+  '@lezer/lr@1.4.12':
+    resolution: {integrity: sha512-On9HU4oMMiHPMkQDgoTnGahjgG5n/MkN38CgG77sMraKLL+3JBbeQNi1FcCXV9QRqwF9/BUXP3caHyJC1fBOTQ==}
+
+  '@marijn/find-cluster-break@1.0.4':
+    resolution: {integrity: sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==}
 
   '@mdx-js/mdx@3.1.1':
     resolution: {integrity: sha512-f6ZO2ifpwAQIpzGWaBQT2TXxPv6z3RBzQKpVftEWN78Vl/YweF1uwussDx8ECAXVtr3Rs89fKyG9YlzUs9DyGQ==}
@@ -1688,6 +1758,18 @@ packages:
   code-block-writer@13.0.3:
     resolution: {integrity: sha512-Oofo0pq3IKnsFtuHqSF7TqBfr71aeyZDVJ0HpmqB7FBM2qEigL0iPONSCZSO9pE9dZTAxANe5XHG9Uy0YMv8cg==}
 
+  codemirror-obsidian-md@0.1.0:
+    resolution: {integrity: sha512-2w2gdXzGS45QHw9J4XVVxTSSfYYhISiQ9NDO3aewD1Lqq+XHPNP3Kud0aY0081ZtatJZfIUrOTsQXWx8HgMPrg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      '@codemirror/state': ^6.7.6
+      '@codemirror/view': ^6.43.15
+      remark-obsidian-md: ^3.1.0
+      vitest: ^5.0.0
+    peerDependenciesMeta:
+      vitest:
+        optional: true
+
   collapse-white-space@2.1.0:
     resolution: {integrity: sha512-loKTxY1zCOuG4j9f6EPnuyyYkf58RnhhWTvRoZEokgB+WbdXehfjFviyOVYkqzEWz1Q5kRiZdBYS5SwxbQYwzw==}
 
@@ -1766,6 +1848,9 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
+
+  crelt@1.0.7:
+    resolution: {integrity: sha512-aK6BbWfhf4U/wCcLHKPJl/xa6VkVstRaPywWtMKGwuOLc/wZTyQYuoxgvZnNsBvv7Kg3YTBQYYBCggcviQczuA==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -2345,8 +2430,8 @@ packages:
       vite:
         optional: true
 
-  fumadocs-obsidian-md@0.1.0:
-    resolution: {integrity: sha512-qypDH+2slscHZfo7x9PVaWnqg9lSJhxeuIBygF50U9xA67wdDT/1n7RZNwj20IDAjcQ/511pcH+xjXx4qVxyCQ==}
+  fumadocs-obsidian-md@0.1.2:
+    resolution: {integrity: sha512-90VouaA2vwDvGEQnf8z8kI4rxFxy2smYudX6Mxrt9zJxMMdICjeBW2RGWJnOnBp1W9cI0ENOrxN6Bul7TbrkBg==}
     engines: {node: '>=20'}
     hasBin: true
     peerDependencies:
@@ -2355,7 +2440,7 @@ packages:
       fumadocs-ui: ^16.0.0
       react: ^19.0.0
       react-dom: ^19.0.0
-      react-obsidian-md: ^0.1.0
+      react-obsidian-md: ^0.1.1
 
   fumadocs-ui@16.17.7:
     resolution: {integrity: sha512-3zqnVKUnDoGRLu2I0IniEwnurW/eGQeZNS80bgrebPdfp1BYd+51EeBEwxgGJgNWBAFLFxQvuE0TBDgqKVndsQ==}
@@ -3599,8 +3684,9 @@ packages:
   remark-mdx@3.1.1:
     resolution: {integrity: sha512-Pjj2IYlUY3+D8x00UJsIOg5BEvfMyeI+2uLPn9VO9Wg4MEtN/VTIq2NEJQfde9PnX15KgtHyl9S0BcTnWrIuWg==}
 
-  remark-obsidian-md@3.0.0:
-    resolution: {integrity: sha512-EvyB4pyHNiU6D5BcICvRg2b7VH0tsAuYYI0wopS6fRxjK+T12WG/RXY0wbIzPiM+cxoOAN95gBfJnmpc6rtUTg==}
+  remark-obsidian-md@3.1.1:
+    resolution: {integrity: sha512-4Ep6X8Y2LztPvhQQXtU45OD3SMew3MUnssWdYLH1EbbkrsM7ienYgsgvbNxQchEeovsmXIiy7P2oadeVVQhE+A==}
+    engines: {node: '>=20'}
     peerDependencies:
       remark-gfm: ^4.0.0
 
@@ -3751,6 +3837,16 @@ packages:
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
 
+  sonner@2.0.8:
+    resolution: {integrity: sha512-UM/ByIoFra8yzV75n1o0Puu0bw5U/9UNnDacrJNspekBewIfsQ3D6ez1nvlWpt7aTsO6rujQtifBpycwIivqlg==}
+    peerDependencies:
+      '@types/react': ^18.0.0 || ^19.0.0
+      react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
   source-map-js@1.2.2:
     resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
@@ -3814,6 +3910,9 @@ packages:
   strip-final-newline@4.0.0:
     resolution: {integrity: sha512-aulFJcD6YK8V1G7iRB5tigAP4TsHBZZrOV8pjV++zdUwmeV8uzbY7yn6h9MswN62adStNZFuCIx4haBnRuMDaw==}
     engines: {node: '>=18'}
+
+  style-mod@4.1.4:
+    resolution: {integrity: sha512-XXWIQt633/EpAFx8aZDOTjBzrCaGmhvEQlQo6MVPfa2OzO2cWo+4hV9h+6UkHYlXGfy+ODXKUdP7Pthmcu5ATw==}
 
   style-to-js@1.1.21:
     resolution: {integrity: sha512-RjQetxJrrUJLQPHbLku6U/ocGtzyjbJMP9lCNK7Ag0CNh690nSH8woqWH9u16nMjYBAok+i7JO1NP2pOy8IsPQ==}
@@ -4123,6 +4222,9 @@ packages:
       jsdom:
         optional: true
 
+  w3c-keyname@2.2.8:
+    resolution: {integrity: sha512-dpojBhNsCNN7T82Tm7k26A6G9ML3NkhDsnw9n/eoxSRlVBB4CEtIQ/KTCLI2Fwf3ataSXRhYFkQi3SlnFwPvPQ==}
+
   web-namespaces@2.0.1:
     resolution: {integrity: sha512-bKr1DkiNa2krS7qxNtdrtHAmzuYGFQLiQ13TsorsdT6ULTkPLKuu5+GsFpDlg6JFjUTwX2DyhMPG2be8uPrqsQ==}
 
@@ -4429,6 +4531,61 @@ snapshots:
 
   '@braintree/sanitize-url@6.0.4': {}
 
+  '@codemirror/autocomplete@6.20.4':
+    dependencies:
+      '@codemirror/language': 6.13.1
+      '@codemirror/state': 6.7.6
+      '@codemirror/view': 6.43.15
+      '@lezer/common': 1.5.5
+
+  '@codemirror/commands@6.11.1':
+    dependencies:
+      '@codemirror/language': 6.13.1
+      '@codemirror/state': 6.7.6
+      '@codemirror/view': 6.43.15
+      '@lezer/common': 1.5.5
+
+  '@codemirror/language@6.13.1':
+    dependencies:
+      '@codemirror/state': 6.7.6
+      '@codemirror/streamparser': 6.0.0
+      '@codemirror/view': 6.43.15
+      '@lezer/common': 1.5.5
+      '@lezer/highlight': 1.2.5
+      '@lezer/lr': 1.4.12
+      style-mod: 4.1.4
+
+  '@codemirror/state@6.7.6':
+    dependencies:
+      '@marijn/find-cluster-break': 1.0.4
+
+  '@codemirror/streamparser@6.0.0': {}
+
+  '@codemirror/view@6.43.15':
+    dependencies:
+      '@codemirror/state': 6.7.6
+      crelt: 1.0.7
+      style-mod: 4.1.4
+      w3c-keyname: 2.2.8
+
+  '@dnd-kit/accessibility@3.1.1(react@19.2.3)':
+    dependencies:
+      react: 19.2.3
+      tslib: 2.9.1
+
+  '@dnd-kit/core@6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@dnd-kit/accessibility': 3.1.1(react@19.2.3)
+      '@dnd-kit/utilities': 3.2.2(react@19.2.3)
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+      tslib: 2.9.1
+
+  '@dnd-kit/utilities@3.2.2(react@19.2.3)':
+    dependencies:
+      react: 19.2.3
+      tslib: 2.9.1
+
   '@dotenvx/dotenvx@1.75.1':
     dependencies:
       '@dotenvx/primitives': 0.8.0
@@ -4721,6 +4878,18 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  '@lezer/common@1.5.5': {}
+
+  '@lezer/highlight@1.2.5':
+    dependencies:
+      '@lezer/common': 1.5.5
+
+  '@lezer/lr@1.4.12':
+    dependencies:
+      '@lezer/common': 1.5.5
+
+  '@marijn/find-cluster-break@1.0.4': {}
 
   '@mdx-js/mdx@3.1.1':
     dependencies:
@@ -5612,6 +5781,22 @@ snapshots:
 
   code-block-writer@13.0.3: {}
 
+  codemirror-obsidian-md@0.1.0(@codemirror/state@6.7.6)(@codemirror/view@6.43.15)(remark-obsidian-md@3.1.1(remark-gfm@4.0.1))(vitest@5.0.5(@types/node@20.19.43)(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.3.5(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))):
+    dependencies:
+      '@codemirror/autocomplete': 6.20.4
+      '@codemirror/commands': 6.11.1
+      '@codemirror/state': 6.7.6
+      '@codemirror/view': 6.43.15
+      remark-gfm: 4.0.1
+      remark-math: 6.0.0
+      remark-obsidian-md: 3.1.1(remark-gfm@4.0.1)
+      remark-parse: 11.0.0
+      unified: 11.0.5
+    optionalDependencies:
+      vitest: 5.0.5(@types/node@20.19.43)(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.3.5(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+    transitivePeerDependencies:
+      - supports-color
+
   collapse-white-space@2.1.0: {}
 
   color-convert@2.0.1:
@@ -5676,6 +5861,8 @@ snapshots:
       parse-json: 5.2.0
     optionalDependencies:
       typescript: 5.9.3
+
+  crelt@1.0.7: {}
 
   cross-spawn@7.0.6:
     dependencies:
@@ -6291,17 +6478,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  fumadocs-obsidian-md@0.1.0(7b8739bd50a4ca33b2b4f83fa62d11b6):
+  fumadocs-obsidian-md@0.1.2(e025c007186e905802523ae33d2b149f):
     dependencies:
       fumadocs-core: 16.17.7(patch_hash=7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de)(@mdx-js/mdx@3.1.1)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@0.564.0(react@19.2.3))(next@16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod@4.6.7)
       fumadocs-mdx: 14.3.2(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.3.0)(fumadocs-core@16.17.7(patch_hash=7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de)(@mdx-js/mdx@3.1.1)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@0.564.0(react@19.2.3))(next@16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod@4.6.7))(next@16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(vite@8.3.5(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       fumadocs-ui: 16.17.7(@types/mdx@2.0.14)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(fumadocs-core@16.17.7(patch_hash=7d24487ba7aa1e067f05ad61d3d070894dffc95dcf2965f36055da20c57fe4de)(@mdx-js/mdx@3.1.1)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@0.564.0(react@19.2.3))(next@16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(zod@4.6.7))(next@16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.3.3)
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
-      react-obsidian-md: 0.1.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(remark-obsidian-md@3.0.0(remark-gfm@4.0.1))
+      react-obsidian-md: 0.1.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(remark-obsidian-md@3.1.1(remark-gfm@4.0.1))
       remark-breaks: 4.0.0
       remark-gfm: 4.0.1
-      remark-obsidian-md: 3.0.0(remark-gfm@4.0.1)
+      remark-obsidian-md: 3.1.1(remark-gfm@4.0.1)
       yaml: 2.9.1
     transitivePeerDependencies:
       - supports-color
@@ -7829,7 +8016,7 @@ snapshots:
       react: 19.2.3
       scheduler: 0.27.0
 
-  react-obsidian-md@0.1.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(remark-obsidian-md@3.0.0(remark-gfm@4.0.1)):
+  react-obsidian-md@0.1.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(remark-obsidian-md@3.1.1(remark-gfm@4.0.1)):
     dependencies:
       '@base-ui/react': 1.9.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       hast-util-from-html: 2.0.3
@@ -7837,7 +8024,7 @@ snapshots:
       hast-util-to-jsx-runtime: 2.3.6
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
-      remark-obsidian-md: 3.0.0(remark-gfm@4.0.1)
+      remark-obsidian-md: 3.1.1(remark-gfm@4.0.1)
     transitivePeerDependencies:
       - '@date-fns/tz'
       - '@types/react'
@@ -7987,7 +8174,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  remark-obsidian-md@3.0.0(remark-gfm@4.0.1):
+  remark-obsidian-md@3.1.1(remark-gfm@4.0.1):
     dependencies:
       github-slugger: 2.0.0
       js-yaml: 5.5.0
@@ -8264,6 +8451,13 @@ snapshots:
 
   sisteransi@1.0.5: {}
 
+  sonner@2.0.8(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+    dependencies:
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+    optionalDependencies:
+      '@types/react': 19.3.0
+
   source-map-js@1.2.2: {}
 
   source-map@0.6.1: {}
@@ -8316,6 +8510,8 @@ snapshots:
   strip-final-newline@2.0.0: {}
 
   strip-final-newline@4.0.0: {}
+
+  style-mod@4.1.4: {}
 
   style-to-js@1.1.21:
     dependencies:
@@ -8555,6 +8751,8 @@ snapshots:
       '@types/node': 20.19.43
     transitivePeerDependencies:
       - msw
+
+  w3c-keyname@2.2.8: {}
 
   web-namespaces@2.0.1: {}
 

@@ -130,6 +130,24 @@ _Avoid_: surround, auto-format
 Typing an opening bracket or quote with nothing selected inserts its closer too and leaves the cursor between them; typing the closer steps over it, and Backspace on an empty pair removes both. A quote typed after a word character does not pair, so apostrophes in prose are left alone.
 _Avoid_: auto-close, bracket matching
 
+## Organizing
+
+**File Tree**:
+The Wiki's sidebar listing of a Vault's Notes and folders, in the order the Vault's `meta.json` files give. It always shows the deployed Vault, so a change is visible there only after the Wiki is redeployed. Right-clicking an item opens its menu (Edit, Rename/Move, Reorder, and where the Example can write, New note and Delete).
+_Avoid_: sidebar, navigation, page tree
+
+**Separator**:
+A titled label in a folder's order that groups the items listed after it, up to the next Separator. It moves no file and changes no Slug.
+_Avoid_: group, section, divider, heading
+
+**Reorganize**:
+To move or rename Notes, Assets and folders, reorder them, and add or remove Separators, as one staged set of changes that is applied as a single commit. Links that would break are rewritten in the same commit.
+_Avoid_: restructure, rearrange, refactor
+
+**Manager**:
+The page where a user reorganizes a Vault by dragging items in a tree, opened from the File Tree's menu. In the authenticated Example it needs sign-in, works on the deployed Vault and is locked while a redeploy is pending; in the open Example it writes to the local Vault and exists only in development.
+_Avoid_: file manager, explorer, organizer
+
 ## Styling
 
 **Stylesheet**:

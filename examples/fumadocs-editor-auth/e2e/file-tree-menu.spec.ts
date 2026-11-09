@@ -30,6 +30,27 @@ async function rightClick(page: Page, { signedIn = true } = {}) {
   await treeLink(page, "Beta Note").click({ button: "right" });
 }
 
+// A folder row's name can start with its `icon`, which Fumadocs prints as text.
+const folderRow = (page: Page, name: string) =>
+  page
+    .locator("#nd-sidebar")
+    .getByRole("button", { name: new RegExp(`${name}$`) });
+
+/** Right-click the empty part of the File Tree, below the last row. */
+async function rightClickRoot(page: Page) {
+  await expect(page.getByTestId("account")).toBeVisible();
+  const box = await page
+    .locator("#nd-sidebar [data-radix-scroll-area-viewport]")
+    .boundingBox();
+  if (!box) throw new Error("the File Tree has no box");
+  await page.mouse.click(box.x + 20, box.y + box.height - 10, {
+    button: "right",
+  });
+}
+
+const items = (page: Page) =>
+  page.getByRole("menu").getByRole("menuitem").allTextContents();
+
 test.describe("signed in", () => {
   test.beforeEach(async ({ context }) => {
     await control("reset", {});
@@ -46,6 +67,78 @@ test.describe("signed in", () => {
 
     await page.keyboard.press("Escape");
     await expect(menu).toHaveCount(0);
+  });
+
+  test("a Note also offers Rename/Move… and New note here", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await rightClick(page);
+
+    expect(await items(page)).toEqual([
+      "Edit",
+      "Rename/Move…",
+      "New note here",
+      "Delete",
+    ]);
+  });
+
+  test("Rename/Move… opens the Manager on that Note", async ({ page }) => {
+    await page.goto("/");
+    await rightClick(page);
+    await page.getByRole("menuitem", { name: "Rename/Move…" }).click();
+
+    await expect(page).toHaveURL(/\/manage\?focus=Beta\+Note\.md$/);
+    const row = page.locator('[data-path="Beta Note.md"]');
+    await expect(row).toHaveAttribute("data-focused", "true");
+    await expect(row).toBeInViewport();
+  });
+
+  test("a folder offers New note here and Reorder…", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTestId("account")).toBeVisible();
+    await folderRow(page, "Manager Fixture").click({ button: "right" });
+
+    expect(await items(page)).toEqual(["New note here", "Reorder…"]);
+    await page.getByRole("menuitem", { name: "New note here" }).click();
+    await expect(page).toHaveURL(/\/edit\/new\?folder=Manager\+Fixture$/);
+  });
+
+  test("Reorder… on a nested folder opens the Manager on it", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(page.getByTestId("account")).toBeVisible();
+    await folderRow(page, "Manager Fixture").click();
+    await folderRow(page, "Ordered").click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Reorder…" }).click();
+
+    await expect(page).toHaveURL(/\/manage\?focus=Manager\+Fixture%2FOrdered$/);
+    await expect(
+      page.locator('[data-folder="Manager Fixture/Ordered"]'),
+    ).toHaveAttribute("data-focused", "true");
+  });
+
+  test("the root of the File Tree offers Reorder…", async ({ page }) => {
+    await page.goto("/");
+    await rightClickRoot(page);
+
+    expect(await items(page)).toEqual(["Reorder…"]);
+    await page.getByRole("menuitem", { name: "Reorder…" }).click();
+
+    await expect(page).toHaveURL(/\/manage\?focus=%2F$/);
+    await expect(page.locator('[data-folder=""]')).toHaveAttribute(
+      "data-focused",
+      "true",
+    );
+  });
+
+  test("a deep link to a missing item still opens the Manager", async ({
+    page,
+  }) => {
+    await page.goto("/manage?focus=Nope%2FGone.md");
+    await expect(page.locator('[data-path="Beta Note.md"]')).toBeVisible();
+    await expect(page.locator('[data-focused="true"]')).toHaveCount(0);
   });
 
   test("Edit opens the editor for that Note", async ({ page }) => {
@@ -93,5 +186,23 @@ test("a signed-out visitor gets no menu", async ({ page }) => {
   await page.goto("/");
   await rightClick(page, { signedIn: false });
 
+  await expect(page.getByRole("menu")).toHaveCount(0);
+});
+
+test("a signed-out visitor gets no menu on a folder or the root either", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await folderRow(page, "Manager Fixture").click({ button: "right" });
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  const box = await page
+    .locator("#nd-sidebar [data-radix-scroll-area-viewport]")
+    .boundingBox();
+  if (!box) throw new Error("the File Tree has no box");
+  await page.mouse.click(box.x + 20, box.y + box.height - 10, {
+    button: "right",
+  });
   await expect(page.getByRole("menu")).toHaveCount(0);
 });

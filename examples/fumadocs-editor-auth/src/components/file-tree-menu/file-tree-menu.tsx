@@ -5,22 +5,33 @@ import { useEffect, useRef, useState } from "react";
 
 import { authClient } from "@/lib/auth/client";
 import { deleteNote } from "@/lib/delete-note";
+import type { FolderRef } from "@/lib/file-tree-targets";
 import { DeleteDialog } from "./delete-dialog";
-import { NOTE_MENU_ITEMS } from "./items";
+import { type MenuTarget, menuItemsFor } from "./items";
+import { targetAt } from "./target-at";
 
-type Open = { x: number; y: number; url: string; path: string };
+type Open = { x: number; y: number; target: MenuTarget };
 
 /**
- * Right-click menu on the sidebar's file tree: Edit and Delete (see
- * `NOTE_MENU_ITEMS`). It renders nothing for a signed-out visitor, reading
- * the session in the browser so the Wiki's pages stay static.
+ * Right-click menu on the File Tree: entries for a Note, a folder
+ * and the root of the tree (see `MENU_ITEMS`). It renders nothing for a
+ * signed-out visitor, reading the session in the browser so the Wiki's pages
+ * stay static.
  *
  * @param notes Note path by page URL, so a clicked link maps to its file.
+ * @param folders The page tree's folders, so a clicked folder maps to its path.
  */
-export function FileTreeMenu({ notes }: { notes: Record<string, string> }) {
+export function FileTreeMenu({
+  notes,
+  folders,
+}: {
+  notes: Record<string, string>;
+  folders: FolderRef[];
+}) {
   const { data: session } = authClient.useSession();
   const [open, setOpen] = useState<Open | null>(null);
-  const [deleting, setDeleting] = useState<Open | null>(null);
+  // Path of the Note whose Delete confirmation is open.
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const signedIn = Boolean(session);
   const signedInRef = useRef(signedIn);
@@ -29,16 +40,10 @@ export function FileTreeMenu({ notes }: { notes: Record<string, string> }) {
   useEffect(() => {
     const onContextMenu = (event: MouseEvent) => {
       if (!signedInRef.current) return;
-      const link = (event.target as Element | null)?.closest?.(
-        "#nd-sidebar a[href]",
-      );
-      if (!link) return;
-      const url = new URL((link as HTMLAnchorElement).href, location.href)
-        .pathname;
-      const path = notes[url];
-      if (!path) return;
+      const target = targetAt(event.target as Element | null, notes, folders);
+      if (!target) return;
       event.preventDefault();
-      setOpen({ x: event.clientX, y: event.clientY, url, path });
+      setOpen({ x: event.clientX, y: event.clientY, target });
     };
     const close = () => setOpen(null);
     const onKey = (event: KeyboardEvent) => {
@@ -53,7 +58,7 @@ export function FileTreeMenu({ notes }: { notes: Record<string, string> }) {
       document.removeEventListener("click", close);
       document.removeEventListener("keydown", onKey);
     };
-  }, [notes]);
+  }, [notes, folders]);
 
   if (!signedIn) return null;
 
@@ -65,18 +70,18 @@ export function FileTreeMenu({ notes }: { notes: Record<string, string> }) {
           role="menu"
           style={{ left: open.x, top: open.y }}
         >
-          {NOTE_MENU_ITEMS.map((item) => (
+          {menuItemsFor(open.target.kind).map((item) => (
             <button
               className="block w-full rounded px-3 py-1.5 text-left hover:bg-fd-accent"
               key={item.id}
               onClick={() => {
                 const target = open;
                 setOpen(null);
-                item.run({
-                  path: target.path,
-                  url: target.url,
-                  close: () => setOpen(null),
-                  requestDelete: () => setDeleting(target),
+                item.run(target.target, {
+                  requestDelete: () => {
+                    if (target.target.kind === "note")
+                      setDeleting(target.target.path);
+                  },
                 });
               }}
               role="menuitem"
@@ -93,13 +98,13 @@ export function FileTreeMenu({ notes }: { notes: Record<string, string> }) {
           onConfirm={async () => {
             await deleteNote(
               createStorageClient({ url: "/api/notes" }),
-              deleting.path,
+              deleting,
             );
-            setDone(`Deleted ${deleting.path}`);
+            setDone(`Deleted ${deleting}`);
             setDeleting(null);
             setTimeout(() => setDone(null), 8000);
           }}
-          path={deleting.path}
+          path={deleting}
         />
       )}
       {done && (

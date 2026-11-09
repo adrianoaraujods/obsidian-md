@@ -13,6 +13,8 @@ import {
 //
 // - "production" is a production build. It is built with only the GitHub
 //   repo variables (the build needs no secrets) and started with the rest.
+//   The Manager page reads the Vault's files from `VAULT_DIR` at request time,
+//   so the server gets it too.
 // - "development" is `next dev` in its own distDir, with no GITHUB_REPO, so
 //   the Vault is the local filesystem.
 // - A fake GitHub stands in for OAuth, so no test touches the real one.
@@ -48,6 +50,7 @@ export default defineConfig({
         "editor.spec.ts",
         "file-tree-menu.spec.ts",
         "new-note.spec.ts",
+        "manager.spec.ts",
         "lock.spec.ts",
         "save-ux.spec.ts",
         "live-preview.spec.ts",
@@ -68,7 +71,7 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: `VAULT_DIR=tests/fixtures/vault GITHUB_REPO=acme/wiki GITHUB_BRANCH=main VAULT_PATH=tests/fixtures/vault npm run build && ${authEnv(PROD_PORT)} GITHUB_REPO=acme/wiki GITHUB_BRANCH=main VAULT_PATH=tests/fixtures/vault GITHUB_TOKEN=ghp_fake npm run start -- -p ${PROD_PORT}`,
+      command: `VAULT_DIR=tests/fixtures/vault GITHUB_REPO=acme/wiki GITHUB_BRANCH=main VAULT_PATH=tests/fixtures/vault npm run build && ${authEnv(PROD_PORT)} VAULT_DIR=tests/fixtures/vault GITHUB_REPO=acme/wiki GITHUB_BRANCH=main VAULT_PATH=tests/fixtures/vault GITHUB_TOKEN=ghp_fake npm run start -- -p ${PROD_PORT}`,
       url: `http://localhost:${PROD_PORT}`,
       timeout: 300_000,
       reuseExistingServer: false,

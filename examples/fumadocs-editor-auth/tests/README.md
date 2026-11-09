@@ -9,7 +9,9 @@
   `GITHUB_API_URL` point the app at it. It is also the repo the editor saves to:
   `/api/repos/...` is the adapter's `createFakeContentsApi`, seeded with the fixture
   Vault's Notes, with `/__test/*` controls (`reset`, `reject-token`,
-  `external-write`, `state`) used by `e2e/editor.spec.ts`.
+  `external-write`, `state`) used by `e2e/editor.spec.ts`. It is seeded with every file
+  of the fixture Vault (Notes, `meta.json`, Assets), which `e2e/manager.spec.ts` moves
+  and reorders through `/manage`, asserting on the repo and its commits.
 - Ports: production 3103, development 3104, fake GitHub 3105, startup checks 3106.
   `e2e/support/config.ts` holds them and the test `BETTER_AUTH_SECRET`.
 - Most tests start signed in with `signInAs(context, baseURL, login)`

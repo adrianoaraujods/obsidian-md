@@ -61,6 +61,10 @@
       "types": "./dist/new-note/index.d.ts",
       "default": "./dist/new-note/index.js"
     },
+    "./manager": {
+      "types": "./dist/manager/index.d.ts",
+      "default": "./dist/manager/index.js"
+    },
     "./styles.css": "./dist/styles.css",
     "./editor": {
       "types": "./dist/editor/index.d.ts",

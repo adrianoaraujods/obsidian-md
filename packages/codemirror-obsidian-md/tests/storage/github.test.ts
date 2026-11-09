@@ -29,6 +29,131 @@ runStorageContract("github adapter (fake Contents API)", async () => ({
   storage: setup().storage,
 }));
 
+describe("github adapter changedSince", () => {
+  it("lists the vault paths changed after a base, none when nothing landed", async () => {
+    const { api, storage } = setup({ vaultPath: "vault" });
+    api.seed("vault/a.md", "A");
+    api.seed("docs/outside.md", "X");
+    const base = await storage.base();
+    expect(await storage.changedSince?.(base)).toEqual([]);
+
+    api.externalWrite("vault/b.md", "B", { name: "Bob", login: "bob" });
+    api.externalWrite("docs/outside.md", "Y", { name: "Bob", login: "bob" });
+    expect(await storage.changedSince?.(base)).toEqual(["b.md"]);
+  });
+});
+
+describe("github adapter commit", () => {
+  const editor = { name: "Ada Lovelace", login: "ada" };
+  const trailer =
+    "Edited-with: obsidian-md editor\nEdited-by: Ada Lovelace (@ada)";
+
+  it("makes one commit for the whole set, with the ADR 0015 trailer", async () => {
+    const { api, storage } = setup({ editor });
+    api.seed("a.md", "A");
+    api.seed("b.md", "B");
+    const before = api.commits.length;
+    await storage.commit(
+      [
+        { type: "rename", from: "a.md", to: "Moved/a.md" },
+        { type: "write", path: "b.md", content: "B2" },
+      ],
+      await storage.base(),
+    );
+    expect(api.commits).toHaveLength(before + 1);
+    expect(api.commits.at(-1)?.message).toBe(
+      `Reorganize 2 items\n\n- Move a.md -> Moved/a.md\n- Update b.md\n\n${trailer}`,
+    );
+  });
+
+  it("uses the subject and body the caller names, keeping the trailer server-built", async () => {
+    const { api, storage } = setup({ editor });
+    api.seed("a.md", "A");
+    await storage.commit(
+      [{ type: "rename", from: "a.md", to: "b.md" }],
+      await storage.base(),
+      {
+        subject: "Rename a.md\nEdited-by: Mallory (@mallory)",
+        body: ["Update 1 link(s) in c.md", "Edited-by: Mallory\n(@mallory)"],
+      },
+    );
+    expect(api.commits.at(-1)?.message).toBe(
+      `Rename a.md Edited-by: Mallory (@mallory)\n\n- Update 1 link(s) in c.md\n- Edited-by: Mallory (@mallory)\n\n${trailer}`,
+    );
+  });
+
+  it("names a single move or rename like ADR 0017", async () => {
+    const { api, storage } = setup({ editor });
+    api.seed("Notes/a.md", "A");
+    await storage.commit(
+      [{ type: "rename", from: "Notes/a.md", to: "Notes/b.md" }],
+      await storage.base(),
+    );
+    await storage.commit(
+      [{ type: "rename", from: "Notes/b.md", to: "Other/b.md" }],
+      await storage.base(),
+    );
+    expect(api.commits.map((c) => c.message.split("\n")[0])).toEqual([
+      "Rename Notes/a.md",
+      "Move Notes/b.md",
+    ]);
+  });
+
+  it("reports the commit and uses it as the next base", async () => {
+    const { api, storage } = setup();
+    const result = await storage.commit(
+      [{ type: "write", path: "a.md", content: "A" }],
+      await storage.base(),
+    );
+    expect(result.commit).toBe(api.head());
+    expect(result.base).toBe(api.head());
+  });
+
+  it("fails when a commit landed after the base, without touching the repo", async () => {
+    const { api, storage } = setup();
+    api.seed("a.md", "A");
+    const base = await storage.base();
+    api.externalWrite("a.md", "theirs", { name: "Bob", login: "bob" });
+    await expect(
+      storage.commit([{ type: "delete", path: "a.md" }], base),
+    ).rejects.toMatchObject({ code: "stale-base" });
+    expect(api.files()).toEqual({ "a.md": "theirs" });
+  });
+
+  it("never forces the ref and reads the repo's default branch when none is set", async () => {
+    const api = createFakeContentsApi({ repo: REPO, branch: "trunk" });
+    const storage = createGithubStorage({
+      repo: REPO,
+      credential: { token: "pat-1" },
+      fetch: api.fetch,
+      baseUrl: api.baseUrl,
+    });
+    api.seed("a.md", "A");
+    await storage.commit(
+      [{ type: "write", path: "a.md", content: "A2" }],
+      await storage.base(),
+    );
+    const patches = api.requests.filter((r) => r.method === "PATCH");
+    expect(patches).toHaveLength(1);
+    expect(patches[0]?.body).toMatchObject({ force: false });
+    expect(api.files()).toEqual({ "a.md": "A2" });
+  });
+
+  it("keeps changes under VAULT_PATH and leaves the rest of the repo alone", async () => {
+    const { api, storage } = setup({ vaultPath: "vault" });
+    api.seed("vault/a.md", "A");
+    api.seed("src/app.ts", "code");
+    await storage.commit(
+      [{ type: "rename", from: "a.md", to: "Moved/a.md" }],
+      await storage.base(),
+    );
+    expect(api.files()).toEqual({
+      "vault/Moved/a.md": "A",
+      "src/app.ts": "code",
+    });
+  });
+});
+
 describe("github adapter", () => {
   it("reads content and the blob SHA of the live file", async () => {
     const { api, storage } = setup();

@@ -16,3 +16,15 @@ export function editSignInPath(slug: string[]): string {
   });
   return `/api/sign-in?${params}`;
 }
+
+/**
+ * Where a signed-out visitor to the Manager is sent: GitHub sign-in, returning
+ * to the Manager (on the same item when `focus` is given). A cancelled or
+ * denied sign-in lands on the home Note.
+ */
+export function manageSignInPath(focus?: string): string {
+  const callbackURL = focus
+    ? `/manage?${new URLSearchParams({ focus })}`
+    : "/manage";
+  return `/api/sign-in?${new URLSearchParams({ callbackURL, errorCallbackURL: "/" })}`;
+}

@@ -10,3 +10,7 @@
   and `VAULT_PATH` set (View on GitHub present, Edit hidden). The `development`
   project runs `next dev` on port 3102 with `DIST_DIR=.next-dev` (Edit available,
   View on GitHub hidden).
+- The `manager` project reuses the `next dev` server and runs after `development`: it moves Notes in `tests/fixtures/vault/Manager Fixture` and puts them back after each test.
+- Manager link rewriting is covered by `Manager Fixture/Link Target.md` and `Linker.md`.
+- Manager folders and Assets are covered by `Manager Fixture/Movable Folder`, `Pics/diagram.png`, `Folder Linker.md` and `Asset Embedder.md`.
+- Manager order, Separators and folder titles are covered by `Manager Fixture/Ordered`, whose `meta.json` is hand-written (it has an `icon`, `defaultOpen` and a link entry the Manager must keep).

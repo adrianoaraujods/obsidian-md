@@ -15,3 +15,12 @@ export function saveErrorMessage(error: unknown): string {
     ? CREDENTIAL_MESSAGE
     : NETWORK_MESSAGE;
 }
+
+export const APPLY_CREDENTIAL_MESSAGE =
+  "Applying isn't configured correctly. Your staged changes are kept. Tell the Wiki owner.";
+
+export const APPLY_SESSION_MESSAGE =
+  "You're signed out. Your staged changes are kept. Sign in again, then Apply.";
+
+export const APPLY_NETWORK_MESSAGE =
+  "Couldn't reach the server. Your staged changes are kept. Try again.";

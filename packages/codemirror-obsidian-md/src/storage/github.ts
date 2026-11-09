@@ -1,11 +1,21 @@
 import { createSign } from "node:crypto";
 
+import { folderOf } from "../paths.js";
+
 import {
   AlreadyExistsError,
   type NewerChange,
+  StaleBaseError,
   StaleShaError,
 } from "./errors.js";
-import type { Storage, StorageFile, StorageWriteResult } from "./types.js";
+import type {
+  Change,
+  Changeset,
+  CommitMessage,
+  CommitStorage,
+  StorageFile,
+  StorageWriteResult,
+} from "./types.js";
 
 /** A GitHub App installation, used to mint short-lived tokens. */
 export interface GithubAppCredential {
@@ -100,7 +110,46 @@ function commitMessage(
   path: string,
   editor: GithubEditor | undefined,
 ): string {
-  const lines = [`${verb} ${path}`, "", TRAILER];
+  return withTrailer(`${verb} ${path}`, [], editor);
+}
+
+function describeChange(change: Change): string {
+  if (change.type === "write") return `Update ${change.path}`;
+  if (change.type === "delete") return `Delete ${change.path}`;
+  return `${folderOf(change.from) === folderOf(change.to) ? "Rename" : "Move"} ${change.from} -> ${change.to}`;
+}
+
+/** ADR 0017: one change reads like a single-file commit, a set is "Reorganize <n> items". */
+function changesetMessage(
+  changeset: Changeset,
+  editor: GithubEditor | undefined,
+  given?: CommitMessage,
+): string {
+  if (given) {
+    return withTrailer(
+      oneLine(given.subject),
+      (given.body ?? []).map(oneLine).filter(Boolean),
+      editor,
+    );
+  }
+  const [only] = changeset;
+  const subject =
+    changeset.length === 1 && only
+      ? only.type === "rename"
+        ? `${folderOf(only.from) === folderOf(only.to) ? "Rename" : "Move"} ${only.from}`
+        : describeChange(only)
+      : `Reorganize ${changeset.length} items`;
+  return withTrailer(subject, changeset.map(describeChange), editor);
+}
+
+function withTrailer(
+  subject: string,
+  body: string[],
+  editor: GithubEditor | undefined,
+): string {
+  const lines = [subject, ""];
+  if (body.length > 0) lines.push(...body.map((line) => `- ${line}`), "");
+  lines.push(TRAILER);
   if (editor) {
     const login = oneLine(editor.login);
     const name = editor.name ? oneLine(editor.name) : "";
@@ -115,10 +164,14 @@ function encodePath(path: string): string {
 
 /**
  * Storage over the GitHub Contents API. Server-side only: it holds the write
- * credential. Each `write`, `create` and `delete` is one commit. Create one per
+ * credential. Each `write`, `create` and `delete` is one commit; `commit`
+ * applies a whole changeset as one commit through the Git Data API, and never
+ * forces the ref. Create one per
  * request so `editor` names the person who made it.
  */
-export function createGithubStorage(options: GithubStorageOptions): Storage {
+export function createGithubStorage(
+  options: GithubStorageOptions,
+): CommitStorage {
   const doFetch = options.fetch ?? ((...args) => fetch(...args));
   const baseUrl = (options.baseUrl ?? "https://api.github.com").replace(
     /\/+$/,
@@ -256,7 +309,171 @@ export function createGithubStorage(options: GithubStorageOptions): Storage {
     return { sha: result.content?.sha ?? "", commit: result.commit.sha };
   }
 
-  const storage: Storage = {
+  let defaultBranch: string | undefined;
+
+  async function branchName(): Promise<string> {
+    if (options.branch) return options.branch;
+    if (!defaultBranch) {
+      const response = await api(repoUrl);
+      if (!response.ok) throw await apiError(response);
+      defaultBranch = ((await response.json()) as { default_branch: string })
+        .default_branch;
+    }
+    return defaultBranch;
+  }
+
+  async function getJson<T>(url: string): Promise<T> {
+    const response = await api(url);
+    if (!response.ok) throw await apiError(response);
+    return (await response.json()) as T;
+  }
+
+  async function postJson<T>(url: string, body: unknown): Promise<T> {
+    const response = await api(url, { method: "POST", body });
+    if (!response.ok) throw await apiError(response);
+    return (await response.json()) as T;
+  }
+
+  async function headSha(branch: string): Promise<string> {
+    const ref = await getJson<{ object: { sha: string } }>(
+      `${repoUrl}/git/ref/heads/${encodePath(branch)}`,
+    );
+    return ref.object.sha;
+  }
+
+  const storage: CommitStorage = {
+    async base() {
+      return headSha(await branchName());
+    },
+
+    async changedSince(since) {
+      const head = await headSha(await branchName());
+      if (head === since) return [];
+      const comparison = await getJson<{
+        files?: Array<{ filename: string; previous_filename?: string }>;
+      }>(
+        `${repoUrl}/compare/${encodeURIComponent(since)}...${encodeURIComponent(head)}`,
+      );
+      const inVault = (path: string) =>
+        prefix === ""
+          ? path
+          : path.startsWith(`${prefix}/`)
+            ? path.slice(prefix.length + 1)
+            : null;
+      const paths = new Set<string>();
+      for (const file of comparison.files ?? []) {
+        for (const name of [file.filename, file.previous_filename]) {
+          const path = name === undefined ? null : inVault(name);
+          if (path !== null) paths.add(path);
+        }
+      }
+      return [...paths].sort();
+    },
+
+    async commit(changeset, expected, message) {
+      const branch = await branchName();
+      const head = await headSha(branch);
+      if (head !== expected) throw new StaleBaseError(expected);
+
+      const headCommit = await getJson<{ tree: { sha: string } }>(
+        `${repoUrl}/git/commits/${head}`,
+      );
+      const listing = await getJson<{
+        truncated: boolean;
+        tree: Array<{ path: string; mode: string; type: string; sha: string }>;
+      }>(`${repoUrl}/git/trees/${headCommit.tree.sha}?recursive=1`);
+      if (listing.truncated) {
+        throw new Error("The repo tree is too large to commit through the API");
+      }
+
+      // Plan the whole set against the tree before anything is uploaded.
+      type Entry = { mode: string; sha?: string; content?: string };
+      const original = new Map<string, Entry>();
+      for (const item of listing.tree) {
+        if (item.type === "blob") {
+          original.set(item.path, { mode: item.mode, sha: item.sha });
+        }
+      }
+      const working = new Map(original);
+      const touched = new Set<string>();
+      for (const change of changeset) {
+        if (change.type === "write") {
+          const path = repoPath(change.path);
+          touched.add(path);
+          working.set(path, {
+            mode: working.get(path)?.mode ?? "100644",
+            content: change.content,
+          });
+        } else if (change.type === "delete") {
+          const path = repoPath(change.path);
+          touched.add(path);
+          if (!working.delete(path)) throw new StaleShaError(change.path);
+        } else {
+          const from = repoPath(change.from);
+          const to = repoPath(change.to);
+          const moved = working.get(from);
+          if (!moved) throw new StaleShaError(change.from);
+          if (working.has(to)) throw new AlreadyExistsError(change.to);
+          touched.add(from);
+          touched.add(to);
+          working.delete(from);
+          working.set(to, moved);
+        }
+      }
+
+      const entries: Array<{
+        path: string;
+        mode: string;
+        type: "blob";
+        sha: string | null;
+      }> = [];
+      for (const path of touched) {
+        const before = original.get(path);
+        const after = working.get(path);
+        if (!after) {
+          if (before) {
+            entries.push({ path, mode: before.mode, type: "blob", sha: null });
+          }
+          continue;
+        }
+        let sha = after.sha;
+        if (after.content !== undefined) {
+          sha = (
+            await postJson<{ sha: string }>(`${repoUrl}/git/blobs`, {
+              content: Buffer.from(after.content, "utf8").toString("base64"),
+              encoding: "base64",
+            })
+          ).sha;
+        }
+        if (sha !== before?.sha || after.mode !== before?.mode) {
+          entries.push({
+            path,
+            mode: after.mode,
+            type: "blob",
+            sha: sha ?? null,
+          });
+        }
+      }
+
+      const tree = await postJson<{ sha: string }>(`${repoUrl}/git/trees`, {
+        base_tree: headCommit.tree.sha,
+        tree: entries,
+      });
+      const made = await postJson<{ sha: string }>(`${repoUrl}/git/commits`, {
+        message: changesetMessage(changeset, options.editor, message),
+        tree: tree.sha,
+        parents: [head],
+      });
+      const moved = await api(
+        `${repoUrl}/git/refs/heads/${encodePath(branch)}`,
+        { method: "PATCH", body: { sha: made.sha, force: false } },
+      );
+      // Not a fast-forward: another commit landed after the head was read.
+      if (moved.status === 422) throw new StaleBaseError(expected);
+      if (!moved.ok) throw await apiError(moved);
+      return { base: made.sha, commit: made.sha };
+    },
+
     async read(path): Promise<StorageFile> {
       const response = await api(`${contentsUrl(path)}${refQuery()}`);
       if (!response.ok) throw await apiError(response);

@@ -1,6 +1,6 @@
 {
   "name": "remark-obsidian-md",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "author": "Adriano Araújo (adrianoaraujodsantos@hotmail.com)",
   "description": "Remark plugin for Obsidian.md syntax: wiki links, embeds, callouts, highlights, comments, block IDs and inline footnotes",
   "license": "MIT",

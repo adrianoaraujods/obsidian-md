@@ -1,5 +1,18 @@
 # fumadocs-obsidian-md
 
+## 0.2.0
+
+### Minor Changes
+
+- e5692ba: Add the browser-safe `fumadocs-obsidian-md/meta` subpath: `readMeta` and `writeMeta` for a folder's `meta.json` (`title`, `pages` order, `---Title---` Separators) with helpers to reorder, add, rename and remove Separators and set the title. Unknown keys and `pages` entries (links, `...folder`, `!name`, `z...a`) are preserved in place, and `createMeta` builds a first `meta.json` that ends with `"..."`.
+- 6a3bb07: `fumadocs-obsidian-md/meta` gains `planMeta`, which turns staged moves, reorders, Separator edits and title changes into the `meta.json` writes and deletes that keep a folder's `pages` in sync, and the helpers it is built from: `orderChildren`, `folderRows` and `defaultOrder`.
+
+### Patch Changes
+
+- Updated dependencies [b402c84]
+  - remark-obsidian-md@3.2.0
+  - react-obsidian-md@0.1.1
+
 ## 0.1.2
 
 ### Patch Changes
